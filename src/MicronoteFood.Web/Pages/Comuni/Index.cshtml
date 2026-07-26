@@ -1,0 +1,121 @@
+@page
+@model MicronoteFood.Web.Pages.Comuni.IndexModel
+@{
+    ViewData["Title"] = "Comuni";
+    ViewData["BodyClass"] = "list-module";
+}
+
+<section class="list-page comuni-list-page small-table-page" data-list-page data-menu-url="/">
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Comuni</strong>
+                <small>Micronote Food - Tabelle di base</small>
+            </span>
+        </a>
+        <div class="list-title-actions">
+            <button class="list-title-button" type="button" data-comune-action="new">Aggiungi</button>
+            <button class="list-title-button" type="button" data-comune-action="edit">Modifica</button>
+            <button class="list-title-button" type="button" data-comune-action="delete">Elimina</button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <span hidden data-page-message data-message-variant="error"
+              data-message-text="@Model.ErrorMessage"></span>
+    }
+
+    <section class="list-panel">
+        <div class="list-grid-frame comuni-grid-frame small-table-grid-frame" data-comune-grid>
+            <table class="list-grid comuni-grid small-table-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="name">Nome</th>
+                        <th data-sort-key="province">Provincia</th>
+                        <th data-sort-key="postalCode" data-sort-type="number">CAP</th>
+                        <th data-sort-key="code" data-sort-type="number">Codice</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var comune in Model.Comuni)
+                    {
+                        <tr tabindex="0"
+                            data-comune-row
+                            data-sort-name="@comune.Name"
+                            data-sort-province="@comune.Province"
+                            data-sort-postal-code="@comune.PostalCode"
+                            data-sort-code="@comune.Code"
+                            data-name="@comune.Name"
+                            data-province="@comune.Province"
+                            data-postal-code="@comune.PostalCode"
+                            data-code="@comune.Code"
+                            data-selected="@(Model.Comune.Name == comune.Name ? "true" : "false")"
+                            data-delete-name="@comune.Name"
+                            data-record-label="@comune.Name">
+                            <td>@comune.Name</td>
+                            <td>@comune.Province</td>
+                            <td>@comune.PostalCode</td>
+                            <td>@comune.Code</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="list-empty" data-comune-empty hidden>
+                Nessun comune trovato.
+            </div>
+        </div>
+    </section>
+
+    <form method="post"
+          asp-page-handler="Save"
+          class="entity-form small-table-editor supplier-form-page data-form-skin comuni-form-page"
+          data-comune-editor
+          data-enter-navigation>
+        <input asp-for="Comune.IsNew" type="hidden" data-comune-is-new />
+        <input asp-for="Comune.OriginalName" type="hidden" data-comune-original-name />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <fieldset class="form-frame compact-frame" data-comune-editor-fields disabled>
+            <legend>Scheda comune</legend>
+            <div class="comuni-fields-row">
+                <div class="field comuni-name-field">
+                    <label asp-for="Comune.Name"></label>
+                    <input asp-for="Comune.Name" autocomplete="off" data-comune-name />
+                    <span asp-validation-for="Comune.Name"></span>
+                </div>
+                <div class="field comuni-province-field">
+                    <label asp-for="Comune.Province"></label>
+                    <input asp-for="Comune.Province" class="text-uppercase" autocomplete="off" data-comune-province />
+                </div>
+                <div class="field comuni-postal-code-field">
+                    <label asp-for="Comune.PostalCode"></label>
+                    <input asp-for="Comune.PostalCode" inputmode="numeric" autocomplete="off" data-comune-postal-code />
+                </div>
+                <div class="field comuni-code-field">
+                    <label asp-for="Comune.Code"></label>
+                    <input asp-for="Comune.Code" autocomplete="off" data-comune-code />
+                </div>
+                <div class="comuni-actions">
+                    <button class="button button-primary primary comuni-action-button" type="submit" data-comune-save disabled>
+                        Salva
+                    </button>
+                    <button class="button button-secondary secondary comuni-action-button" type="button" data-comune-cancel disabled>
+                        Annulla
+                    </button>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <form method="post" asp-page-handler="Delete" data-comune-delete-form hidden>
+        <input type="hidden" name="name" data-comune-delete-name />
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+    <script src="~/js/comuni-list.js" asp-append-version="true"></script>
+}

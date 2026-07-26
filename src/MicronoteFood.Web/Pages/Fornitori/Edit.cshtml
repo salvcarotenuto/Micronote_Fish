@@ -1,0 +1,228 @@
+@page "{code:int?}"
+@using System.Globalization
+@model MicronoteFood.Web.Pages.Fornitori.EditModel
+@{
+    ViewData["Title"] = Model.IsNew ? "Nuovo fornitore" : "Scheda fornitore";
+}
+
+<section class="module-page form-module-page supplier-form-page data-form-skin">
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" href="@Model.BackUrl" aria-label="Esci dalla scheda">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>@(Model.IsNew ? "Nuovo fornitore" : "Scheda fornitore")</h1>
+                <p>
+                    @(Model.IsNew
+                        ? "Inserimento di una nuova anagrafica."
+                        : $"Codice {Model.Supplier.Code:00000}")
+                </p>
+            </div>
+        </div>
+        <div class="top-actions">
+            <button class="button button-primary primary" type="button" data-supplier-save>
+                Salva
+            </button>
+            <a class="button button-secondary secondary" href="@Model.BackUrl">Annulla</a>
+        </div>
+    </header>
+
+    <form id="supplier-form"
+          method="post"
+          class="entity-form"
+          data-progress-disabled="true"
+          data-enter-navigation>
+        <input asp-for="Supplier.Code" type="hidden" />
+        <input asp-for="ReturnUrl" type="hidden" />
+        <input asp-for="Azione" type="hidden" />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <fieldset class="form-frame compact-frame">
+            <legend>Anagrafica</legend>
+            <div class="form-grid form-grid-4 form-frame-grid">
+                <div class="field field-code">
+                    <label>Codice</label>
+                    <input type="text"
+                           class="readonly-field code-display"
+                           readonly
+                           tabindex="-1"
+                           value="@(Model.IsNew ? Model.DisplayCode.ToString("00000") : Model.Supplier.Code.ToString("00000"))" />
+                </div>
+                <div class="field field-span-2">
+                    <label asp-for="Supplier.Name"></label>
+                    <input asp-for="Supplier.Name" autofocus />
+                    <span asp-validation-for="Supplier.Name"></span>
+                </div>
+                <div class="field">
+                    <label asp-for="Supplier.TaxCode"></label>
+                    <input asp-for="Supplier.TaxCode" class="text-uppercase" />
+                    <span asp-validation-for="Supplier.TaxCode"></span>
+                </div>
+                <div class="supplier-location-row">
+                    <div class="field">
+                        <label asp-for="Supplier.City"></label>
+                        <input asp-for="Supplier.City"
+                               list="ComuniList"
+                               autocomplete="off"
+                               data-comune-city />
+                        <span asp-validation-for="Supplier.City"></span>
+                    </div>
+                    <div class="field field-small">
+                        <label asp-for="Supplier.Province"></label>
+                        <input asp-for="Supplier.Province"
+                               class="text-uppercase"
+                               autocomplete="off"
+                               data-comune-province />
+                        <span asp-validation-for="Supplier.Province"></span>
+                    </div>
+                    <div class="field">
+                        <label asp-for="Supplier.PostalCode"></label>
+                        <input asp-for="Supplier.PostalCode"
+                               inputmode="numeric"
+                               autocomplete="off"
+                               data-comune-postal-code />
+                        <span asp-validation-for="Supplier.PostalCode"></span>
+                    </div>
+                    <div class="field">
+                        <label asp-for="Supplier.VatNumber"></label>
+                        <input asp-for="Supplier.VatNumber" inputmode="numeric" />
+                        <span asp-validation-for="Supplier.VatNumber"></span>
+                    </div>
+                </div>
+                <div class="field field-span-2 field-address">
+                    <label asp-for="Supplier.Address"></label>
+                    <input asp-for="Supplier.Address" />
+                    <span asp-validation-for="Supplier.Address"></span>
+                </div>
+                <div class="field field-country">
+                    <label asp-for="Supplier.CountryCode"></label>
+                    <select asp-for="Supplier.CountryCode" asp-items="Model.Countries">
+                        <option value=""></option>
+                    </select>
+                </div>
+                <div class="field field-legal-nature">
+                    <label asp-for="Supplier.LegalNatureCode"></label>
+                    <select asp-for="Supplier.LegalNatureCode" asp-items="Model.LegalNatures">
+                        <option value=""></option>
+                    </select>
+                </div>
+                <div class="field field-active field-check">
+                    <div class="check-button-field">
+                        <input asp-for="Supplier.IsActive" />
+                        <label class="check-text" asp-for="Supplier.IsActive">
+                            Fornitore attivo
+                        </label>
+                        <label class="check-button-wrap"
+                               for="Supplier_IsActive"
+                               aria-label="Fornitore attivo"></label>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="form-frame compact-frame">
+            <legend>Recapiti</legend>
+            <div class="form-grid form-grid-4 form-frame-grid">
+                <div class="field field-span-2">
+                    <label asp-for="Supplier.Phone"></label>
+                    <input asp-for="Supplier.Phone" inputmode="tel" />
+                </div>
+                <div class="field field-span-2">
+                    <label asp-for="Supplier.Mobile"></label>
+                    <input asp-for="Supplier.Mobile" inputmode="tel" />
+                </div>
+                <div class="supplier-email-row">
+                    <div class="field">
+                        <label asp-for="Supplier.Email"></label>
+                        <input asp-for="Supplier.Email" type="email" />
+                        <span asp-validation-for="Supplier.Email"></span>
+                    </div>
+                    <div class="field">
+                        <label asp-for="Supplier.CertifiedEmail"></label>
+                        <input asp-for="Supplier.CertifiedEmail" type="email" />
+                        <span asp-validation-for="Supplier.CertifiedEmail"></span>
+                    </div>
+                </div>
+                <div class="field field-span-2">
+                    <label asp-for="Supplier.Contact"></label>
+                    <input asp-for="Supplier.Contact" />
+                </div>
+                <div class="field field-span-2">
+                    <label asp-for="Supplier.ContactMobile"></label>
+                    <input asp-for="Supplier.ContactMobile" inputmode="tel" />
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="form-frame compact-frame">
+            <legend>Dati gestionali</legend>
+            <div class="form-grid form-grid-4 form-frame-grid">
+                <div class="field field-span-2">
+                    <label asp-for="Supplier.AccountCode"></label>
+                    <select asp-for="Supplier.AccountCode" asp-items="Model.Accounts">
+                        <option value=""></option>
+                    </select>
+                    <span asp-validation-for="Supplier.AccountCode"></span>
+                </div>
+                <div class="field">
+                    <label asp-for="Supplier.SdiCode"></label>
+                    <input asp-for="Supplier.SdiCode" class="text-uppercase" />
+                </div>
+                <div class="field">
+                    <label asp-for="Supplier.StoreCode"></label>
+                    <select asp-for="Supplier.StoreCode" asp-items="Model.Stores">
+                        <option value=""></option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label asp-for="Supplier.PaymentCode"></label>
+                    <select asp-for="Supplier.PaymentCode" asp-items="Model.Payments">
+                        <option value=""></option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label asp-for="Supplier.BankCode"></label>
+                    <select asp-for="Supplier.BankCode" asp-items="Model.Banks">
+                        <option value=""></option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label asp-for="Supplier.OpeningBalance"></label>
+                    <input type="text"
+                           class="readonly-field currency-display"
+                           readonly
+                           tabindex="-1"
+                           value="@(Model.Supplier.OpeningBalance?.ToString("#,##0.00", CultureInfo.GetCultureInfo("it-IT")))" />
+                </div>
+                <div class="field">
+                    <label asp-for="Supplier.CategoryCode"></label>
+                    <select asp-for="Supplier.CategoryCode" asp-items="Model.Categories">
+                        <option value=""></option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label asp-for="Supplier.CreditLimit"></label>
+                    <input asp-for="Supplier.CreditLimit"
+                           inputmode="decimal"
+                           class="money-input" />
+                </div>
+                <div class="field">
+                    <label asp-for="Supplier.AgentCode"></label>
+                    <select asp-for="Supplier.AgentCode" asp-items="Model.Agents">
+                        <option value=""></option>
+                    </select>
+                </div>
+            </div>
+        </fieldset>
+
+    </form>
+    <datalist id="ComuniList"></datalist>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/comuni-assist.js" asp-append-version="true"></script>
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+    <script src="~/js/supplier-edit.js" asp-append-version="true"></script>
+}

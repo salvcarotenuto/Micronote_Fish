@@ -1,0 +1,125 @@
+@page
+@model MicronoteFood.Web.Pages.Admin.Aziende.EditModel
+@{
+    ViewData["Title"] = Model.Title;
+    ViewData["BodyClass"] = "system-admin-page";
+}
+
+<section class="module-page system-admin-home data-form-skin admin-company-edit-page">
+    <form id="company-clean-form" method="post" novalidate autocomplete="off" data-form-type="other">
+        @Html.AntiForgeryToken()
+        <header class="module-header system-admin-header">
+            <a class="module-logo-link" asp-page="/Admin/Aziende/Index" aria-label="Torna alla lista aziende">
+                <img class="module-logo" src="~/images/micronote-bak.png" alt="Micronote" />
+            </a>
+            <div>
+                <h1>@Model.Title</h1>
+                <p class="subtitle">Micronote Food - Gestione aziende</p>
+            </div>
+            <div class="top-actions stock-toolbar-actions admin-company-edit-actions">
+                <button class="button button-primary" type="submit">Salva</button>
+                <a class="button button-primary" asp-page="Index">Esci</a>
+            </div>
+        </header>
+
+        <section class="settings-shell admin-company-edit-shell">
+            <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+            <input type="hidden" name="IsNew" value="@Model.IsNew.ToString()" />
+            <fieldset class="settings-frame admin-company-frame">
+                <legend>Dati azienda</legend>
+                <div class="settings-grid admin-company-grid">
+                    <div class="field admin-company-code-field">
+                        <label for="Code">Codice</label>
+                        <input id="Code" name="Code" type="text" value="@Model.Code.ToString("0000")" readonly inputmode="numeric" maxlength="4" />
+                        <span asp-validation-for="Code"></span>
+                    </div>
+
+                    <div class="field field-wide">
+                        <label for="Name">Nome accesso</label>
+                        <input id="Name" name="Name" value="@Model.Name" maxlength="120" autocomplete="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" />
+                        <span asp-validation-for="Name"></span>
+                    </div>
+
+                    <div class="field field-wide">
+                        <label for="CompanySecret">Password</label>
+                        <div class="settings-password-control">
+                            <input id="CompanySecret" name="CompanySecret" value="@Model.CompanySecret" class="password-masked" maxlength="255" autocomplete="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" type="text" />
+                            <button class="settings-password-toggle" type="button" data-password-toggle="CompanySecret" tabindex="-1" aria-label="Mostra password" title="Mostra password">
+                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                        </div>
+                        <span asp-validation-for="CompanySecret"></span>
+                    </div>
+
+                    <div class="field field-wide">
+                        <label for="DatabaseName">Nome database</label>
+                        <input id="DatabaseName" name="DatabaseName" value="@Model.DatabaseName" readonly />
+                        <span asp-validation-for="DatabaseName"></span>
+                    </div>
+
+                    <div class="field">
+                        <label for="CurrentDatabaseVersion">Versione DB attuale</label>
+                        <input id="CurrentDatabaseVersion" name="CurrentDatabaseVersion" value="@Model.CurrentDatabaseVersion" maxlength="30" autocomplete="off" />
+                    </div>
+
+                    <div class="field">
+                        <label for="RequiredDatabaseVersion">Versione DB richiesta</label>
+                        <input id="RequiredDatabaseVersion" name="RequiredDatabaseVersion" value="@Model.RequiredDatabaseVersion" maxlength="30" autocomplete="off" />
+                    </div>
+
+                    <div class="field field-check admin-company-check-field">
+                        <label for="Active">Attiva</label>
+                        <label class="standard-check-button" aria-label="Attiva">
+                            <input id="Active" name="Active" type="checkbox" value="true" checked="@Model.Active" />
+                            <input type="hidden" name="Active" value="false" />
+                            <span aria-hidden="true"></span>
+                        </label>
+                    </div>
+
+                    <div class="field field-check admin-company-check-field">
+                        <label for="Locked">Bloccata</label>
+                        <label class="standard-check-button" aria-label="Bloccata">
+                            <input id="Locked" name="Locked" type="checkbox" value="true" checked="@Model.Locked" />
+                            <input type="hidden" name="Locked" value="false" />
+                            <span aria-hidden="true"></span>
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+        </section>
+    </form>
+</section>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+            const input = document.getElementById(button.dataset.passwordToggle);
+            button.addEventListener('click', () => {
+                const hidden = input.classList.toggle('password-masked');
+                button.classList.toggle('active', !hidden);
+                input.focus();
+            });
+        });
+    </script>
+    @if (Model.SaveMessage is not null)
+    {
+        <script>
+            window.addEventListener('load', () => {
+                window.MicronoteMessageBox?.show({
+                    title: 'Gestione aziende',
+                    message: @Json.Serialize(Model.SaveMessage),
+                    variant: @Json.Serialize(Model.SaveSucceeded ? "success" : "error")
+                });
+            });
+        </script>
+    }
+}
+
+
+
+
+
+

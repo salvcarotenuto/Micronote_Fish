@@ -1,0 +1,148 @@
+@page
+@model MicronoteFood.Web.Pages.AttivitaUtenti.IndexModel
+@{
+    ViewData["Title"] = "Lista attività utenti";
+    ViewData["BodyClass"] = "list-module activity-list-module";
+}
+
+<section class="list-page activity-list-page" data-list-page data-menu-url="/">
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Lista attività utenti</strong>
+                <small>Micronote Food - Registro attività</small>
+            </span>
+        </a>
+        <div class="list-title-actions">
+            <span class="list-records-box">
+                <strong data-activity-count>@Model.Activities.Count</strong>
+                <span>record</span>
+            </span>
+            <button class="button button-primary primary"
+                    type="button"
+                    data-activity-action="print">
+                Stampa lista
+            </button>
+        </div>
+    </header>
+
+    <section class="list-panel activity-list-panel">
+        <form class="list-toolbar activity-list-toolbar" method="get" data-activity-filter-form>
+            <div class="list-filter-field activity-filter-year">
+                <label for="activity-year">Anno</label>
+                <select id="activity-year" name="year" asp-items="Model.YearOptions" data-activity-filter></select>
+            </div>
+            <div class="list-filter-field activity-filter-month">
+                <label for="activity-month">Mese</label>
+                <select id="activity-month" name="month" data-activity-filter>
+                    <option value=""></option>
+                    @foreach (var option in Model.MonthOptions)
+                    {
+                        <option value="@option.Value" selected="@option.Selected">@option.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="list-filter-field activity-filter-day">
+                <label for="activity-day">Giorno</label>
+                <select id="activity-day" name="day" data-activity-filter>
+                    <option value=""></option>
+                    @foreach (var option in Model.DayOptions)
+                    {
+                        <option value="@option.Value" selected="@option.Selected">@option.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="list-filter-field activity-filter-user">
+                <label for="activity-user">Utente</label>
+                <select id="activity-user" name="userCode" data-activity-filter>
+                    <option value=""></option>
+                    @foreach (var option in Model.UserOptions)
+                    {
+                        <option value="@option.Value" selected="@option.Selected">@option.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="list-filter-field activity-filter-action">
+                <label for="activity-action">Azione</label>
+                <select id="activity-action" name="action" data-activity-filter>
+                    <option value=""></option>
+                    @foreach (var option in Model.ActionOptions)
+                    {
+                        <option value="@option.Value" selected="@option.Selected">@option.Text</option>
+                    }
+                </select>
+            </div>
+        </form>
+
+        <div class="list-grid-frame activity-list-grid-frame" data-activity-grid>
+            <table class="list-grid activity-list-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="date">Data</th>
+                        <th data-sort-key="time">Ora</th>
+                        <th data-sort-key="user">Utente</th>
+                        <th data-sort-key="table">Tabella</th>
+                        <th data-sort-key="action">Attività</th>
+                        <th data-sort-key="year" data-sort-type="number">Anno</th>
+                        <th data-sort-key="number">Numero</th>
+                        <th data-sort-key="code">Codice record</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var activity in Model.Activities)
+                    {
+                        <tr tabindex="0"
+                            data-activity-row
+                            data-sort-date="@(activity.Date?.ToString("yyyyMMdd") ?? "")"
+                            data-sort-time="@(activity.Time?.ToString("HHmmss") ?? "")"
+                            data-sort-user="@activity.UserDisplayName"
+                            data-sort-table="@activity.TableName"
+                            data-sort-action="@activity.ActionDescription"
+                            data-sort-year="@activity.Year"
+                            data-sort-number="@activity.Number"
+                            data-sort-code="@activity.Code">
+                            <td>@(activity.Date?.ToString("dd/MM/yyyy") ?? "")</td>
+                            <td>@(activity.Time?.ToString("HH:mm:ss") ?? "")</td>
+                            <td>@activity.UserDisplayName</td>
+                            <td>@activity.TableName</td>
+                            <td>@activity.ActionDescription</td>
+                            <td>@(activity.Year > 0 ? activity.Year.ToString() : "")</td>
+                            <td>@activity.Number</td>
+                            <td>@activity.Code</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="list-empty" data-activity-empty hidden>
+                Nessuna attività presente.
+            </div>
+        </div>
+    </section>
+
+    <div class="report-preview-backdrop" data-activity-print-preview hidden>
+        <section class="report-preview-window" role="dialog" aria-modal="true" aria-labelledby="activityPrintPreviewTitle">
+            <header class="report-preview-toolbar">
+                <div>
+                    <strong id="activityPrintPreviewTitle">Anteprima lista attività utenti</strong>
+                    <span data-activity-print-summary></span>
+                </div>
+                <div class="report-preview-actions">
+                    <button type="button" data-activity-preview-zoom-out aria-label="Riduci anteprima">−</button>
+                    <span data-activity-preview-zoom-label>100%</span>
+                    <button type="button" data-activity-preview-zoom-in aria-label="Ingrandisci anteprima">+</button>
+                    <button type="button" data-activity-preview-print>Stampa</button>
+                    <button type="button" class="report-preview-close" data-activity-preview-close>Chiudi</button>
+                </div>
+            </header>
+            <div class="report-preview-viewport">
+                <div class="report-preview-document" data-activity-preview-document></div>
+            </div>
+        </section>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/activity-list.js" asp-append-version="true"></script>
+}
+

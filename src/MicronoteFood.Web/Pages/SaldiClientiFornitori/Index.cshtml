@@ -1,0 +1,108 @@
+@page
+@model MicronoteFood.Web.Pages.SaldiClientiFornitori.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Saldi contabili clienti e fornitori";
+    ViewData["BodyClass"] = "customer-supplier-balances-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Total(decimal value) => value.ToString("N2", it);
+}
+
+<section class="module-page stock-movements-page customer-supplier-balances-page supplier-form-page data-form-skin"
+         data-customer-supplier-balances data-year="@Model.Report.Year">
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>Saldi contabili clienti e fornitori</h1>
+                <p>Visualizzazione saldi contabili clienti e fornitori</p>
+            </div>
+        </div>
+        <div class="top-actions customer-supplier-balances-actions">
+            <span class="list-records-box"><span>Clienti</span><strong>@Model.Report.Customers.Count</strong></span>
+            <span class="list-records-box"><span>Fornitori</span><strong>@Model.Report.Suppliers.Count</strong></span>
+            <button class="button button-primary primary" type="button" data-balance-action="statement">Vedi e/conto</button>
+            <button class="button button-primary primary" type="button" data-balance-action="print">Stampa</button>
+        </div>
+    </header>
+
+    <form class="stock-movements-filters customer-supplier-balances-filters" method="get"
+          data-balance-filters data-progress-message="Elaborazione saldi in corso..." data-progress-minimum-time="400">
+        <fieldset class="form-frame">
+            <div class="customer-supplier-balances-filter-row">
+                <div class="field">
+                    <label>Esercizio contabile</label>
+                    <select name="year">
+                        @foreach (var year in Model.Report.Years)
+                        {
+                            <option value="@year" selected="@(Model.Report.Year == year)">@year</option>
+                        }
+                    </select>
+                </div>
+                <div class="field field-check customer-supplier-zero-filter">
+                    <label for="showZero">Mostra saldi a zero</label>
+                    <label class="standard-check-button" aria-label="Mostra saldi a zero">
+                        <input id="showZero" type="checkbox" name="showZero" value="true" checked="@Model.Report.ShowZero" />
+                        <input type="hidden" name="showZero" value="false" />
+                        <span aria-hidden="true"></span>
+                    </label>
+                </div>
+                <div class="field customer-supplier-store-filter">
+                    <label>Punto vendita</label>
+                    <select name="storeCode">
+                        <option value="">Tutti</option>
+                        @foreach (var store in Model.Report.Stores)
+                        {
+                            <option value="@store.Code" selected="@(Model.Report.StoreCode == store.Code)">@store.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <div class="customer-supplier-balances-layout">
+        <section class="customer-supplier-balances-panel">
+            <h2>Saldi clienti</h2>
+            <div class="list-grid-frame customer-supplier-balances-grid-frame">
+                <table class="list-grid customer-supplier-balances-grid" data-balance-table data-party-type="C">
+                    <thead><tr><th data-sort-key="code" data-sort-type="number">Codice</th><th data-sort-key="name">Nome</th><th>Saldo iniz.</th><th>Vendite</th><th>Incassi</th><th>Saldo</th></tr></thead>
+                    <tbody>
+                    @foreach (var row in Model.Report.Customers)
+                    {
+                        <tr tabindex="0" data-balance-row data-party-type="C" data-party-code="@row.Code" data-sort-code="@row.Code" data-sort-name="@row.Name">
+                            <td>@row.Code.ToString("00000")</td><td>@row.Name</td><td>@Money(row.InitialBalance)</td><td>@Money(row.Operations)</td><td>@Money(row.Settlements)</td><td>@Money(row.Balance)</td>
+                        </tr>
+                    }
+                    </tbody>
+                    <tfoot><tr><td></td><td>Totale clienti</td><td>@Total(Model.Report.CustomerTotals.InitialBalance)</td><td>@Total(Model.Report.CustomerTotals.Operations)</td><td>@Total(Model.Report.CustomerTotals.Settlements)</td><td>@Total(Model.Report.CustomerTotals.Balance)</td></tr></tfoot>
+                </table>
+            </div>
+        </section>
+
+        <section class="customer-supplier-balances-panel">
+            <h2>Saldi fornitori</h2>
+            <div class="list-grid-frame customer-supplier-balances-grid-frame">
+                <table class="list-grid customer-supplier-balances-grid" data-balance-table data-party-type="F">
+                    <thead><tr><th data-sort-key="code" data-sort-type="number">Codice</th><th data-sort-key="name">Nome</th><th>Saldo iniz.</th><th>Acquisti</th><th>Pagamenti</th><th>Saldo</th></tr></thead>
+                    <tbody>
+                    @foreach (var row in Model.Report.Suppliers)
+                    {
+                        <tr tabindex="0" data-balance-row data-party-type="F" data-party-code="@row.Code" data-sort-code="@row.Code" data-sort-name="@row.Name">
+                            <td>@row.Code.ToString("00000")</td><td>@row.Name</td><td>@Money(row.InitialBalance)</td><td>@Money(row.Operations)</td><td>@Money(row.Settlements)</td><td>@Money(row.Balance)</td>
+                        </tr>
+                    }
+                    </tbody>
+                    <tfoot><tr><td></td><td>Totale fornitori</td><td>@Total(Model.Report.SupplierTotals.InitialBalance)</td><td>@Total(Model.Report.SupplierTotals.Operations)</td><td>@Total(Model.Report.SupplierTotals.Settlements)</td><td>@Total(Model.Report.SupplierTotals.Balance)</td></tr></tfoot>
+                </table>
+            </div>
+        </section>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/customer-supplier-balances.js" asp-append-version="true"></script>
+}

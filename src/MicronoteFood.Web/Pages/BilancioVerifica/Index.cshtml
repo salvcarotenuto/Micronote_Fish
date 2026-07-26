@@ -1,0 +1,143 @@
+@page
+@model MicronoteFood.Web.Pages.BilancioVerifica.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Bilancio di verifica";
+    ViewData["BodyClass"] = "trial-balance-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Share(decimal value) => value == 0 ? "" : value.ToString("N1", it) + " %";
+    var result = Model.Report.ProfitOrLoss;
+}
+
+<section class="module-page trial-balance-page data-form-skin"
+         data-trial-balance
+         data-menu-url="/"
+         data-year="@Model.Report.Year">
+    <header class="module-header trial-balance-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale">
+                <img src="~/images/micronote-bak.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>Bilancio di verifica</h1>
+                <p>Situazione patrimoniale e conto economico</p>
+            </div>
+        </div>
+        <div class="top-actions trial-balance-actions">
+            <button class="button button-primary primary" type="submit" form="trial-balance-filters">Elabora</button>
+            <button class="button button-primary primary" type="button" data-trial-action="account">Vedi e/conto</button>
+            <button class="button button-primary primary" type="button" data-trial-action="print">Stampa</button>
+        </div>
+    </header>
+
+    <form id="trial-balance-filters"
+          class="trial-balance-filters"
+          method="get"
+          data-progress-message="Elaborazione bilancio in corso..."
+          data-progress-minimum-time="600">
+        <input type="hidden" name="run" value="true" />
+        <fieldset class="form-frame">
+            <div class="trial-balance-filter-row">
+                <div class="field">
+                    <label for="trial-year">Esercizio contabile</label>
+                    <select id="trial-year" name="year">
+                        @foreach (var year in Model.Report.Years)
+                        {
+                            <option value="@year" selected="@(year == Model.Report.Year)">@year</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <div class="trial-balance-workspace">
+        <section class="trial-balance-panel">
+            <h2>Situazione patrimoniale</h2>
+            <div class="list-grid-frame trial-balance-grid-frame">
+                <table class="list-grid trial-balance-grid" data-trial-grid>
+                    <thead>
+                        <tr><th>Conto</th><th>Descrizione</th><th>Attività</th><th>Passività</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.Report.EquityRows)
+                        {
+                            <tr tabindex="0" data-trial-row data-account-code="@row.AccountCode">
+                                <td class="code-cell">@row.AccountCode.ToString("000")</td>
+                                <td>@row.Description</td>
+                                <td class="number-cell">@Money(row.Assets)</td>
+                                <td class="number-cell">@Money(row.Liabilities)</td>
+                            </tr>
+                        }
+                    </tbody>
+                    @if (Model.Report.IsLoaded)
+                    {
+                        <tfoot>
+                            <tr><td></td><td>TOTALI</td><td class="number-cell">@Money(Model.Report.TotalAssets)</td><td class="number-cell">@Money(Model.Report.TotalLiabilities)</td></tr>
+                        </tfoot>
+                    }
+                </table>
+            </div>
+        </section>
+
+        <section class="trial-balance-panel">
+            <h2>Conto economico</h2>
+            <div class="list-grid-frame trial-balance-grid-frame">
+                <table class="list-grid trial-balance-grid trial-income-grid" data-trial-grid>
+                    <thead>
+                        <tr><th>Conto</th><th>Descrizione</th><th>Costi</th><th>Ricavi</th><th>Quota</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.Report.IncomeRows)
+                        {
+                            <tr tabindex="0" data-trial-row data-account-code="@row.AccountCode">
+                                <td class="code-cell">@row.AccountCode.ToString("000")</td>
+                                <td>@row.Description</td>
+                                <td class="number-cell">@Money(row.Costs)</td>
+                                <td class="number-cell">@Money(row.Revenues)</td>
+                                <td class="number-cell">@Share(row.Share)</td>
+                            </tr>
+                        }
+                    </tbody>
+                    @if (Model.Report.IsLoaded)
+                    {
+                        <tfoot>
+                            <tr><td></td><td>TOTALI</td><td class="number-cell">@Money(Model.Report.TotalCosts)</td><td class="number-cell">@Money(Model.Report.TotalRevenues)</td><td></td></tr>
+                            <tr><td></td><td>@(result < 0 ? "PERDITA DELL'ESERCIZIO" : "UTILE DELL'ESERCIZIO")</td><td class="number-cell">@(result >= 0 ? Money(Math.Abs(result)) : "")</td><td class="number-cell">@(result < 0 ? Money(Math.Abs(result)) : "")</td><td></td></tr>
+                        </tfoot>
+                    }
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <form method="post" data-trial-print-form hidden></form>
+
+    <div class="report-preview-backdrop" data-trial-print-preview hidden>
+        <section class="report-preview-window" role="dialog" aria-modal="true" aria-labelledby="trialPrintPreviewTitle">
+            <header class="report-preview-toolbar">
+                <div>
+                    <strong id="trialPrintPreviewTitle">Anteprima bilancio di verifica</strong>
+                    <span data-trial-print-summary></span>
+                </div>
+                <div class="report-preview-actions">
+                    <button type="button" data-trial-preview-zoom-out aria-label="Riduci anteprima">−</button>
+                    <span data-trial-preview-zoom-label>100%</span>
+                    <button type="button" data-trial-preview-zoom-in aria-label="Ingrandisci anteprima">+</button>
+                    <button type="button" data-trial-preview-print>Stampa</button>
+                    <button type="button" data-trial-preview-pdf>File PDF</button>
+                    <button type="button" data-trial-preview-excel>Excel</button>
+                    <button type="button" class="report-preview-close" data-trial-preview-close>Chiudi</button>
+                </div>
+            </header>
+            <div class="report-preview-viewport">
+                <div class="report-preview-document" data-trial-preview-document></div>
+            </div>
+        </section>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/trial-balance.js" asp-append-version="true"></script>
+}

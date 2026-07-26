@@ -1,0 +1,121 @@
+@page
+@model MicronoteFood.Web.Pages.UnitaMisura.IndexModel
+@{
+    ViewData["Title"] = "Unità di misura";
+    ViewData["BodyClass"] = "list-module";
+}
+
+<section class="list-page unit-measure-list-page small-table-page" data-list-page data-menu-url="/">
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Unità di misura</strong>
+                <small>Micronote Food - Tabelle di base</small>
+            </span>
+        </a>
+        <div class="list-title-actions">
+            <button class="list-title-button" type="button" data-unit-measure-action="new">
+                Aggiungi
+            </button>
+            <button class="list-title-button" type="button" data-unit-measure-action="edit">
+                Modifica
+            </button>
+            <button class="list-title-button" type="button" data-unit-measure-action="delete">
+                Elimina
+            </button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <span hidden data-page-message data-message-variant="error"
+              data-message-text="@Model.ErrorMessage"></span>
+    }
+
+    <section class="list-panel">
+        <div class="list-grid-frame unit-measure-grid-frame small-table-grid-frame" data-unit-measure-grid>
+            <table class="list-grid unit-measure-grid small-table-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="code">Codice</th>
+                        <th data-sort-key="description">Descrizione</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var unit in Model.Units)
+                    {
+                        <tr tabindex="0"
+                            data-unit-measure-row
+                            data-sort-code="@unit.Code"
+                            data-sort-description="@unit.Description"
+                            data-code="@unit.Code"
+                            data-description="@unit.Description"
+                            data-selected="@(Model.Unit.Code == unit.Code ? "true" : "false")"
+                            data-delete-code="@unit.Code"
+                            data-record-label="@unit.Description">
+                            <td class="code-cell">@unit.Code</td>
+                            <td>@unit.Description</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="list-empty" data-unit-measure-empty hidden>
+                Nessuna unità di misura trovata.
+            </div>
+        </div>
+    </section>
+
+    <form method="post"
+          asp-page-handler="Save"
+          class="entity-form small-table-editor supplier-form-page data-form-skin unit-measure-form-page"
+          data-unit-measure-editor
+          data-enter-navigation>
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+        <input asp-for="Unit.IsNew" type="hidden" data-unit-measure-is-new />
+
+        <fieldset class="form-frame compact-frame" data-unit-measure-editor-fields disabled>
+            <legend>Scheda unità di misura</legend>
+            <div class="form-grid form-grid-4 form-frame-grid small-table-fields-row">
+                <div class="field field-code">
+                    <label asp-for="Unit.Code"></label>
+                    <input asp-for="Unit.Code"
+                           autocomplete="off"
+                           data-unit-measure-code />
+                    <span asp-validation-for="Unit.Code"></span>
+                </div>
+                <div class="field field-span-2 small-table-description-field">
+                    <label asp-for="Unit.Description"></label>
+                    <input asp-for="Unit.Description"
+                           autocomplete="off"
+                           data-unit-measure-description />
+                    <span asp-validation-for="Unit.Description"></span>
+                </div>
+                <div class="small-table-actions">
+                    <button class="button button-primary primary"
+                            type="submit"
+                            data-unit-measure-save
+                            disabled>
+                        Salva
+                    </button>
+                    <button class="button button-secondary secondary"
+                            type="button"
+                            data-unit-measure-cancel
+                            disabled>
+                        Annulla
+                    </button>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <form method="post" asp-page-handler="Delete" data-unit-measure-delete-form hidden>
+        <input type="hidden" name="code" data-unit-measure-delete-code />
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+    <script src="~/js/unit-measures-list.js" asp-append-version="true"></script>
+}

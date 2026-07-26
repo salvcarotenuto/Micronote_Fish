@@ -1,0 +1,72 @@
+@page
+@model MicronoteFood.Web.Pages.RendicontoCassa.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Rendiconto di cassa";
+    ViewData["BodyClass"] = "cash-statement-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Total(decimal value) => value.ToString("N2", it);
+}
+
+<section class="module-page stock-movements-page accounting-statement-page cash-statement-page supplier-form-page data-form-skin"
+         data-accounting-statement data-is-loaded="true">
+    <header class="module-header stock-movements-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale"><img src="~/images/micronote-bak.jpeg" alt="" /></a>
+            <div><h1>Rendiconto di cassa</h1><p>Rendiconto giornaliero movimenti di cassa</p></div>
+        </div>
+        <div class="top-actions accounting-statement-actions">
+            <span class="list-records-box accounting-statement-records"><strong>@Model.Report.Rows.Count</strong><span>record</span></span>
+            <button class="button button-primary primary" type="submit" form="cash-statement-filters">Visualizza</button>
+            <button class="button button-primary primary" type="button" onclick="window.print()">Stampa</button>
+        </div>
+    </header>
+
+    <form id="cash-statement-filters" class="cash-statement-filters" method="get" data-accounting-statement-filters>
+        <fieldset class="form-frame"><div class="cash-statement-filter-row">
+            <div class="cash-filter-field"><label>Dalla data</label>
+                <span class="micronote-date-control" data-date-control>
+                    <input type="hidden" name="dateFrom" value="@Model.Report.DateFrom.ToString("yyyy-MM-dd")" data-statement-date-hidden data-statement-date-from />
+                    <input class="micronote-date-input" type="text" inputmode="numeric" maxlength="10" autocomplete="off" value="@Model.Report.DateFrom.ToString("dd/MM/yyyy", it)" data-statement-date-display />
+                    <button class="micronote-date-button" type="button" tabindex="-1" aria-label="Seleziona data iniziale" data-date-picker-button></button>
+                </span>
+            </div>
+            <div class="cash-filter-field"><label>Alla data</label>
+                <span class="micronote-date-control" data-date-control>
+                    <input type="hidden" name="dateTo" value="@Model.Report.DateTo.ToString("yyyy-MM-dd")" data-statement-date-hidden data-statement-date-to />
+                    <input class="micronote-date-input" type="text" inputmode="numeric" maxlength="10" autocomplete="off" value="@Model.Report.DateTo.ToString("dd/MM/yyyy", it)" data-statement-date-display />
+                    <button class="micronote-date-button" type="button" tabindex="-1" aria-label="Seleziona data finale" data-date-picker-button></button>
+                </span>
+            </div>
+            <div class="cash-filter-field cash-statement-cash-field"><label>Cassa</label><select name="cashType">
+                <option value="0" selected="@(Model.Report.CashType == 0)"></option>
+                <option value="61" selected="@(Model.Report.CashType == 61)">Cassa contanti</option>
+                <option value="65" selected="@(Model.Report.CashType == 65)">Cassa transitoria</option>
+            </select></div>
+            <div class="cash-filter-field cash-statement-store-field"><label>Punto vendita</label><select name="storeCode">
+                <option value="0">Tutti</option>
+                @foreach (var store in Model.Report.Stores) { <option value="@store.Code" selected="@(store.Code == Model.Report.StoreCode)">@store.Code.ToString("000") - @store.Name</option> }
+            </select></div>
+        </div></fieldset>
+    </form>
+
+    <section class="stock-movements-panel accounting-statement-panel">
+        <div class="list-grid-frame stock-movements-grid-frame accounting-statement-grid-frame">
+            <table class="list-grid stock-movements-grid accounting-statement-grid cash-statement-grid">
+                <thead><tr><th>Partita</th><th>Data</th><th>Num. doc.</th><th>Causale</th><th>Descrizione</th><th>Entrate</th><th>Uscite</th><th>Conto</th><th>Descrizione</th><th>Punto v.</th></tr></thead>
+                <tbody>
+                @foreach (var row in Model.Report.Rows) {
+                    <tr tabindex="0"><td>@row.Code.ToString("000000")</td><td>@row.MovementDate.ToString("dd/MM/yyyy")</td><td>@row.DocumentNumber</td><td>@(row.CauseCode?.ToString("000") ?? "")</td><td>@row.CauseDescription</td><td>@Money(row.Income)</td><td>@Money(row.Expense)</td><td>@row.AccountCode.ToString("000")</td><td>@row.AccountDescription</td><td>@row.StoreName</td></tr>
+                }
+                </tbody>
+                <tfoot><tr><td colspan="5">TOTALI</td><td>@Total(Model.Report.TotalIncome)</td><td>@Total(Model.Report.TotalExpense)</td><td colspan="3"></td></tr></tfoot>
+            </table>
+        </div>
+    </section>
+    <div class="cash-statement-balance"><span>Entrate</span><strong>@Total(Model.Report.TotalIncome)</strong><span>Uscite</span><strong>@Total(Model.Report.TotalExpense)</strong><span>Saldo</span><strong class="@(Model.Report.Balance < 0 ? "negative" : "")">@Total(Model.Report.Balance)</strong></div>
+</section>
+
+@section Scripts {
+    <script src="~/js/accounting-statement.js" asp-append-version="true"></script>
+}

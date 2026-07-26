@@ -1,0 +1,93 @@
+@page
+@model MicronoteFood.Web.Pages.RiepilogoMovimentiPuntiVendita.IndexModel
+@using MicronoteFood.Web.Models
+@{
+    ViewData["Title"] = "Riepilogo movimenti per punto vendita";
+    ViewData["BodyClass"] = "store-movement-summary-module";
+}
+
+<section class="module-page stock-movements-page store-movement-summary-page supplier-form-page data-form-skin"
+         data-store-summary data-year="@Model.Report.Year">
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>Riepilogo movimenti per punto vendita</h1>
+                <p>Riepilogo dei movimenti contabili dettagliati per punto vendita</p>
+            </div>
+        </div>
+        <div class="top-actions store-summary-actions">
+            <button class="button button-primary primary" type="submit" form="store-summary-filters">Elabora</button>
+            <button class="button button-primary primary" type="button" data-store-summary-action="account">Vedi e/conto</button>
+            <button class="button button-primary primary store-summary-print-button"
+                    type="button"
+                    data-store-summary-action="print">Stampa</button>
+        </div>
+    </header>
+
+    <form id="store-summary-filters"
+          class="stock-movements-filters store-summary-filters"
+          method="get"
+          data-progress-message="Elaborazione riepilogo in corso..."
+          data-progress-minimum-time="700">
+        <input type="hidden" name="run" value="true" />
+        <fieldset class="form-frame">
+            <div class="store-summary-filter-row">
+                <div class="field">
+                    <label>Esercizio</label>
+                    <select name="year">
+                        @foreach (var year in Model.Report.Years)
+                        {
+                            <option value="@year" selected="@(Model.Report.Year == year)">@year</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <section class="stock-movements-panel store-summary-panel store-summary-revenue-panel">
+        <h2>@Model.Report.Revenues.Title</h2>
+        <div class="list-grid-frame stock-movements-grid-frame store-summary-grid-frame">
+            <partial name="_StoreSummaryGrid" model="new StoreSummaryGridViewModel(Model.Report.Revenues, Model.Report.Stores, false)" />
+        </div>
+    </section>
+
+    <section class="stock-movements-panel store-summary-panel store-summary-cost-panel">
+        <h2>@Model.Report.Costs.Title</h2>
+        <div class="list-grid-frame stock-movements-grid-frame store-summary-grid-frame">
+            <partial name="_StoreSummaryGrid" model="new StoreSummaryGridViewModel(Model.Report.Costs, Model.Report.Stores, true)" />
+        </div>
+    </section>
+
+    <form method="post" data-store-summary-print-form hidden></form>
+
+    <div class="report-preview-backdrop" data-store-summary-print-preview hidden>
+        <section class="report-preview-window" role="dialog" aria-modal="true" aria-labelledby="storeSummaryPrintPreviewTitle">
+            <header class="report-preview-toolbar">
+                <div>
+                    <strong id="storeSummaryPrintPreviewTitle">Anteprima riepilogo movimenti per punto vendita</strong>
+                    <span data-store-summary-print-summary></span>
+                </div>
+                <div class="report-preview-actions">
+                    <button type="button" data-store-summary-preview-zoom-out aria-label="Riduci anteprima">−</button>
+                    <span data-store-summary-preview-zoom-label>100%</span>
+                    <button type="button" data-store-summary-preview-zoom-in aria-label="Ingrandisci anteprima">+</button>
+                    <button type="button" data-store-summary-preview-print>Stampa</button>
+                    <button type="button" data-store-summary-preview-pdf>File PDF</button>
+                    <button type="button" data-store-summary-preview-excel>Excel</button>
+                    <button type="button" class="report-preview-close" data-store-summary-preview-close>Chiudi</button>
+                </div>
+            </header>
+            <div class="report-preview-viewport">
+                <div class="report-preview-document" data-store-summary-preview-document></div>
+            </div>
+        </section>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/store-summary.js" asp-append-version="true"></script>
+}

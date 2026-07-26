@@ -1,0 +1,98 @@
+@page
+@model MicronoteFood.Web.Pages.ArticoloPrimaNota.IndexModel
+@using System.Globalization
+@{
+    Layout = null;
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    var detail = Model.Detail!;
+    var maxRows = Math.Max(8, Math.Max(detail.DebitLines.Count, detail.CreditLines.Count));
+    static string Money(decimal value) => value == 0 ? "" : value.ToString("N2", CultureInfo.GetCultureInfo("it-IT"));
+    static string Code(int? value, string format) => value.GetValueOrDefault() > 0 ? value.GetValueOrDefault().ToString(format, CultureInfo.InvariantCulture) : "";
+}
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Articolo di contabilita</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="accounting-article-detail-body">
+    <main class="accounting-article-detail-page" data-accounting-article-detail>
+        <div class="accounting-article-detail-title">Articolo di contabilit&agrave;</div>
+
+        <section class="accounting-article-detail-panel">
+            <div class="accounting-article-detail-fields">
+                <label>Numero di partita</label>
+                <input class="code" value="@detail.Code.ToString("000000", CultureInfo.InvariantCulture)" readonly tabindex="-1" />
+                <input class="year" value="@detail.Year" readonly tabindex="-1" />
+
+                <label>Causale movimento</label>
+                <input class="code" value="@Code(detail.CauseCode, "000")" readonly tabindex="-1" />
+                <input class="description" value="@detail.CauseDescription" readonly tabindex="-1" />
+
+                <label>@detail.SubjectLabel</label>
+                <input class="code" value="@Code(detail.SubjectCode, "00000")" readonly tabindex="-1" />
+                <input class="description" value="@detail.SubjectName" readonly tabindex="-1" />
+
+                <label>Data movimento</label>
+                <input class="date" value="@detail.MovementDate.ToString("dd MMMM yyyy", it)" readonly tabindex="-1" />
+
+                <label>N.ro documento</label>
+                <input class="document" value="@detail.DocumentNumber" readonly tabindex="-1" />
+
+                <label>Importo</label>
+                <input class="amount" value="@Money(detail.Amount)" readonly tabindex="-1" />
+            </div>
+
+            <div class="accounting-article-detail-grid-frame">
+                <table class="accounting-article-detail-grid">
+                    <thead>
+                        <tr>
+                            <th>Conto</th>
+                            <th>Descrizione</th>
+                            <th>Importo</th>
+                            <th>---A---</th>
+                            <th>Conto</th>
+                            <th>Descrizione</th>
+                            <th>Importo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < maxRows; i++)
+                        {
+                            var debit = i < detail.DebitLines.Count ? detail.DebitLines[i] : null;
+                            var credit = i < detail.CreditLines.Count ? detail.CreditLines[i] : null;
+                            <tr>
+                                <td>@(debit is null ? "" : debit.AccountCode.ToString("000", CultureInfo.InvariantCulture))</td>
+                                <td>@(debit?.AccountDescription ?? "")</td>
+                                <td>@(debit is null ? "" : Money(debit.Amount))</td>
+                                <td></td>
+                                <td>@(credit is null ? "" : credit.AccountCode.ToString("000", CultureInfo.InvariantCulture))</td>
+                                <td>@(credit?.AccountDescription ?? "")</td>
+                                <td>@(credit is null ? "" : Money(credit.Amount))</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2"></td>
+                            <td class="amount-total">@Money(detail.DebitTotal)</td>
+                            <td colspan="3"></td>
+                            <td class="amount-total">@Money(detail.CreditTotal)</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <div class="accounting-article-detail-actions">
+            <button class="button button-primary primary" type="button" data-accounting-article-close>Chiudi</button>
+        </div>
+    </main>
+
+    <script src="~/js/accounting-article-detail.js" asp-append-version="true"></script>
+</body>
+</html>
+
+

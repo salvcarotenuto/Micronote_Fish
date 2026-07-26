@@ -1,0 +1,291 @@
+@page
+@model MicronoteFood.Web.Pages.EstrattoContoArticolo.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Estratto conto articolo";
+    ViewData["BodyClass"] = "article-account-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Quantity(decimal value) => value == 0 ? "" : value.ToString("N3", it);
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string QuantityTotal(decimal value) => value.ToString("N3", it);
+    string MoneyTotal(decimal value) => value.ToString("N2", it);
+    string SortNumber(decimal value) => value.ToString(CultureInfo.InvariantCulture);
+    var hasArticle = !string.IsNullOrWhiteSpace(Model.Report.ArticleCode);
+    var months = it.DateTimeFormat.MonthNames
+        .Take(12)
+        .Select((name, index) => new { Number = index + 1, Name = it.TextInfo.ToTitleCase(name) })
+        .ToArray();
+}
+
+<section class="module-page stock-movements-page article-account-page supplier-form-page data-form-skin"
+         data-article-account
+         data-has-article="@hasArticle.ToString().ToLowerInvariant()">
+    <header class="module-header stock-movements-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>Estratto conto articolo</h1>
+                <p>Visualizzazione estratto conto articoli di magazzino</p>
+            </div>
+        </div>
+        <div class="top-actions stock-toolbar-actions article-account-actions">
+            <span class="list-records-box stock-movements-records">
+                <strong>@Model.Report.Movements.Count</strong>
+                <span>record</span>
+            </span>
+            <button class="button button-primary primary" type="button" data-article-account-action="article">Vedi articolo</button>
+            <button class="button button-primary primary" type="button" data-article-account-action="movement">Vedi movimento</button>
+            <button class="button button-primary primary" type="button" data-article-account-action="print">Stampa</button>
+            <button class="button button-primary primary" type="button" data-article-account-action="exit">Esci</button>
+        </div>
+    </header>
+
+    <form class="stock-movements-filters article-account-filters" method="get" data-article-account-filters data-progress-disabled="true">
+        <fieldset class="form-frame">
+            <div class="article-account-filter-row">
+                <div class="field article-account-year-field">
+                    <label>Anno</label>
+                    <select name="year" data-article-account-filter>
+                        @foreach (var year in Model.Report.Years)
+                        {
+                            <option value="@year" selected="@(Model.Report.Year == year)">@year</option>
+                        }
+                    </select>
+                </div>
+                <div class="field article-account-month-field">
+                    <label>Mese</label>
+                    <select name="month" data-article-account-filter>
+                        <option value="0" selected="@(Model.Report.Month == 0)"></option>
+                        @foreach (var month in months)
+                        {
+                            <option value="@month.Number" selected="@(Model.Report.Month == month.Number)">@month.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="field article-account-article-field">
+                    <label>Articolo</label>
+                    <input name="articleCode"
+                           value="@Model.Report.ArticleCode"
+                           readonly
+                           data-article-account-code />
+                    <input value="@Model.Report.ArticleDescription"
+                           readonly
+                           tabindex="-1"
+                           data-article-account-description />
+                    <button class="button button-primary primary article-account-change-button"
+                            type="button"
+                            data-article-account-change>Cambia articolo</button>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <section class="stock-movements-panel article-account-panel">
+        <div class="list-grid-frame stock-movements-grid-frame article-account-grid-frame">
+            <table class="list-grid stock-movements-grid article-account-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="year" data-sort-type="number">Anno</th>
+                        <th data-sort-key="code" data-sort-type="number">Partita</th>
+                        <th data-sort-key="date" data-sort-type="number">Data</th>
+                        <th data-sort-key="documentNumber">Num. doc.</th>
+                        <th data-sort-key="movementType">C/S</th>
+                        <th data-sort-key="loadQuantity" data-sort-type="number">Car. quantità</th>
+                        <th data-sort-key="loadPrice" data-sort-type="number">Car. prezzo</th>
+                        <th data-sort-key="loadAmount" data-sort-type="number">Car. importo</th>
+                        <th data-sort-key="unloadQuantity" data-sort-type="number">Scar.quantità</th>
+                        <th data-sort-key="unloadPrice" data-sort-type="number">Scar. prezzo</th>
+                        <th data-sort-key="unloadAmount" data-sort-type="number">Scar.importo</th>
+                        <th data-sort-key="subjectType">C/F</th>
+                        <th data-sort-key="subjectCode" data-sort-type="number">Ditta</th>
+                        <th data-sort-key="subjectName">Nome</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var movement in Model.Report.Movements)
+                    {
+                        var rowUrl = Url.Page(
+                            "./Index",
+                            new
+                            {
+                                year = Model.Report.Year,
+                                month = Model.Report.Month,
+                                articleCode = Model.Report.ArticleCode,
+                                selectedKey = movement.Key
+                            });
+                        <tr class="@(Model.Report.SelectedKey == movement.Key ? "selected selected-row" : "")"
+                            tabindex="0"
+                            data-article-account-row
+                            data-row-key="@movement.Key"
+                            data-article-code="@Model.Report.ArticleCode"
+                            data-stock-load-id="@movement.StockLoadId"
+                            data-sale-id="@movement.SaleId"
+                            data-sector="@movement.Sector"
+                            data-sort-year="@movement.Year"
+                            data-sort-code="@movement.Code"
+                            data-sort-date="@movement.MovementDate.ToString("yyyyMMdd")"
+                            data-sort-document-number="@movement.DocumentNumber"
+                            data-sort-movement-type="@movement.MovementType"
+                            data-sort-load-quantity="@SortNumber(movement.LoadQuantity)"
+                            data-sort-load-price="@SortNumber(movement.LoadPrice)"
+                            data-sort-load-amount="@SortNumber(movement.LoadAmount)"
+                            data-sort-unload-quantity="@SortNumber(movement.UnloadQuantity)"
+                            data-sort-unload-price="@SortNumber(movement.UnloadPrice)"
+                            data-sort-unload-amount="@SortNumber(movement.UnloadAmount)"
+                            data-sort-subject-type="@movement.SubjectType"
+                            data-sort-subject-code="@movement.SubjectCode"
+                            data-sort-subject-name="@movement.SubjectName"
+                            data-url="@rowUrl">
+                            <td>@movement.Year</td>
+                            <td>@movement.Code.ToString("000000")</td>
+                            <td>@movement.MovementDate.ToString("dd-MM-yyyy", it)</td>
+                            <td>@movement.DocumentNumber</td>
+                            <td>@movement.MovementType</td>
+                            <td>@Quantity(movement.LoadQuantity)</td>
+                            <td>@Money(movement.LoadPrice)</td>
+                            <td>@Money(movement.LoadAmount)</td>
+                            <td>@Quantity(movement.UnloadQuantity)</td>
+                            <td>@Money(movement.UnloadPrice)</td>
+                            <td>@Money(movement.UnloadAmount)</td>
+                            <td>@movement.SubjectType</td>
+                            <td>@(movement.SubjectCode == 0 ? "" : movement.SubjectCode.ToString("00000"))</td>
+                            <td>@movement.SubjectName</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <footer class="stock-movements-footer article-account-footer">
+        <div class="article-account-totals">
+            <div class="article-account-totals-title">Riepilogo movimenti</div>
+            <div class="stock-total-box article-account-total-box">
+                <span class="stock-total-title">Esistenza iniziale</span>
+                <span class="stock-total-label">Quantità</span>
+                <span class="stock-total-label">Valore</span>
+                <input value="@QuantityTotal(Model.Report.Totals.InitialQuantity)" readonly tabindex="-1" />
+                <input value="@MoneyTotal(Model.Report.Totals.InitialValue)" readonly tabindex="-1" />
+            </div>
+            <div class="stock-total-box article-account-total-box article-account-total-box-wide">
+                <span class="stock-total-title">Carico</span>
+                <span class="stock-total-label">Quantità</span>
+                <span class="stock-total-label">Costo medio</span>
+                <span class="stock-total-label">Importo</span>
+                <input value="@QuantityTotal(Model.Report.Totals.LoadQuantity)" readonly tabindex="-1" />
+                <input value="@MoneyTotal(Model.Report.Totals.LoadAverageCost)" readonly tabindex="-1" />
+                <input value="@MoneyTotal(Model.Report.Totals.LoadValue)" readonly tabindex="-1" />
+            </div>
+            <div class="stock-total-box article-account-total-box article-account-total-box-wide">
+                <span class="stock-total-title">Scarico</span>
+                <span class="stock-total-label">Quantità</span>
+                <span class="stock-total-label">Prezzo medio</span>
+                <span class="stock-total-label">Importo</span>
+                <input value="@QuantityTotal(Model.Report.Totals.UnloadQuantity)" readonly tabindex="-1" />
+                <input value="@MoneyTotal(Model.Report.Totals.UnloadAveragePrice)" readonly tabindex="-1" />
+                <input value="@MoneyTotal(Model.Report.Totals.UnloadValue)" readonly tabindex="-1" />
+            </div>
+            <div class="stock-total-box article-account-total-box">
+                <span class="stock-total-title">Esistenza finale</span>
+                <span class="stock-total-label">Quantità</span>
+                <span class="stock-total-label">Valore</span>
+                <input value="@QuantityTotal(Model.Report.Totals.FinalQuantity)" readonly tabindex="-1" />
+                <input value="@MoneyTotal(Model.Report.Totals.FinalValue)" readonly tabindex="-1" />
+            </div>
+        </div>
+    </footer>
+
+    <div class="stock-load-article-lookup article-account-choice" hidden data-article-account-choice>
+        <div class="article-account-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="article-account-choice-title">
+            <div class="stock-load-article-lookup-title" id="article-account-choice-title">Scelta articolo</div>
+            <div class="article-account-choice-frame">
+                <div class="article-account-choice-code-row">
+                    <label>Articolo</label>
+                    <input type="text" autocomplete="off" data-choice-code />
+                    <input type="text" readonly tabindex="-1" data-choice-description />
+                    <button class="lookup-button stock-movements-article-lookup-button"
+                            type="button"
+                            title="Seleziona articolo"
+                            aria-label="Seleziona articolo"
+                            data-choice-lookup></button>
+                </div>
+                <div class="field article-account-choice-text">
+                    <label>Categoria</label>
+                    <input type="text" readonly tabindex="-1" data-choice-category />
+                </div>
+                <div class="field article-account-choice-text">
+                    <label>Gruppo</label>
+                    <input type="text" readonly tabindex="-1" data-choice-group />
+                </div>
+                <div class="field article-account-choice-text">
+                    <label>Sottogruppo</label>
+                    <input type="text" readonly tabindex="-1" data-choice-subgroup />
+                </div>
+                <div class="field article-account-choice-side article-account-choice-unit">
+                    <label>Unità di misura</label>
+                    <input type="text" readonly tabindex="-1" data-choice-unit />
+                </div>
+                <div class="field article-account-choice-side article-account-choice-cost">
+                    <label>Costo standard</label>
+                    <input type="text" readonly tabindex="-1" data-choice-price />
+                </div>
+            </div>
+            <div class="article-account-choice-actions">
+                <button class="button button-primary primary" type="button" data-choice-confirm>Conferma</button>
+                <button class="button button-secondary secondary" type="button" data-choice-cancel>Annulla</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="stock-load-article-lookup" hidden data-article-account-lookup>
+        <div class="stock-load-article-lookup-dialog" role="dialog" aria-modal="true" aria-labelledby="article-account-lookup-title">
+            <div class="stock-load-article-lookup-title" id="article-account-lookup-title">Lista articoli</div>
+            <div class="stock-load-article-lookup-frame" tabindex="0">
+                <table class="stock-load-article-lookup-table">
+                    <thead>
+                        <tr>
+                            <th><button type="button" data-article-sort="code">Codice</button></th>
+                            <th><button type="button" data-article-sort="description">Descrizione</button></th>
+                            <th><button type="button" data-article-sort="category">Categoria</button></th>
+                            <th><button type="button" data-article-sort="group">Gruppo</button></th>
+                            <th><button type="button" data-article-sort="subgroup">Sottogruppo</button></th>
+                            <th><button type="button" data-article-sort="price">Costo std</button></th>
+                            <th><button type="button" data-article-sort="vatRate">Aliq. iva</button></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="stock-load-article-lookup-tools">
+                <label>Cerca</label>
+                <input type="text" autocomplete="off" data-article-search />
+                <label>Categoria</label>
+                <select data-article-category></select>
+                <label>Fornitore</label>
+                <select data-article-supplier></select>
+                <label>Records</label>
+                <input type="text" readonly tabindex="-1" data-article-count />
+                <button class="button button-primary primary" type="button" data-article-ok>OK</button>
+                <button class="button button-secondary secondary" type="button" data-article-cancel>Annulla</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="purchase-invoice-payment-modal-overlay" data-article-account-article-modal hidden>
+        <section class="purchase-invoice-payment-modal stock-load-article-card-modal" role="dialog" aria-modal="true" aria-label="Scheda articolo">
+            <iframe title="Scheda articolo" data-article-account-article-modal-frame></iframe>
+        </section>
+    </div>
+
+    <div class="purchase-invoice-payment-modal-overlay" data-article-account-document-modal hidden>
+        <section class="purchase-invoice-payment-modal stock-movement-document-modal" role="dialog" aria-modal="true" aria-label="Documento origine">
+            <iframe title="Documento origine" data-article-account-document-modal-frame></iframe>
+        </section>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/article-account.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,76 @@
+@page
+@model MicronoteFood.Web.Pages.CambiaEsercizio.IndexModel
+@{
+    ViewData["Title"] = "Cambia esercizio";
+}
+
+<section class="module-page form-module-page supplier-form-page exercise-change-page data-form-skin">
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>Cambia esercizio</h1>
+                <p>Imposta l'esercizio contabile in linea.</p>
+            </div>
+        </div>
+    </header>
+
+    <form id="exercise-change-form"
+          method="post"
+          class="entity-form exercise-change-form"
+          data-enter-navigation>
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <fieldset class="form-frame compact-frame">
+            <legend>Esercizio contabile</legend>
+            <div class="exercise-change-content">
+                <div class="exercise-change-fields">
+                    <div class="field">
+                        <label>Esercizio attuale</label>
+                        <input type="text"
+                               value="@Model.CurrentExercise"
+                               readonly
+                               tabindex="-1" />
+                    </div>
+                    <div class="field">
+                        <label asp-for="NewExercise"></label>
+                        <input asp-for="NewExercise"
+                               type="text"
+                               min="1900"
+                               max="2200"
+                               step="1"
+                               autocomplete="off"
+                               data-updown
+                               autofocus />
+                        <span asp-validation-for="NewExercise"></span>
+                    </div>
+                </div>
+                <div class="top-actions exercise-change-actions">
+                    <button class="button button-primary primary" type="submit" form="exercise-change-form">
+                        Salva
+                    </button>
+                    <a class="button button-secondary secondary" asp-page="/Index">Annulla</a>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+</section>
+
+@if (Model.SavedExercise.HasValue)
+{
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            window.MicronoteMessageBox?.show({
+                title: "Conferma nuovo esercizio",
+                message: "L'esercizio contabile in linea e' ora: @Model.SavedExercise.Value.",
+                detail: "Da questo momento i moduli contabili useranno questo esercizio per i controlli di coerenza.",
+                variant: "success",
+                onConfirm: () => {
+                    window.location.href = "/";
+                }
+            });
+        });
+    </script>
+}

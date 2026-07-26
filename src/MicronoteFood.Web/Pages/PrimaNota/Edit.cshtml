@@ -1,0 +1,460 @@
+@page "{id:int?}"
+@model MicronoteFood.Web.Pages.PrimaNota.EditModel
+@using System.Globalization
+@{
+    ViewData["Title"] = Model.IsNew ? "Nuovo movimento" : "Scheda movimento";
+    ViewData["BodyClass"] = "accounting-movement-edit-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Code3(int? value) => value.GetValueOrDefault() > 0 ? value.GetValueOrDefault().ToString("000") : "";
+    string Code5(int? value) => value.GetValueOrDefault() > 0 ? value.GetValueOrDefault().ToString("00000") : "";
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    var masterOptions = Model.AccountOptions
+        .Where(option => option.MasterCode > 0)
+        .GroupBy(option => new { option.MasterCode, option.MasterDescription })
+        .OrderBy(group => group.Key.MasterCode)
+        .Select(group => group.Key)
+        .ToArray();
+}
+
+<section class="module-page form-module-page supplier-form-page accounting-cause-form-page accounting-movement-form-page data-form-skin">
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" href="@Model.ReturnUrl" aria-label="Torna alla lista">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>@(Model.IsNew ? "Nuovo movimento" : "Scheda movimento")</h1>
+                <p>Movimento di prima nota contabile.</p>
+            </div>
+        </div>
+        <div class="top-actions">
+            <button class="button button-primary primary"
+                    type="button"
+                    data-accounting-movement-save>
+                Salva
+            </button>
+            <a class="button button-secondary secondary" href="@Model.ReturnUrl">Annulla</a>
+        </div>
+    </header>
+
+    <form id="accounting-movement-form"
+          method="post"
+          class="entity-form"
+          novalidate
+          data-enter-navigation
+          data-progress-disabled="true"
+          data-is-new="@(Model.IsNew ? "true" : "false")">
+        <input type="hidden" name="returnTo" value="@Model.ReturnTo" />
+        <input asp-for="Azione" type="hidden" />
+        <input asp-for="Movement.IsNew" type="hidden" />
+        <input asp-for="Movement.Id" type="hidden" />
+        <input asp-for="Movement.Sector" type="hidden" />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <fieldset class="form-frame compact-frame accounting-movement-head-frame">
+            <legend>Movimento di prima nota</legend>
+            <div class="accounting-movement-fields">
+                <div class="field accounting-movement-code-field">
+                    <label>Partita</label>
+                    <input asp-for="Movement.Code"
+                           class="accounting-movement-code-number"
+                           type="text"
+                           value="@Model.Movement.Code.ToString("000000")"
+                           readonly
+                           tabindex="-1" />
+                    <span class="accounting-movement-code-separator">/</span>
+                    <input asp-for="Movement.Year"
+                           class="accounting-movement-code-year"
+                           type="text"
+                           value="@Model.Movement.Year"
+                           readonly
+                           tabindex="-1"
+                           data-movement-year />
+                </div>
+
+                <div class="field accounting-movement-cause-field">
+                    <label>Causale</label>
+                    <input asp-for="Movement.CauseCode"
+                           id="movementCauseCode"
+                           class="accounting-movement-cause-code"
+                           value="@Code3(Model.Movement.CauseCode)"
+                           type="text"
+                           inputmode="numeric"
+                           maxlength="3"
+                           autocomplete="off"
+                           readonly="@(!Model.IsNew)"
+                           tabindex="@(Model.IsNew ? "1" : "-1")"
+                           data-movement-cause-code />
+                    <input asp-for="Movement.CauseDescription"
+                           class="accounting-movement-cause-description"
+                           value="@Model.Movement.CauseDescription"
+                           readonly
+                           tabindex="-1"
+                           data-movement-cause-description />
+                    @if (Model.IsNew)
+                    {
+                        <button class="lookup-button accounting-movement-lookup-button"
+                                type="button"
+                                title="Seleziona causale"
+                                aria-label="Seleziona causale"
+                                data-movement-cause-lookup-open></button>
+                    }
+                    else
+                    {
+                        <button class="lookup-button accounting-movement-lookup-button"
+                                type="button"
+                                title="Causale bloccata"
+                                aria-label="Causale bloccata"
+                                disabled
+                                data-movement-cause-lookup-open></button>
+                    }
+                </div>
+
+                <div class="field accounting-movement-document-field">
+                    <label>Numero documento</label>
+                    <input asp-for="Movement.DocumentNumber" autocomplete="off" tabindex="3" />
+                </div>
+
+                <div class="field accounting-movement-date-field">
+                    <label>Data movimento</label>
+                    <input asp-for="Movement.MovementDate"
+                           type="hidden"
+                           data-movement-date
+                           value="@Model.Movement.MovementDate.ToString("yyyy-MM-dd")" />
+                    <span class="micronote-date-control" data-date-control>
+                        <input class="micronote-date-input"
+                               type="text"
+                               inputmode="numeric"
+                               maxlength="10"
+                               autocomplete="off"
+                               tabindex="-1"
+                               value="@Model.Movement.MovementDate.ToString("dd/MM/yyyy")"
+                               data-movement-date-display />
+                        <button class="micronote-date-button"
+                                type="button"
+                                tabindex="-1"
+                                aria-label="Seleziona data movimento"
+                                data-date-picker-button></button>
+                    </span>
+                </div>
+
+                <div class="field accounting-movement-subject-field lookup-field"
+                     data-lookup-field
+                     data-lookup-type="fornitori"
+                     data-lookup-title="Fornitori"
+                     data-code-input="movementSubjectCode"
+                     data-code-display="movementSubjectCodeDisplay"
+                     data-label-input="movementSubjectName">
+                    <label data-movement-subject-label>Fornitore</label>
+                    <input asp-for="Movement.SubjectType" type="hidden" data-movement-subject-type />
+                    <input asp-for="Movement.SubjectCode"
+                           id="movementSubjectCode"
+                           type="hidden"
+                           data-movement-subject-code />
+                    <input id="movementSubjectCodeDisplay"
+                           class="accounting-movement-subject-code"
+                           value="@Code5(Model.Movement.SubjectCode)"
+                           type="text"
+                           inputmode="numeric"
+                           maxlength="5"
+                           autocomplete="off"
+                           tabindex="2"
+                           data-movement-subject-code-display />
+                    <input asp-for="Movement.SubjectName"
+                           id="movementSubjectName"
+                           class="accounting-movement-subject-name"
+                           value="@Model.Movement.SubjectName"
+                           readonly
+                           tabindex="-1"
+                           data-movement-subject-name />
+                    <button class="lookup-button accounting-movement-lookup-button"
+                            type="button"
+                            title="Seleziona fornitore"
+                            aria-label="Seleziona fornitore"
+                            data-lookup-open></button>
+                </div>
+
+                <div class="field accounting-movement-store-field">
+                    <label>Punto vendita</label>
+                    <select asp-for="Movement.StoreCode">
+                        <option value=""></option>
+                        @foreach (var store in Model.StoreOptions)
+                        {
+                            <option value="@store.Code">@store.Code.ToString("000") - @store.Name</option>
+                        }
+                    </select>
+                </div>
+
+                <input asp-for="Movement.LinkedInvoiceDocumentId"
+                       type="hidden"
+                       data-movement-linked-document-id="invoice" />
+                <input asp-for="Movement.LinkedInvoiceDocumentSector"
+                       type="hidden"
+                       data-movement-linked-document-sector="invoice" />
+                <input asp-for="Movement.LinkedDueDateDocumentId"
+                       type="hidden"
+                       data-movement-linked-document-id="due-date" />
+                <input asp-for="Movement.LinkedDueDateDocumentSector"
+                       type="hidden"
+                       data-movement-linked-document-sector="due-date" />
+
+                <div class="field accounting-movement-accessory-field accounting-movement-invoice-field"
+                     data-movement-accessory="invoice">
+                    <label>Fattura collegata</label>
+                    <input class="accounting-movement-accessory-code accounting-movement-linked-code"
+                           type="text"
+                           value="@(Model.Movement.LinkedInvoiceDocumentId.HasValue ? $"{Model.Movement.LinkedInvoiceDocumentId.Value:000000} / {Model.Movement.Year}" : "")"
+                           readonly
+                           tabindex="-1"
+                           data-movement-accessory-code />
+                    <input class="accounting-movement-linked-number"
+                           type="text"
+                           value="@Model.Movement.LinkedInvoiceDocumentNumber"
+                           readonly
+                           tabindex="-1"
+                           data-movement-accessory-number />
+                    <input class="accounting-movement-linked-date"
+                           type="text"
+                           value="@(Model.Movement.LinkedInvoiceDocumentDate?.ToString("dd-MM-yyyy") ?? "")"
+                           readonly
+                           tabindex="-1"
+                           data-movement-accessory-date />
+                    <button class="lookup-button accounting-movement-lookup-button"
+                            type="button"
+                            title="Seleziona fattura"
+                            aria-label="Seleziona fattura"
+                            disabled
+                            data-movement-accessory-lookup></button>
+                    <button class="accounting-movement-accessory-clear"
+                            type="button"
+                            title="Azzera fattura collegata"
+                            aria-label="Azzera fattura collegata"
+                            disabled
+                            data-movement-accessory-clear>x</button>
+                </div>
+
+                <div class="field accounting-movement-accessory-field accounting-movement-due-date-field"
+                     data-movement-accessory="due-date">
+                    <label>Scadenza colleg.</label>
+                    <input class="accounting-movement-accessory-code accounting-movement-linked-code"
+                           type="text"
+                           value="@(Model.Movement.LinkedDueDateDocumentId.HasValue ? $"{Model.Movement.LinkedDueDateDocumentId.Value:000000} / {Model.Movement.Year}" : "")"
+                           readonly
+                           tabindex="-1"
+                           data-movement-accessory-code />
+                    <input class="accounting-movement-linked-number"
+                           type="text"
+                           value="@Model.Movement.LinkedDueDateDocumentNumber"
+                           readonly
+                           tabindex="-1"
+                           data-movement-accessory-number />
+                    <input class="accounting-movement-linked-date"
+                           type="text"
+                           value="@(Model.Movement.LinkedDueDateDocumentDate?.ToString("dd-MM-yyyy") ?? "")"
+                           readonly
+                           tabindex="-1"
+                           data-movement-accessory-date />
+                    <button class="lookup-button accounting-movement-lookup-button"
+                            type="button"
+                            title="Seleziona scadenza"
+                            aria-label="Seleziona scadenza"
+                            disabled
+                            data-movement-accessory-lookup></button>
+                    <button class="accounting-movement-accessory-clear"
+                            type="button"
+                            title="Azzera scadenza collegata"
+                            aria-label="Azzera scadenza collegata"
+                            disabled
+                            data-movement-accessory-clear>x</button>
+                </div>
+
+                <div class="field accounting-movement-notes-field">
+                    <label>Annotazioni</label>
+                    <input asp-for="Movement.Notes" autocomplete="off" />
+                </div>
+
+                <div class="field accounting-movement-amount-field">
+                    <label>Importo movimento</label>
+                    <input asp-for="Movement.Amount"
+                           class="currency-display"
+                           value="@Money(Model.Movement.Amount)"
+                           autocomplete="off"
+                           inputmode="decimal"
+                           maxlength="12"
+                           data-money-integer-digits="9"
+                           data-money-field
+                           data-movement-total-amount />
+                    <button class="accounting-movement-amount-button"
+                            type="button"
+                            title="Gestione importo"
+                            aria-label="Gestione importo"
+                            data-movement-amount-fill></button>
+                </div>
+            </div>
+        </fieldset>
+
+        <select data-movement-cause-source hidden>
+            <option value=""></option>
+            @foreach (var cause in Model.CauseTemplates)
+            {
+                <option value="@cause.Code"
+                        data-description="@cause.Description"
+                        data-subject="@cause.Subject"
+                        data-invoice="@(cause.Invoice ? "true" : "false")"
+                        data-due-date="@(cause.DueDate ? "true" : "false")"
+                        data-debit-1="@cause.Debit1"
+                        data-debit-2="@cause.Debit2"
+                        data-debit-3="@cause.Debit3"
+                        data-debit-4="@cause.Debit4"
+                        data-debit-5="@cause.Debit5"
+                        data-debit-6="@cause.Debit6"
+                        data-credit-1="@cause.Credit1"
+                        data-credit-2="@cause.Credit2"
+                        data-credit-3="@cause.Credit3"
+                        data-credit-4="@cause.Credit4"
+                        data-credit-5="@cause.Credit5"
+                        data-credit-6="@cause.Credit6">
+                    @cause.Code.ToString("000") - @cause.Description
+                </option>
+            }
+        </select>
+
+        <fieldset class="form-frame compact-frame accounting-cause-accounts-frame accounting-movement-accounts-frame">
+            <legend>Conti movimentati</legend>
+            <div class="accounting-cause-accounts accounting-movement-accounts">
+                <div class="accounting-cause-account-column accounting-movement-account-column" data-movement-side="debit">
+                    <h2>Conti Dare</h2>
+                    <div class="accounting-cause-account-subhead accounting-movement-account-subhead">
+                        <span></span>
+                        <span></span>
+                        <span class="accounting-cause-subhead-master">Mastro</span>
+                        <span class="accounting-cause-subhead-account">Conto</span>
+                        <span class="accounting-movement-subhead-amount">Importo</span>
+                    </div>
+                    @for (var index = 0; index < Model.Movement.DebitLines.Count; index++)
+                    {
+                        var line = Model.Movement.DebitLines[index];
+                        var account = Model.GetAccount(line.AccountCode);
+                        <div class="accounting-cause-account-row accounting-movement-account-row" data-account-row>
+                            <input asp-for="Movement.DebitLines[index].RowNumber" type="hidden" />
+                            <input asp-for="Movement.DebitLines[index].Sign" type="hidden" />
+                            <button class="accounting-cause-row-button" type="button" data-account-add aria-label="Aggiungi conto Dare @(index + 1)">+</button>
+                            <button class="accounting-cause-row-button accounting-cause-row-button-clear" type="button" data-account-clear aria-label="Elimina conto Dare @(index + 1)">x</button>
+                            <input class="accounting-cause-code-box" type="text" value="@(account is not null && account.MasterCode > 0 ? account.MasterCode.ToString("000") : "")" readonly tabindex="-1" data-master-code />
+                            <input class="accounting-cause-master-description" type="text" value="@(account?.MasterDescription ?? "")" readonly tabindex="-1" data-master-description />
+                            <input class="accounting-cause-code-box" type="text" value="@(account is not null ? account.AccountCode.ToString("000") : "")" readonly tabindex="-1" data-account-code />
+                            <input asp-for="Movement.DebitLines[index].AccountCode" type="hidden" data-account-select />
+                            <input class="accounting-cause-account-description" type="text" value="@(account?.AccountDescription ?? "")" readonly tabindex="-1" data-account-description />
+                            <input asp-for="Movement.DebitLines[index].Amount" value="@Money(line.Amount)" class="accounting-movement-line-amount currency-display" inputmode="decimal" maxlength="12" autocomplete="off" data-money-integer-digits="9" data-money-field data-line-amount />
+                        </div>
+                    }
+                    <input class="accounting-movement-side-total" type="text" value="" readonly tabindex="-1" data-side-total="debit" />
+                </div>
+
+                <div class="accounting-cause-account-column accounting-movement-account-column" data-movement-side="credit">
+                    <h2>Conti Avere</h2>
+                    <div class="accounting-cause-account-subhead accounting-movement-account-subhead">
+                        <span></span>
+                        <span></span>
+                        <span class="accounting-cause-subhead-master">Mastro</span>
+                        <span class="accounting-cause-subhead-account">Conto</span>
+                        <span class="accounting-movement-subhead-amount">Importo</span>
+                    </div>
+                    @for (var index = 0; index < Model.Movement.CreditLines.Count; index++)
+                    {
+                        var line = Model.Movement.CreditLines[index];
+                        var account = Model.GetAccount(line.AccountCode);
+                        <div class="accounting-cause-account-row accounting-movement-account-row" data-account-row>
+                            <input asp-for="Movement.CreditLines[index].RowNumber" type="hidden" />
+                            <input asp-for="Movement.CreditLines[index].Sign" type="hidden" />
+                            <button class="accounting-cause-row-button" type="button" data-account-add aria-label="Aggiungi conto Avere @(index + 1)">+</button>
+                            <button class="accounting-cause-row-button accounting-cause-row-button-clear" type="button" data-account-clear aria-label="Elimina conto Avere @(index + 1)">x</button>
+                            <input class="accounting-cause-code-box" type="text" value="@(account is not null && account.MasterCode > 0 ? account.MasterCode.ToString("000") : "")" readonly tabindex="-1" data-master-code />
+                            <input class="accounting-cause-master-description" type="text" value="@(account?.MasterDescription ?? "")" readonly tabindex="-1" data-master-description />
+                            <input class="accounting-cause-code-box" type="text" value="@(account is not null ? account.AccountCode.ToString("000") : "")" readonly tabindex="-1" data-account-code />
+                            <input asp-for="Movement.CreditLines[index].AccountCode" type="hidden" data-account-select />
+                            <input class="accounting-cause-account-description" type="text" value="@(account?.AccountDescription ?? "")" readonly tabindex="-1" data-account-description />
+                            <input asp-for="Movement.CreditLines[index].Amount" value="@Money(line.Amount)" class="accounting-movement-line-amount currency-display" inputmode="decimal" maxlength="12" autocomplete="off" data-money-integer-digits="9" data-money-field data-line-amount />
+                        </div>
+                    }
+                    <input class="accounting-movement-side-total" type="text" value="" readonly tabindex="-1" data-side-total="credit" />
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <div class="account-zoom-overlay" data-account-zoom hidden>
+        <div class="account-zoom-dialog" role="dialog" aria-modal="true" aria-labelledby="account-zoom-title">
+            <div class="account-zoom-title" id="account-zoom-title">Piano dei conti</div>
+            <div class="account-zoom-body">
+                <div class="account-zoom-grid-frame" data-account-zoom-grid>
+                    <table class="account-zoom-grid">
+                        <thead>
+                            <tr>
+                                <th class="account-zoom-selector"></th>
+                                <th data-account-zoom-sort="masterCode" tabindex="0" aria-sort="none">Mastro</th>
+                                <th data-account-zoom-sort="masterDescription" tabindex="0" aria-sort="none">Descrizione</th>
+                                <th data-account-zoom-sort="accountCode" tabindex="0" aria-sort="none">Conto</th>
+                                <th data-account-zoom-sort="accountDescription" tabindex="0" aria-sort="none">Descrizione</th>
+                                <th data-account-zoom-sort="accountType" tabindex="0" aria-sort="none">Tipo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var option in Model.AccountOptions)
+                            {
+                                <tr tabindex="0"
+                                    data-zoom-row
+                                    data-master-code="@option.MasterCode"
+                                    data-master-description="@option.MasterDescription"
+                                    data-account-code="@option.AccountCode"
+                                    data-account-description="@option.AccountDescription"
+                                    data-account-type="@option.Type"
+                                    data-filter-text="@($"{option.MasterDescription} {option.AccountDescription}")">
+                                    <td class="account-zoom-selector-cell"></td>
+                                    <td class="code-cell">@option.MasterCode.ToString("000")</td>
+                                    <td>@option.MasterDescription</td>
+                                    <td class="code-cell">@option.AccountCode.ToString("000")</td>
+                                    <td>@option.AccountDescription</td>
+                                    <td>@option.Type</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    <div class="account-zoom-empty" data-account-zoom-empty hidden>Nessun conto trovato.</div>
+                </div>
+                <div class="account-zoom-type-panel" role="group" aria-label="Tipo conto">
+                    <button type="button" data-account-type-filter="equity">Patrimoniali</button>
+                    <button type="button" data-account-type-filter="costs">Costi</button>
+                    <button type="button" data-account-type-filter="revenues">Ricavi</button>
+                    <button type="button" data-account-type-filter="all" class="is-active">Tutti</button>
+                </div>
+            </div>
+            <div class="account-zoom-footer">
+                <label for="account-zoom-master">Mastro</label>
+                <select id="account-zoom-master" data-account-zoom-master>
+                    <option value=""></option>
+                    @foreach (var master in masterOptions)
+                    {
+                        <option value="@master.MasterCode">@master.MasterCode.ToString("000") - @master.MasterDescription</option>
+                    }
+                </select>
+                <label for="account-zoom-search">Cerca</label>
+                <input id="account-zoom-search" type="text" autocomplete="off" data-account-zoom-search />
+                <span class="account-zoom-records">
+                    <span>Records</span>
+                    <strong data-account-zoom-count>@Model.AccountOptions.Count</strong>
+                </span>
+                <button class="account-zoom-command primary" type="button" data-account-zoom-ok>OK</button>
+                <button class="account-zoom-command" type="button" data-account-zoom-cancel>Annulla</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+    <script src="~/js/lookup-fields.js" asp-append-version="true"></script>
+    <script src="~/js/accounting-movement-edit.js" asp-append-version="true"></script>
+}
+

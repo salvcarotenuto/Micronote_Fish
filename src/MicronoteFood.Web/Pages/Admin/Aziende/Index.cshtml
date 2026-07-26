@@ -1,0 +1,201 @@
+@page
+@model MicronoteFood.Web.Pages.Admin.Aziende.IndexModel
+@{
+    ViewData["Title"] = "Gestione aziende";
+    ViewData["BodyClass"] = "system-admin-page";
+}
+
+<section class="module-page system-admin-home data-list-skin admin-companies-page">
+    <header class="module-header system-admin-header">
+        <a class="module-logo-link" asp-page="/Admin/Index" aria-label="Torna all'amministrazione">
+            <img class="module-logo" src="~/images/micronote-bak.png" alt="Micronote" />
+        </a>
+        <div>
+            <h1>Gestione aziende</h1>
+            <p class="subtitle">Micronote Food - Amministrazione piattaforma</p>
+        </div>
+        <div class="top-actions stock-toolbar-actions admin-companies-actions">
+            <span class="stock-movements-records"><strong>@Model.Companies.Count</strong> record</span>
+            <a class="button button-primary" asp-page="Edit">Aggiungi</a>
+            <button class="button button-primary" type="button" data-admin-company-edit>Modifica</button>
+            <button class="button button-primary danger" type="button" data-admin-company-delete>Cancella</button>
+            <button class="button button-primary" type="button" data-admin-company-create-database>Crea database</button>
+            <button class="button button-primary danger" type="button" data-admin-company-delete-database>Elimina database</button>
+            <a class="button button-primary" asp-page="/Admin/Index">Esci</a>
+        </div>
+    </header>
+
+    @if (Model.Message is not null)
+    {
+        <div class="message @(Model.MessageSucceeded ? "message-success" : "message-error")">@Model.Message</div>
+    }
+
+    <section class="filter-panel admin-companies-filter">
+        <form method="get" class="toolbar filters-toolbar">
+            <label for="company-search">Cerca</label>
+            <input id="company-search" name="Search" value="@Model.Search" autocomplete="off" />
+            <button class="button button-primary" type="submit">Cerca</button>
+            <a class="button button-primary" asp-page="Index">Azzera</a>
+        </form>
+    </section>
+
+    <section class="list-frame admin-companies-list-frame">
+        <table class="data-grid admin-companies-grid" data-admin-companies-grid>
+            <thead>
+                <tr>
+                    <th>Codice</th>
+                    <th>Nome accesso</th>
+                    <th>Database</th>
+                    <th>Versione DB</th>
+                    <th>Richiesta</th>
+                    <th>DB</th>
+                    <th>Attiva</th>
+                    <th>Bloccata</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Companies.Count == 0)
+                {
+                    <tr><td colspan="8">Nessuna azienda presente.</td></tr>
+                }
+                @foreach (var company in Model.Companies)
+                {
+                    <tr tabindex="0"
+                        data-code="@company.Code"
+                        data-edit-url="@Url.Page("Edit", new { code = company.Code })"
+                        data-database-exists="@(company.DatabaseExists ? "true" : "false")"
+                        data-selected="@(Model.Selected == company.Code ? "true" : "false")">
+                        <td>@company.Code.ToString("0000")</td>
+                        <td>@company.Name</td>
+                        <td>@company.DatabaseName</td>
+                        <td>@company.CurrentDatabaseVersion</td>
+                        <td>@company.RequiredDatabaseVersion</td>
+                        <td class="center-cell">@(company.DatabaseExists ? "SI" : "")</td>
+                        <td class="center-cell">@(company.Active ? "SI" : "")</td>
+                        <td class="center-cell">@(company.Locked ? "SI" : "")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+
+    <form method="post" asp-page-handler="CreateDatabase" data-admin-company-create-database-form>
+        <input type="hidden" name="code" data-admin-company-create-database-code />
+    </form>
+    <form method="post" asp-page-handler="DeleteDatabase" data-admin-company-delete-database-form>
+        <input type="hidden" name="code" data-admin-company-delete-database-code />
+    </form>
+    <form method="post" asp-page-handler="Delete" data-admin-company-delete-form>
+        <input type="hidden" name="code" data-admin-company-delete-code />
+    </form>
+</section>
+
+@section Scripts {
+    <script>
+        (() => {
+            const rows = Array.from(document.querySelectorAll('[data-admin-companies-grid] tbody tr[data-code]'));
+            const editButton = document.querySelector('[data-admin-company-edit]');
+            const createDatabaseButton = document.querySelector('[data-admin-company-create-database]');
+            const deleteDatabaseButton = document.querySelector('[data-admin-company-delete-database]');
+            const deleteButton = document.querySelector('[data-admin-company-delete]');
+            const createDatabaseForm = document.querySelector('[data-admin-company-create-database-form]');
+            const deleteDatabaseForm = document.querySelector('[data-admin-company-delete-database-form]');
+            const deleteDatabaseCode = document.querySelector('[data-admin-company-delete-database-code]');
+            const createDatabaseCode = document.querySelector('[data-admin-company-create-database-code]');
+            const deleteForm = document.querySelector('[data-admin-company-delete-form]');
+            const deleteCode = document.querySelector('[data-admin-company-delete-code]');
+            let selected = rows.find(row => row.dataset.selected === 'true') || rows[0] || null;
+
+            function select(row) {
+                if (!row) return;
+                rows.forEach(item => item.classList.toggle('selected', item === row));
+                selected = row;
+            }
+
+            rows.forEach(row => {
+                row.addEventListener('click', () => select(row));
+                row.addEventListener('dblclick', () => { window.location.href = row.dataset.editUrl; });
+                row.addEventListener('keydown', event => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        window.location.href = row.dataset.editUrl;
+                    }
+                });
+            });
+            select(selected);
+
+            editButton?.addEventListener('click', () => {
+                if (selected?.dataset.editUrl) {
+                    window.location.href = selected.dataset.editUrl;
+                }
+            });
+
+            createDatabaseButton?.addEventListener('click', () => {
+                if (!selected) return;
+                if (selected.dataset.databaseExists === 'true') {
+                    window.MicronoteMessageBox?.show({
+                        title: 'Gestione aziende',
+                        message: "Il database dell'azienda " + selected.dataset.code.padStart(4, '0') + " esiste già.",
+                        variant: 'warning'
+                    });
+                    return;
+                }
+                window.MicronoteMessageBox?.show({
+                    title: 'Gestione aziende',
+                    message: `Creare il database per l'azienda ${selected.dataset.code.padStart(4, '0')}?`,
+                    mode: 'confirm',
+                    variant: 'confirm',
+                    okText: 'Crea',
+                    onConfirm: () => {
+                        createDatabaseCode.value = selected.dataset.code;
+                        createDatabaseForm.submit();
+                    }
+                });
+            });
+
+            deleteDatabaseButton?.addEventListener('click', () => {
+                if (!selected) return;
+                if (selected.dataset.databaseExists !== 'true') {
+                    window.MicronoteMessageBox?.show({
+                        title: 'Gestione aziende',
+                        message: "Il database dell'azienda " + selected.dataset.code.padStart(4, '0') + " non esiste.",
+                        variant: 'warning'
+                    });
+                    return;
+                }
+                window.MicronoteMessageBox?.show({
+                    title: 'Gestione aziende',
+                    message: `Eliminare il database dell'azienda ${selected.dataset.code.padStart(4, '0')}?`,
+                    detail: "L'operazione non può essere annullata.",
+                    mode: 'confirm',
+                    variant: 'confirm',
+                    okText: 'Elimina',
+                    onConfirm: () => {
+                        deleteDatabaseCode.value = selected.dataset.code;
+                        deleteDatabaseForm.submit();
+                    }
+                });
+            });
+
+            deleteButton?.addEventListener('click', () => {
+                if (!selected) return;
+                window.MicronoteMessageBox?.show({
+                    title: 'Gestione aziende',
+                    message: `Eliminare l'azienda ${selected.dataset.code.padStart(4, '0')}?`,
+                    mode: 'confirm',
+                    variant: 'confirm',
+                    okText: 'Elimina',
+                    onConfirm: () => {
+                        deleteCode.value = selected.dataset.code;
+                        deleteForm.submit();
+                    }
+                });
+            });
+        })();
+    </script>
+}
+
+
+
+
+

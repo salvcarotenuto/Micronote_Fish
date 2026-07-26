@@ -1,0 +1,126 @@
+@page
+@model MicronoteFood.Web.Pages.Gruppi.IndexModel
+@{
+    ViewData["Title"] = "Gruppi di magazzino";
+    ViewData["BodyClass"] = "list-module";
+}
+
+<section class="list-page group-list-page small-table-page"
+         data-list-page
+         data-menu-url="/"
+         data-next-code="@Model.DisplayCode.ToString("000")">
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Gruppi di magazzino</strong>
+                <small>Micronote Food - Tabelle di base</small>
+            </span>
+        </a>
+        <div class="list-title-actions">
+            <button class="list-title-button" type="button" data-group-action="new">
+                Aggiungi
+            </button>
+            <button class="list-title-button" type="button" data-group-action="edit">
+                Modifica
+            </button>
+            <button class="list-title-button" type="button" data-group-action="delete">
+                Elimina
+            </button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <span hidden data-page-message data-message-variant="error"
+              data-message-text="@Model.ErrorMessage"></span>
+    }
+
+    <section class="list-panel">
+        <div class="list-grid-frame group-grid-frame small-table-grid-frame" data-group-grid>
+            <table class="list-grid group-grid small-table-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="code" data-sort-type="number">Codice</th>
+                        <th data-sort-key="description">Descrizione</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var group in Model.Groups)
+                    {
+                        <tr tabindex="0"
+                            data-group-row
+                            data-sort-code="@group.Code"
+                            data-sort-description="@group.Description"
+                            data-code="@group.Code"
+                            data-description="@group.Description"
+                            data-selected="@(Model.Group.Code == group.Code ? "true" : "false")"
+                            data-delete-code="@group.Code"
+                            data-record-label="@group.Description">
+                            <td class="code-cell">@group.Code.ToString("000")</td>
+                            <td>@group.Description</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="list-empty" data-group-empty hidden>
+                Nessun gruppo trovato.
+            </div>
+        </div>
+    </section>
+
+    <form method="post"
+          asp-page-handler="Save"
+          class="entity-form small-table-editor supplier-form-page data-form-skin group-form-page"
+          data-group-editor
+          data-enter-navigation>
+        <input asp-for="Group.Code" type="hidden" data-group-code />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <fieldset class="form-frame compact-frame" data-group-editor-fields disabled>
+            <legend>Scheda gruppo</legend>
+            <div class="form-grid form-grid-4 form-frame-grid small-table-fields-row">
+                <div class="field field-code">
+                    <label>Codice</label>
+                    <input type="text"
+                           class="readonly-field code-display"
+                           readonly
+                           tabindex="-1"
+                           value="@(Model.Group.Code == 0 ? Model.DisplayCode.ToString("000") : Model.Group.Code.ToString("000"))"
+                           data-group-code-display />
+                </div>
+                <div class="field field-span-2 small-table-description-field">
+                    <label asp-for="Group.Description"></label>
+                    <input asp-for="Group.Description"
+                           autocomplete="off"
+                           data-group-description />
+                    <span asp-validation-for="Group.Description"></span>
+                </div>
+                <div class="small-table-actions">
+                    <button class="button button-primary primary"
+                            type="submit"
+                            data-group-save
+                            disabled>
+                        Salva
+                    </button>
+                    <button class="button button-secondary secondary"
+                            type="button"
+                            data-group-cancel
+                            disabled>
+                        Annulla
+                    </button>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <form method="post" asp-page-handler="Delete" data-group-delete-form hidden>
+        <input type="hidden" name="code" data-group-delete-code />
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+    <script src="~/js/groups-list.js" asp-append-version="true"></script>
+}

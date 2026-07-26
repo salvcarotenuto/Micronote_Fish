@@ -1,0 +1,59 @@
+@page
+@model MicronoteFood.Web.Pages.VenditeGiorno.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Dettaglio vendite del giorno";
+    ViewData["BodyClass"] = "sales-entry-module daily-sales-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Total(decimal value) => value.ToString("N2", it);
+    var r = Model.Report;
+    var t = r.Totals;
+}
+
+<section class="module-page daily-sales-page sales-entry-page supplier-form-page data-form-skin" data-daily-sales>
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale"><img src="~/images/micronote-bak.jpeg" alt="" /></a>
+            <div><h1>Dettaglio vendite del giorno</h1><p>Corrispettivi e incassi di vendita per punto vendita</p></div>
+        </div>
+        <div class="top-actions"><button class="button button-primary primary" type="button" onclick="window.print()">Stampa</button></div>
+    </header>
+
+    <form class="entity-form sales-entry-form daily-sales-filters" method="get" data-daily-sales-form data-progress-disabled="true">
+        <fieldset class="form-frame sales-entry-frame"><div class="daily-sales-filter-row">
+            <div class="field daily-sales-field daily-sales-code"><label>Numero di partita</label><input value="@(r.Code == 0 ? "" : r.Code.ToString("00000"))" readonly /></div>
+            <div class="field daily-sales-field daily-sales-date"><label>Data movimento</label>
+                <span class="micronote-date-control" data-date-control>
+                    <input type="hidden" name="movementDate" value="@r.MovementDate.ToString("yyyy-MM-dd")" data-daily-sales-date-hidden />
+                    <input class="micronote-date-input" type="text" inputmode="numeric" maxlength="10" autocomplete="off" value="@r.MovementDate.ToString("dd/MM/yyyy", it)" data-daily-sales-date-display />
+                    <button class="micronote-date-button" type="button" tabindex="-1" aria-label="Seleziona data movimento" data-date-picker-button></button>
+                </span>
+            </div>
+            <nav class="daily-sales-navigation" aria-label="Navigazione data">
+                <button type="button" data-date-shift-month="-1" title="Mese precedente">&lt;&lt;</button>
+                <button type="button" data-date-shift-day="-1" title="Giorno precedente">&lt;</button>
+                <button type="button" data-date-shift-day="1" title="Giorno successivo">&gt;</button>
+                <button type="button" data-date-shift-month="1" title="Mese successivo">&gt;&gt;</button>
+            </nav>
+        </div>
+
+        <div class="sales-entry-grid-wrap daily-sales-grid-frame"><table class="sales-entry-grid daily-sales-grid">
+            <colgroup>
+                <col class="sales-col-code" />
+                <col class="sales-col-name" />
+                @for (var column = 3; column <= 14; column++) { <col class="sales-col-money" /> }
+            </colgroup>
+            <thead>
+                <tr class="sales-entry-group-row"><th colspan="2">Punti vendita</th><th colspan="5">Corrispettivi di vendita</th><th colspan="7">Dettaglio incasso</th></tr>
+                <tr><th>Punto v.</th><th>Nome</th><th>Aliq. @r.VatRate.ToString("0.##", it)%</th><th>Non imp.</th><th>Corrisp. netti</th><th>Iva</th><th>Totale</th><th>Contanti</th><th>Carta</th><th>Tickets</th><th>Assegni</th><th>C. transitoria</th><th>Sospesi</th><th>Ammanchi</th></tr>
+            </thead>
+            <tbody>@foreach (var row in r.Rows) { <tr><td>@row.StoreCode.ToString("000")</td><td>@row.StoreName</td><td>@Money(row.TaxableGross)</td><td>@Money(row.Exempt)</td><td>@Money(row.Net)</td><td>@Money(row.Vat)</td><td>@Money(row.Total)</td><td>@Money(row.Cash)</td><td>@Money(row.Card)</td><td>@Money(row.Tickets)</td><td>@Money(row.Checks)</td><td>@Money(row.Other)</td><td>@Money(row.Suspended)</td><td>@Money(row.Losses)</td></tr> }</tbody>
+            <tfoot><tr><td colspan="2">Totali</td><td>@Total(t.TaxableGross)</td><td>@Total(t.Exempt)</td><td>@Total(t.Net)</td><td>@Total(t.Vat)</td><td>@Total(t.Total)</td><td>@Total(t.Cash)</td><td>@Total(t.Card)</td><td>@Total(t.Tickets)</td><td>@Total(t.Checks)</td><td>@Total(t.Other)</td><td>@Total(t.Suspended)</td><td>@Total(t.Losses)</td></tr></tfoot>
+        </table></div>
+        <div class="daily-sales-summary"><span>Totale contanti</span><strong>@Total(t.TotalCash)</strong><span>Incasso netto</span><strong>@Total(t.NetReceipts)</strong><span>Quadratura</span><strong class="@(t.Balance != 0 ? "negative" : "")">@Total(t.Balance)</strong></div>
+        </fieldset>
+    </form>
+</section>
+
+@section Scripts { <script src="~/js/daily-sales.js" asp-append-version="true"></script> }

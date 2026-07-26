@@ -1,0 +1,312 @@
+@page
+@model MicronoteFood.Web.Pages.CaricoAcquisti.EditModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Carico per acquisti";
+    ViewData["BodyClass"] = "stock-load-edit-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Quantity(decimal value) => value == 0 ? "" : value.ToString("N3", it);
+    string Percent(decimal value) => value == 0 ? "" : value.ToString("N2", it) + " %";
+    var document = Model.Document;
+    var details = document.Details.ToArray();
+    var rowCount = Math.Max(10, details.Length);
+    var total = details.Sum(row => row.Amount);
+}
+
+<section class="module-page form-module-page supplier-form-page stock-load-form-page data-form-skin"
+         data-azione="@Model.Azione"
+         data-stock-load-readonly="@Model.IsReadonly.ToString().ToLowerInvariant()">
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" href="@Model.ReturnUrl" aria-label="@Model.ReturnLabel">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>Carico per acquisti</h1>
+                <p>Registrazione documento di carico da fattura di acquisto.</p>
+            </div>
+        </div>
+        <div class="top-actions">
+            @if (Model.IsReadonly)
+            {
+                <a class="button button-secondary secondary"
+                   href="@Model.ReturnUrl"
+                   data-stock-load-modal-cancel="@Model.IsModal.ToString().ToLowerInvariant()">Chiudi</a>
+            }
+            else
+            {
+                <button class="button button-primary primary" type="button" data-stock-load-save>Salva</button>
+                <a class="button button-secondary secondary" href="@Model.ReturnUrl">Annulla</a>
+            }
+        </div>
+    </header>
+
+    <form class="entity-form" method="post" novalidate data-enter-navigation>
+        <input type="hidden" name="StockLoadPayload" data-stock-load-payload />
+        <input type="hidden" value="@document.Id" data-stock-load-id />
+        <input type="hidden" value="@(document.Year == 0 ? Model.Mask.Year : document.Year)" data-stock-load-year />
+        <input type="hidden" value="@document.Code" data-stock-load-code />
+        <fieldset class="form-frame compact-frame stock-load-frame stock-load-frame-no-legend" disabled="@Model.IsReadonly">
+
+            <div class="stock-load-electronic-row">
+                <div class="stock-load-electronic-icon" aria-hidden="true">
+                    <img src="~/images/FattEl_01.png" alt="" />
+                </div>
+                <label>Fattura elettronica</label>
+                <input type="text" readonly tabindex="-1" value="@document.ElectronicInvoiceName" data-electronic-invoice-name />
+                <input type="hidden" name="ElectronicInvoicePath" data-electronic-invoice-full-path />
+                <button class="button button-primary primary stock-load-electronic-button" type="button" disabled="@Model.IsReadonly" tabindex="@(Model.IsReadonly ? "-1" : null)" data-electronic-invoice-open>Carica</button>
+                <button class="button button-primary primary stock-load-electronic-button" type="button" disabled="@Model.IsReadonly" tabindex="@(Model.IsReadonly ? "-1" : null)" data-electronic-invoice-current-preview>Visualizza</button>
+            </div>
+
+            <div class="stock-load-general-grid">
+                <div class="field stock-load-code-field">
+                    <label>Partita</label>
+                    <input value="@(document.Code == 0 ? "" : document.Code.ToString("000000"))" readonly tabindex="-1" />
+                    <span>/</span>
+                    <input value="@(document.Year == 0 ? Model.Mask.Year : document.Year)" readonly tabindex="-1" />
+                </div>
+
+                <div class="field stock-load-number-field">
+                    <label>Numero documento</label>
+                    <input type="text" autocomplete="off" autofocus value="@document.DocumentNumber" data-stock-load-document-number />
+                </div>
+
+                <div class="field stock-load-cause-field">
+                    <label>Tipo carico</label>
+                    <select data-stock-load-cause>
+                        <option value="10" selected="@(document.CauseCode == 10)">10 - Carico per acquisti</option>
+                        <option value="12" selected="@(document.CauseCode == 12)">12 - Carico per reso</option>
+                    </select>
+                </div>
+
+                <div class="field stock-load-date-field">
+                    <label>Data documento</label>
+                    <span class="micronote-date-control" data-date-control>
+                        <input class="micronote-date-input is-empty"
+                               type="text"
+                               inputmode="numeric"
+                               maxlength="10"
+                               autocomplete="off"
+                               value="@(document.DocumentDate?.ToString("dd/MM/yyyy", it) ?? "")"
+                               data-stock-load-document-date />
+                        <button class="micronote-date-button"
+                                type="button"
+                                tabindex="-1"
+                                aria-label="Seleziona data"
+                                data-date-picker-button></button>
+                    </span>
+                </div>
+
+                <div class="field stock-load-supplier-field lookup-field"
+                     data-lookup-field
+                     data-lookup-type="@(document.CauseCode == 12 ? "clienti" : "fornitori")"
+                     data-lookup-title="@(document.CauseCode == 12 ? "Clienti" : "Fornitori")"
+                     data-code-input="stockLoadSupplierCode"
+                     data-code-display="stockLoadSupplierCodeDisplay"
+                     data-label-input="stockLoadSupplierName">
+                    <label data-stock-load-subject-label>@(document.CauseCode == 12 ? "Cliente" : "Fornitore")</label>
+                    <input id="stockLoadSupplierCode" type="hidden" value="@(document.SupplierCode == 0 ? "" : document.SupplierCode.ToString())" />
+                    <input id="stockLoadSupplierCodeDisplay"
+                           class="stock-load-supplier-code"
+                           type="text"
+                           inputmode="numeric"
+                           maxlength="5"
+                           autocomplete="off"
+                           value="@(document.SupplierCode == 0 ? "" : document.SupplierCode.ToString("00000"))" />
+                    <input id="stockLoadSupplierName"
+                           class="stock-load-supplier-name"
+                           type="text"
+                           readonly
+                           tabindex="-1"
+                           value="@document.SupplierName" />
+                    <button class="lookup-button stock-load-square-button"
+                            type="button"
+                            title="@(document.CauseCode == 12 ? "Seleziona cliente" : "Seleziona fornitore")"
+                            aria-label="@(document.CauseCode == 12 ? "Seleziona cliente" : "Seleziona fornitore")"
+                            data-lookup-open></button>
+                    <button class="stock-load-square-button stock-load-add-button"
+                            type="button"
+                            title="@(document.CauseCode == 12 ? "Aggiungi cliente" : "Aggiungi fornitore")"
+                            aria-label="@(document.CauseCode == 12 ? "Aggiungi cliente" : "Aggiungi fornitore")">+</button>
+                </div>
+
+                <div class="field stock-load-store-field">
+                    <label>Punto vendita</label>
+                    <select data-stock-load-store>
+                        <option value="0">Spese comuni</option>
+                        @foreach (var store in Model.Mask.Stores.Where(store => store.Code != 0 && store.Code != -1))
+                        {
+                            <option value="@store.Code" selected="@(document.StoreCode == store.Code)">@store.Description</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </fieldset>
+
+        <section class="stock-load-lines-section" aria-label="Dettaglio articoli">
+            <div class="stock-load-side-actions" aria-label="Comandi riga">
+                <button type="button" disabled="@Model.IsReadonly" tabindex="@(Model.IsReadonly ? "-1" : null)" data-stock-load-line-open>aggiungi</button>
+                <button type="button" disabled="@Model.IsReadonly" tabindex="@(Model.IsReadonly ? "-1" : null)" data-stock-load-line-edit>modifica</button>
+                <button type="button" disabled="@Model.IsReadonly" tabindex="@(Model.IsReadonly ? "-1" : null)" data-stock-load-line-delete>cancella</button>
+            </div>
+
+            <div class="stock-load-lines-wrap">
+                <table class="stock-load-lines-grid">
+                    <thead>
+                        <tr>
+                            <th>Articolo</th>
+                            <th>Descrizione</th>
+                            <th>U.m.</th>
+                            <th>Quantità</th>
+                            <th>Prezzo</th>
+                            <th>Sconto</th>
+                            <th>Importo</th>
+                            <th>Iva</th>
+                            <th hidden>Stato</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < rowCount; i++)
+                        {
+                            var row = i < details.Length ? details[i] : null;
+                            <tr>
+                                <td><input type="text" readonly tabindex="-1" value="@(row?.ArticleCode ?? "")" /></td>
+                                <td><input type="text" readonly tabindex="-1" value="@(row?.Description ?? "")" /></td>
+                                <td><input type="text" readonly tabindex="-1" value="@(row?.UnitMeasure ?? "")" /></td>
+                                <td><input type="text" readonly tabindex="-1" inputmode="decimal" data-money-field value="@(row is null ? "" : Quantity(row.Quantity))" /></td>
+                                <td><input type="text" readonly tabindex="-1" inputmode="decimal" data-money-field value="@(row is null ? "" : Money(row.Price))" /></td>
+                                <td><input type="text" readonly tabindex="-1" inputmode="decimal" value="@(row is null ? "" : Percent(row.Discount))" /></td>
+                                <td><input type="text" readonly tabindex="-1" inputmode="decimal" data-money-field value="@(row is null ? "" : Money(row.Amount))" /></td>
+                                <td><input type="text" readonly tabindex="-1" inputmode="decimal" data-percent-field value="@(row is null ? "" : Percent(row.VatRate))" /></td>
+                                <td hidden><input type="hidden" data-stock-load-row-state value="@(row is null ? "" : "ok")" /></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <div class="stock-load-footer-actions">
+            <div>
+                <button class="button button-primary primary" type="button" disabled="@Model.IsReadonly" tabindex="@(Model.IsReadonly ? "-1" : null)" data-stock-load-article-card>Scheda articolo</button>
+                <button class="button button-primary primary" type="button" disabled="@Model.IsReadonly" tabindex="@(Model.IsReadonly ? "-1" : null)" data-stock-load-article-add>Aggiungi articolo</button>
+                <button class="button button-primary primary" type="button" disabled="@Model.IsReadonly" tabindex="@(Model.IsReadonly ? "-1" : null)" data-stock-load-article-assign>Sostituisci articolo</button>
+            </div>
+            <div class="field stock-load-invoice-total-field">
+                <label>Totale fattura</label>
+                <input class="currency-display" type="text" readonly tabindex="-1" value="@Money(total)" />
+            </div>
+        </div>
+    </form>
+
+    <div class="stock-load-line-overlay" hidden data-stock-load-line-overlay>
+        <div class="stock-load-line-dialog" role="dialog" aria-modal="true" aria-labelledby="stock-load-line-title">
+            <div class="stock-load-line-title" id="stock-load-line-title">Inserimento articolo</div>
+            <div class="stock-load-line-body">
+                <div class="stock-load-line-article">
+                    <label>Articolo</label>
+                    <input class="stock-load-line-code" type="text" autocomplete="off" data-line-code />
+                    <button class="lookup-button stock-load-line-lookup-button"
+                            type="button"
+                            title="Seleziona articolo"
+                            aria-label="Seleziona articolo"
+                            data-article-lookup-open></button>
+                    <input class="stock-load-line-description" type="text" readonly tabindex="-1" data-line-description />
+                </div>
+
+                <div class="stock-load-line-middle">
+                    <div class="field stock-load-line-unit">
+                        <label>Un. di misura</label>
+                        <input type="text" readonly tabindex="-1" data-line-unit />
+                    </div>
+                    <div class="field">
+                        <label>Giacenza</label>
+                        <input class="numeric-display" type="text" readonly tabindex="-1" data-line-stock />
+                    </div>
+                    <div class="field">
+                        <label>Ultimo prezzo</label>
+                        <input class="currency-display" type="text" readonly tabindex="-1" data-line-last-price />
+                    </div>
+                </div>
+
+                <div class="stock-load-line-right">
+                    <div class="field">
+                        <label>Quantità</label>
+                        <input class="numeric-display" type="text" inputmode="decimal" autocomplete="off" data-line-quantity />
+                    </div>
+                    <div class="field">
+                        <label>Prezzo</label>
+                        <input class="currency-display" type="text" inputmode="decimal" autocomplete="off" data-money-field data-line-price />
+                    </div>
+                    <div class="field">
+                        <label>Sconto</label>
+                        <input class="numeric-display" type="text" inputmode="decimal" autocomplete="off" data-percent-field data-percent-integer-digits="3" data-line-discount />
+                    </div>
+                    <div class="field">
+                        <label>Aliquota iva</label>
+                        <input class="numeric-display" type="text" inputmode="decimal" autocomplete="off" data-percent-field data-percent-integer-digits="3" data-line-vat />
+                    </div>
+                    <div class="field">
+                        <label>Importo</label>
+                        <input class="currency-display" type="text" readonly tabindex="-1" data-line-amount />
+                    </div>
+                </div>
+            </div>
+            <div class="stock-load-line-actions">
+                <button class="button button-primary primary" type="button" data-line-confirm>Conferma</button>
+                <button class="button button-secondary secondary" type="button" data-line-cancel>Annulla</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="stock-load-article-lookup" hidden data-article-lookup>
+        <div class="stock-load-article-lookup-dialog" role="dialog" aria-modal="true" aria-labelledby="stock-load-article-lookup-title">
+            <div class="stock-load-article-lookup-title" id="stock-load-article-lookup-title">Lista articoli</div>
+            <div class="stock-load-article-lookup-frame" tabindex="0">
+                <table class="stock-load-article-lookup-table">
+                    <thead>
+                        <tr>
+                            <th><button type="button" data-article-sort="code">Codice</button></th>
+                            <th><button type="button" data-article-sort="description">Descrizione</button></th>
+                            <th><button type="button" data-article-sort="category">Categoria</button></th>
+                            <th><button type="button" data-article-sort="group">Gruppo</button></th>
+                            <th><button type="button" data-article-sort="subgroup">Sottogruppo</button></th>
+                            <th><button type="button" data-article-sort="price">Costo std</button></th>
+                            <th><button type="button" data-article-sort="vatRate">Aliq. iva</button></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="stock-load-article-lookup-tools">
+                <label>Cerca</label>
+                <input type="text" autocomplete="off" data-article-search />
+                <label>Categoria</label>
+                <select data-article-category></select>
+                <label>Fornitore</label>
+                <select data-article-supplier></select>
+                <label>Records</label>
+                <input type="text" readonly tabindex="-1" data-article-count />
+                <button class="button button-primary primary" type="button" data-article-ok>OK</button>
+                <button class="button button-secondary secondary" type="button" data-article-cancel>Annulla</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="purchase-invoice-payment-modal-overlay" data-stock-load-article-modal hidden>
+        <section class="purchase-invoice-payment-modal stock-load-article-card-modal" role="dialog" aria-modal="true" aria-label="Scheda articolo">
+            <iframe title="Scheda articolo" data-stock-load-article-modal-frame></iframe>
+        </section>
+    </div>
+    @await Html.PartialAsync("_ElectronicInvoiceListDialog", Model.ElectronicInvoiceFolderDefault)
+
+</section>
+
+@section Scripts {
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+    <script src="~/js/lookup-fields.js" asp-append-version="true"></script>
+    <script src="~/js/stock-load-edit.js" asp-append-version="true"></script>
+}
+

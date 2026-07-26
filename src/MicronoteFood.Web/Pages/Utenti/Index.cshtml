@@ -1,0 +1,122 @@
+@page
+@model MicronoteFood.Web.Pages.Utenti.IndexModel
+@{
+    ViewData["Title"] = "Utenti";
+    ViewData["BodyClass"] = "list-module";
+}
+
+<section class="list-page user-list-page" data-list-page data-menu-url="/">
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Utenti</strong>
+                <small>Micronote Food - Gestione utenti</small>
+            </span>
+        </a>
+        <div class="list-title-actions">
+            <a class="list-title-button" asp-page="./Edit">Aggiungi</a>
+            <button class="list-title-button" type="button" data-user-action="edit">
+                Modifica
+            </button>
+            <button class="list-title-button" type="button" data-user-action="delete">
+                Elimina
+            </button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <span hidden data-page-message data-message-variant="error"
+              data-message-text="@Model.ErrorMessage"></span>
+    }
+
+    <section class="list-panel">
+        <div class="list-toolbar">
+            <div class="list-filter-field list-search-field">
+                <label for="user-search">Cerca</label>
+                <div class="list-search-control">
+                    <input id="user-search"
+                           type="text"
+                           placeholder="Cognome, nome o username"
+                           autocomplete="off"
+                           autofocus
+                           data-user-search />
+                    <button class="list-search-clear"
+                            type="button"
+                            aria-label="Pulisci filtro"
+                            data-user-search-clear
+                            hidden>
+                        ×
+                    </button>
+                </div>
+            </div>
+            <span class="list-records-box">
+                <strong data-user-count>@Model.Users.Count</strong>
+                <span>record</span>
+            </span>
+        </div>
+
+        <div class="list-grid-frame" data-user-grid>
+            <table class="list-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="code" data-sort-type="number">Codice</th>
+                        <th data-sort-key="lastName">Cognome</th>
+                        <th data-sort-key="firstName">Nome</th>
+                        <th data-sort-key="userName">Username</th>
+                        <th data-sort-key="city">Città</th>
+                        <th data-sort-key="phone">Telefono</th>
+                        <th data-sort-key="email">E-mail</th>
+                        <th data-sort-key="active">Attivo</th>
+                        <th data-sort-key="locked">Bloccato</th>
+                        <th data-sort-key="type">Tipo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model.Users)
+                    {
+                        <tr tabindex="0"
+                            data-user-row
+                            data-filter-name="@($"{user.LastName} {user.FirstName} {user.UserName}")"
+                            data-sort-code="@user.Code"
+                            data-sort-last-name="@user.LastName"
+                            data-sort-first-name="@user.FirstName"
+                            data-sort-user-name="@user.UserName"
+                            data-sort-city="@user.City"
+                            data-sort-phone="@user.Phone"
+                            data-sort-email="@user.Email"
+                            data-sort-active="@(user.IsActive ? "1" : "0")"
+                            data-sort-locked="@(user.IsLocked ? "1" : "0")"
+                            data-sort-type="@user.TypeDescription"
+                            data-edit-url="@Url.Page("./Edit", new { code = user.Code })"
+                            data-delete-code="@user.Code"
+                            data-record-label="@($"{user.LastName} {user.FirstName}".Trim())">
+                            <td class="code-cell">@user.Code.ToString("000")</td>
+                            <td>@user.LastName</td>
+                            <td>@user.FirstName</td>
+                            <td>@user.UserName</td>
+                            <td>@user.City</td>
+                            <td>@user.Phone</td>
+                            <td>@user.Email</td>
+                            <td>@(user.IsActive ? "Sì" : "No")</td>
+                            <td>@(user.IsLocked ? "Sì" : "")</td>
+                            <td>@user.TypeDescription</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="list-empty" data-user-empty hidden>
+                Nessun utente trovato.
+            </div>
+        </div>
+    </section>
+
+    <form method="post" asp-page-handler="Delete" data-user-delete-form hidden>
+        <input type="hidden" name="code" data-user-delete-code />
+    </form>
+</section>
+
+@section Scripts {
+    <script src="~/js/users-list.js" asp-append-version="true"></script>
+}

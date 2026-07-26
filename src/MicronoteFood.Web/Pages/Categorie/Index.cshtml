@@ -1,0 +1,126 @@
+@page
+@model MicronoteFood.Web.Pages.Categorie.IndexModel
+@{
+    ViewData["Title"] = "Categorie di magazzino";
+    ViewData["BodyClass"] = "list-module";
+}
+
+<section class="list-page category-list-page small-table-page"
+         data-list-page
+         data-menu-url="/"
+         data-next-code="@Model.DisplayCode.ToString("000")">
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Categorie di magazzino</strong>
+                <small>Micronote Food - Tabelle di base</small>
+            </span>
+        </a>
+        <div class="list-title-actions">
+            <button class="list-title-button" type="button" data-category-action="new">
+                Aggiungi
+            </button>
+            <button class="list-title-button" type="button" data-category-action="edit">
+                Modifica
+            </button>
+            <button class="list-title-button" type="button" data-category-action="delete">
+                Elimina
+            </button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <span hidden data-page-message data-message-variant="error"
+              data-message-text="@Model.ErrorMessage"></span>
+    }
+
+    <section class="list-panel">
+        <div class="list-grid-frame category-grid-frame small-table-grid-frame" data-category-grid>
+            <table class="list-grid category-grid small-table-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="code" data-sort-type="number">Codice</th>
+                        <th data-sort-key="description">Descrizione</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var category in Model.Categories)
+                    {
+                        <tr tabindex="0"
+                            data-category-row
+                            data-sort-code="@category.Code"
+                            data-sort-description="@category.Description"
+                            data-code="@category.Code"
+                            data-description="@category.Description"
+                            data-selected="@(Model.Category.Code == category.Code ? "true" : "false")"
+                            data-delete-code="@category.Code"
+                            data-record-label="@category.Description">
+                            <td class="code-cell">@category.Code.ToString("000")</td>
+                            <td>@category.Description</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="list-empty" data-category-empty hidden>
+                Nessuna categoria trovata.
+            </div>
+        </div>
+    </section>
+
+    <form method="post"
+          asp-page-handler="Save"
+          class="entity-form small-table-editor supplier-form-page data-form-skin category-form-page"
+          data-category-editor
+          data-enter-navigation>
+        <input asp-for="Category.Code" type="hidden" data-category-code />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <fieldset class="form-frame compact-frame" data-category-editor-fields disabled>
+            <legend>Scheda categoria</legend>
+            <div class="form-grid form-grid-4 form-frame-grid small-table-fields-row">
+                <div class="field field-code">
+                    <label>Codice</label>
+                    <input type="text"
+                           class="readonly-field code-display"
+                           readonly
+                           tabindex="-1"
+                           value="@(Model.Category.Code == 0 ? Model.DisplayCode.ToString("000") : Model.Category.Code.ToString("000"))"
+                           data-category-code-display />
+                </div>
+                <div class="field field-span-2 small-table-description-field">
+                    <label asp-for="Category.Description"></label>
+                    <input asp-for="Category.Description"
+                           autocomplete="off"
+                           data-category-description />
+                    <span asp-validation-for="Category.Description"></span>
+                </div>
+                <div class="small-table-actions">
+                    <button class="button button-primary primary"
+                            type="submit"
+                            data-category-save
+                            disabled>
+                        Salva
+                    </button>
+                    <button class="button button-secondary secondary"
+                            type="button"
+                            data-category-cancel
+                            disabled>
+                        Annulla
+                    </button>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <form method="post" asp-page-handler="Delete" data-category-delete-form hidden>
+        <input type="hidden" name="code" data-category-delete-code />
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+    <script src="~/js/categories-list.js" asp-append-version="true"></script>
+}

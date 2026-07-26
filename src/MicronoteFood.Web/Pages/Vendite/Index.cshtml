@@ -1,0 +1,236 @@
+@page
+@model MicronoteFood.Web.Pages.Vendite.IndexModel
+@{
+    ViewData["Title"] = "Corrispettivi di vendita";
+    ViewData["BodyClass"] = "sales-entry-module";
+    var backUrl = string.IsNullOrWhiteSpace(Model.Sale.ReturnTo)
+        ? (Url.Page("/Index") ?? "/")
+        : Model.Sale.ReturnTo;
+    var movementDateValue = Model.Sale.SaleId.HasValue
+        ? Model.Sale.MovementDate.ToString("dd/MM/yyyy")
+        : "";
+    var movementDateIsoValue = Model.Sale.SaleId.HasValue
+        ? Model.Sale.MovementDate.ToString("yyyy-MM-dd")
+        : "";
+}
+
+<section class="module-page sales-entry-page supplier-form-page data-form-skin">
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" href="@backUrl" aria-label="Esci dalla scheda">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>Corrispettivi di vendita</h1>
+                <p>Registrazione incassi giornalieri per punto vendita.</p>
+            </div>
+        </div>
+        <div class="top-actions">
+            @if (Model.IsReadonly)
+            {
+                <a class="button button-secondary secondary"
+                   href="@backUrl"
+                   data-sales-modal-cancel="@Model.IsModal.ToString().ToLowerInvariant()">Chiudi</a>
+            }
+            else
+            {
+                <a class="button button-secondary secondary" href="@backUrl">Annulla</a>
+                <button class="button button-primary primary" type="submit" form="sales-entry-form" data-sales-save>
+                    Salva
+                </button>
+            }
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <span hidden data-page-message data-message-variant="error"
+              data-message-text="@Model.ErrorMessage"></span>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.DuplicateDateMessage))
+    {
+        <span hidden data-sales-duplicate-message="@Model.DuplicateDateMessage"></span>
+    }
+
+    <form id="sales-entry-form" class="entity-form sales-entry-form" method="post"
+          data-enter-navigation data-progress-message="Salvataggio in corso..."
+          data-progress-minimum-time="1000">
+        <input type="hidden" asp-for="Sale.Year" />
+        <input type="hidden" asp-for="Sale.SaleId" />
+        <input type="hidden" asp-for="Sale.ReturnTo" />
+        <input type="hidden" asp-for="Sale.Code" />
+        <input type="hidden" asp-for="Sale.SalesVatRate" value="@Model.Entry.SalesVatRate.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+        <input type="hidden" asp-for="Sale.ConfirmOverwrite" data-sales-confirm-overwrite />
+
+        <fieldset class="form-frame sales-entry-frame" disabled="@Model.IsReadonly">
+            <legend>Vendita</legend>
+
+            <div class="sales-entry-toolbar">
+                <div class="field sales-entry-exercise-field">
+                    <label>Esercizio contabile</label>
+                    <input value="@Model.Sale.Year" readonly />
+                </div>
+                <div class="field sales-entry-code-field">
+                    <label asp-for="Entry.Code"></label>
+                    <input value="@Model.Sale.Code.ToString("000000")" readonly />
+                </div>
+                <div class="field sales-entry-date-field">
+                    <label asp-for="Entry.MovementDate"></label>
+                    <input type="hidden"
+                           asp-for="Sale.MovementDate"
+                           value="@movementDateIsoValue"
+                           data-sales-movement-date-hidden />
+                    <span class="micronote-date-control" data-date-control>
+                        <input class="micronote-date-input"
+                               type="text"
+                               inputmode="numeric"
+                               maxlength="10"
+                               autocomplete="off"
+                               value="@movementDateValue"
+                               data-sales-movement-date-display />
+                        <button class="micronote-date-button"
+                                type="button"
+                                tabindex="-1"
+                                aria-label="Seleziona data movimento"
+                                data-date-picker-button></button>
+                    </span>
+                </div>
+                <div class="field sales-entry-last-field">
+                    <label asp-for="Entry.LastRegistrationDate"></label>
+                    <input value="@(Model.Entry.LastRegistrationDate?.ToString("dd/MM/yyyy") ?? "")" readonly />
+                </div>
+            </div>
+
+            <div class="sales-entry-grid-wrap">
+                <table class="sales-entry-grid" data-sales-grid data-sales-vat-rate="@Model.Entry.SalesVatRate.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+                    <colgroup>
+                        <col class="sales-col-code" />
+                        <col class="sales-col-name" />
+                        @for (var index = 0; index < 12; index++)
+                        {
+                            <col class="sales-col-money" />
+                        }
+                    </colgroup>
+                    <thead>
+                        <tr class="sales-entry-group-row">
+                            <th colspan="2">Punti vendita</th>
+                            <th colspan="5">Corrispettivi di vendita</th>
+                            <th colspan="7">Dettaglio incasso</th>
+                        </tr>
+                        <tr>
+                            <th>Punto v.</th>
+                            <th>Nome</th>
+                            <th>Aliq. @Model.Entry.SalesVatRate.ToString("0.##")%</th>
+                            <th>Non imp.</th>
+                            <th>Corrisp. netti</th>
+                            <th>Iva</th>
+                            <th>Totale</th>
+                            <th>Contanti</th>
+                            <th>Carta</th>
+                            <th>Tickets</th>
+                            <th>Assegni</th>
+                            <th>C.transitoria</th>
+                            <th>Sospesi</th>
+                            <th>Ammanchi</th>
+                        </tr>
+                    </thead>
+                    <tbody data-sales-body>
+                        @for (var rowIndex = 0; rowIndex < Math.Max(6, Model.Entry.Stores.Count); rowIndex++)
+                        {
+                            if (rowIndex >= Model.Entry.Stores.Count)
+                            {
+                                <tr class="sales-entry-disabled-row" aria-hidden="true">
+                                    <td class="sales-code">&nbsp;</td>
+                                    <td class="sales-name">&nbsp;</td>
+                                    @for (var cellIndex = 0; cellIndex < 12; cellIndex++)
+                                    {
+                                        <td><input class="sales-money" disabled tabindex="-1" /></td>
+                                    }
+                                </tr>
+                                continue;
+                            }
+
+                            var store = Model.Entry.Stores[rowIndex];
+                            var row = Model.Sale.Rows.Count > rowIndex
+                                ? Model.Sale.Rows[rowIndex]
+                                : new MicronoteFood.Web.Models.SalesEntrySaveRow
+                                {
+                                    StoreCode = store.Code,
+                                    StoreName = store.Name
+                                };
+                            <tr data-sales-row>
+                                <td class="sales-code">
+                                    <input type="hidden" name="Sale.Rows[@rowIndex].StoreCode" value="@store.Code" />
+                                    <input type="hidden" name="Sale.Rows[@rowIndex].StoreName" value="@store.Name" />
+                                    @store.Code.ToString("000")
+                                </td>
+                                <td class="sales-name">@store.Name</td>
+                                <td><input class="sales-money" name="Sale.Rows[@rowIndex].Taxable" value="@row.Taxable" inputmode="decimal" maxlength="12" autocomplete="off" data-money-field data-money-integer-digits="9" data-sales-taxable /></td>
+                                <td><input class="sales-money" name="Sale.Rows[@rowIndex].Exempt" value="@row.Exempt" inputmode="decimal" maxlength="12" autocomplete="off" data-money-field data-money-integer-digits="9" data-sales-exempt /></td>
+                                <td><input class="sales-money sales-calculated" data-sales-net readonly tabindex="-1" /></td>
+                                <td><input class="sales-money sales-calculated" data-sales-vat readonly tabindex="-1" /></td>
+                                <td><input class="sales-money sales-calculated" data-sales-total readonly tabindex="-1" /></td>
+                                <td><input class="sales-money sales-calculated" data-sales-cash readonly tabindex="-1" /></td>
+                                <td><input class="sales-money" name="Sale.Rows[@rowIndex].Card" value="@row.Card" inputmode="decimal" maxlength="12" autocomplete="off" data-money-field data-money-integer-digits="9" data-sales-card /></td>
+                                <td><input class="sales-money" name="Sale.Rows[@rowIndex].Tickets" value="@row.Tickets" inputmode="decimal" maxlength="12" autocomplete="off" data-money-field data-money-integer-digits="9" data-sales-tickets /></td>
+                                <td><input class="sales-money" name="Sale.Rows[@rowIndex].Checks" value="@row.Checks" inputmode="decimal" maxlength="12" autocomplete="off" data-money-field data-money-integer-digits="9" data-sales-checks /></td>
+                                <td><input class="sales-money sales-calculated" name="Sale.Rows[@rowIndex].Other" value="@row.Other" inputmode="decimal" maxlength="12" autocomplete="off" readonly tabindex="-1" data-money-field data-money-integer-digits="9" data-sales-other /></td>
+                                <td><input class="sales-money" name="Sale.Rows[@rowIndex].Suspended" value="@row.Suspended" inputmode="decimal" maxlength="12" autocomplete="off" data-money-field data-money-integer-digits="9" data-sales-suspended /></td>
+                                <td><input class="sales-money" name="Sale.Rows[@rowIndex].Losses" value="@row.Losses" inputmode="decimal" maxlength="12" autocomplete="off" data-money-field data-money-integer-digits="9" data-sales-losses /></td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th class="sales-entry-total-label" colspan="2">TOTALI</th>
+                            <td><input class="sales-money sales-total-field" data-sales-total-taxable readonly tabindex="-1" /></td>
+                            <td><input class="sales-money sales-total-field" data-sales-total-exempt readonly tabindex="-1" /></td>
+                            <td><input class="sales-money sales-total-field" data-sales-total-net readonly tabindex="-1" /></td>
+                            <td><input class="sales-money sales-total-field" data-sales-total-vat readonly tabindex="-1" /></td>
+                            <td><input class="sales-money sales-total-field" data-sales-total-total readonly tabindex="-1" /></td>
+                            <td><input class="sales-money sales-total-field" data-sales-total-cash readonly tabindex="-1" /></td>
+                            <td><input class="sales-money sales-total-field" data-sales-total-card readonly tabindex="-1" /></td>
+                            <td><input class="sales-money sales-total-field" data-sales-total-tickets readonly tabindex="-1" /></td>
+                            <td><input class="sales-money sales-total-field" data-sales-total-checks readonly tabindex="-1" /></td>
+                            <td><input class="sales-money sales-total-field" data-sales-total-other readonly tabindex="-1" /></td>
+                            <td><input class="sales-money sales-total-field" data-sales-total-suspended readonly tabindex="-1" /></td>
+                            <td><input class="sales-money sales-total-field" data-sales-total-losses readonly tabindex="-1" /></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="sales-entry-summary">
+                <div class="field">
+                    <label>Totale vendite</label>
+                    <input class="sales-money" data-sales-summary-sales readonly tabindex="-1" />
+                </div>
+                <div class="field">
+                    <label>Incasso contanti</label>
+                    <input class="sales-money" data-sales-summary-cash readonly tabindex="-1" />
+                </div>
+                <div class="field">
+                    <label>Altri incassi</label>
+                    <input class="sales-money" data-sales-summary-other readonly tabindex="-1" />
+                </div>
+                <div class="field">
+                    <label>Mancato incasso</label>
+                    <input class="sales-money" data-sales-summary-missing readonly tabindex="-1" />
+                </div>
+                <div class="field">
+                    <label>Incasso netto</label>
+                    <input class="sales-money" data-sales-summary-net readonly tabindex="-1" />
+                </div>
+                <div class="field">
+                    <label>Quadratura</label>
+                    <input class="sales-money" data-sales-summary-balance readonly tabindex="-1" />
+                </div>
+            </div>
+        </fieldset>
+    </form>
+</section>
+
+@section Scripts {
+    <script src="~/js/sales-entry.js" asp-append-version="true"></script>
+}
+

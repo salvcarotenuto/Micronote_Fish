@@ -1,0 +1,171 @@
+@page "{code:int?}"
+@model MicronoteFood.Web.Pages.CodiciPagamento.EditModel
+@{
+    ViewData["Title"] = Model.IsNew ? "Nuovo codice pagamento" : "Scheda codice pagamento";
+}
+
+<section class="module-page form-module-page supplier-form-page payment-code-form-page data-form-skin">
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="./Index" aria-label="Esci dalla scheda">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>@(Model.IsNew ? "Nuovo codice pagamento" : "Scheda codice pagamento")</h1>
+                <p>
+                    @(Model.IsNew
+                        ? "Inserimento di un nuovo codice pagamento."
+                        : $"Codice {Model.Payment.Code:000}")
+                </p>
+            </div>
+        </div>
+        <div class="top-actions">
+            <button class="button button-primary primary" type="submit" form="payment-code-form">
+                Salva
+            </button>
+            @if (Model.IsModal)
+            {
+                <button class="button button-secondary secondary" type="button" data-payment-code-modal-cancel>Annulla</button>
+            }
+            else
+            {
+                <a class="button button-secondary secondary" asp-page="./Index">Annulla</a>
+            }
+        </div>
+    </header>
+
+    <form id="payment-code-form"
+          method="post"
+          class="entity-form"
+          data-enter-navigation>
+        <input asp-for="Payment.IsNew" type="hidden" />
+        <input asp-for="Azione" type="hidden" />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <fieldset class="form-frame compact-frame">
+            <legend>Codice pagamento</legend>
+            <div class="payment-code-fields">
+                <div class="field payment-code-code-field">
+                    <label asp-for="Payment.Code"></label>
+                    <input asp-for="Payment.Code"
+                           value="@(Model.Payment.Code > 0 ? Model.Payment.Code.ToString("000") : "")"
+                           type="text"
+                           inputmode="numeric"
+                           maxlength="5"
+                           pattern="[0-9]{1,5}"
+                           autocomplete="off"
+                           tabindex="-1"
+                           readonly />
+                    <span asp-validation-for="Payment.Code"></span>
+                </div>
+                <div class="field payment-code-description-field">
+                    <label asp-for="Payment.Description"></label>
+                    <input asp-for="Payment.Description" autocomplete="off" tabindex="1" autofocus />
+                    <span asp-validation-for="Payment.Description"></span>
+                </div>
+                <div class="field payment-code-abbreviation-field">
+                    <label asp-for="Payment.Abbreviation"></label>
+                    <input asp-for="Payment.Abbreviation" autocomplete="off" tabindex="9" />
+                </div>
+                <div class="field payment-code-type-field">
+                    <label asp-for="Payment.PaymentType"></label>
+                    <select asp-for="Payment.PaymentType" tabindex="2">
+                        <option value=""></option>
+                        @foreach (var option in Model.PaymentTypeOptions)
+                        {
+                            <option value="@option.Code">@option.Code - @option.Description</option>
+                        }
+                    </select>
+                    <span asp-validation-for="Payment.PaymentType"></span>
+                </div>
+                <div class="field payment-code-title-type-field">
+                    <label asp-for="Payment.TitleType"></label>
+                    <select asp-for="Payment.TitleType" tabindex="10">
+                        <option value=""></option>
+                        @foreach (var option in Model.TitleTypeOptions)
+                        {
+                            <option value="@option.Code">@option.Code - @option.Description</option>
+                        }
+                    </select>
+                </div>
+                <div class="field payment-code-due-dates-field">
+                    <label asp-for="Payment.DueDates"></label>
+                    <input asp-for="Payment.DueDates" type="text" min="0" max="99" tabindex="4" data-updown />
+                </div>
+                <div class="field payment-code-first-interval-field">
+                    <label asp-for="Payment.FirstInterval"></label>
+                    <input asp-for="Payment.FirstInterval" type="text" min="0" max="999" tabindex="6" data-updown />
+                </div>
+                <div class="field payment-code-interval-field">
+                    <label asp-for="Payment.Interval"></label>
+                    <input asp-for="Payment.Interval" type="text" min="0" max="999" tabindex="5" data-updown />
+                </div>
+                <div class="field payment-code-offset-field">
+                    <label asp-for="Payment.TimeOffset"></label>
+                    <input asp-for="Payment.TimeOffset" type="text" min="0" max="999" tabindex="7" data-updown />
+                </div>
+                <div class="field payment-code-start-field">
+                    <label asp-for="Payment.StartFrom"></label>
+                    <select asp-for="Payment.StartFrom" tabindex="3">
+                        <option value=""></option>
+                        @foreach (var option in Model.StartFromOptions)
+                        {
+                            <option value="@option.Code">@option.Description</option>
+                        }
+                    </select>
+                </div>
+                <div class="field payment-code-conditions-field">
+                    <label asp-for="Payment.Conditions"></label>
+                    <select asp-for="Payment.Conditions" tabindex="11">
+                        <option value=""></option>
+                        @foreach (var option in Model.ConditionOptions)
+                        {
+                            <option value="@option.Code">@option.Code - @option.Description</option>
+                        }
+                    </select>
+                </div>
+                <div class="field payment-code-mode-field">
+                    <label asp-for="Payment.Mode"></label>
+                    <select asp-for="Payment.Mode" tabindex="12">
+                        <option value=""></option>
+                        @foreach (var option in Model.ModeOptions)
+                        {
+                            <option value="@option.Code">@option.Code - @option.Description</option>
+                        }
+                    </select>
+                </div>
+                <div class="field payment-code-expenses-field">
+                    <label asp-for="Payment.Expenses"></label>
+                    <input asp-for="Payment.Expenses"
+                           value="@EditModel.CurrencyText(Model.Payment.Expenses)"
+                           class="currency-display"
+                           inputmode="decimal"
+                           autocomplete="off"
+                           tabindex="8"
+                           data-money-field
+                           data-money-integer-digits="9" />
+                </div>
+                <div class="field-check payment-code-skip-august-field">
+                    <label class="check-button-field">
+                        <span class="check-text">Salta agosto</span>
+                        <input asp-for="Payment.SkipAugust" type="checkbox" tabindex="13" />
+                        <span class="check-button-wrap" aria-hidden="true"></span>
+                    </label>
+                </div>
+                <div class="field-check payment-code-skip-december-field">
+                    <label class="check-button-field">
+                        <span class="check-text">Salta dicembre</span>
+                        <input asp-for="Payment.SkipDecember" type="checkbox" tabindex="14" />
+                        <span class="check-button-wrap" aria-hidden="true"></span>
+                    </label>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+    <script src="~/js/payment-code-edit.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,127 @@
+@page
+@model MicronoteFood.Web.Pages.Settori.IndexModel
+@{
+    ViewData["Title"] = "Settori commerciali";
+    ViewData["BodyClass"] = "list-module";
+}
+
+<section class="list-page sector-list-page"
+         data-list-page
+         data-menu-url="/"
+         data-next-code="@Model.DisplayCode.ToString("000")">
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Settori commerciali</strong>
+                <small>Micronote Food - Tabelle di base</small>
+            </span>
+        </a>
+        <div class="list-title-actions">
+            <button class="list-title-button" type="button" data-sector-action="new">
+                Aggiungi
+            </button>
+            <button class="list-title-button" type="button" data-sector-action="edit">
+                Modifica
+            </button>
+            <button class="list-title-button" type="button" data-sector-action="delete">
+                Elimina
+            </button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <span hidden data-page-message data-message-variant="error"
+              data-message-text="@Model.ErrorMessage"></span>
+    }
+
+    <section class="list-panel">
+        <div class="list-grid-frame sector-grid-frame" data-sector-grid>
+            <table class="list-grid sector-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="code" data-sort-type="number">Codice</th>
+                        <th data-sort-key="description">Descrizione</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var sector in Model.Sectors)
+                    {
+                        <tr tabindex="0"
+                            data-sector-row
+                            data-filter-name="@sector.Description"
+                            data-sort-code="@sector.Code"
+                            data-sort-description="@sector.Description"
+                            data-code="@sector.Code"
+                            data-description="@sector.Description"
+                            data-selected="@(Model.Sector.Code == sector.Code ? "true" : "false")"
+                            data-delete-code="@sector.Code"
+                            data-record-label="@sector.Description">
+                            <td class="code-cell">@sector.Code.ToString("000")</td>
+                            <td>@sector.Description</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="list-empty" data-sector-empty hidden>
+                Nessun settore trovato.
+            </div>
+        </div>
+    </section>
+
+    <form method="post"
+          asp-page-handler="Save"
+          class="entity-form sector-inline-editor supplier-form-page data-form-skin sector-form-page"
+          data-sector-editor
+          data-enter-navigation>
+        <input asp-for="Sector.Code" type="hidden" data-sector-code />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <fieldset class="form-frame compact-frame" data-sector-editor-fields disabled>
+            <legend>Scheda settore</legend>
+            <div class="form-grid form-grid-4 form-frame-grid sector-fields-row">
+                <div class="field field-code">
+                    <label>Codice</label>
+                    <input type="text"
+                           class="readonly-field code-display"
+                           readonly
+                           tabindex="-1"
+                           value="@(Model.Sector.Code == 0 ? Model.DisplayCode.ToString("000") : Model.Sector.Code.ToString("000"))"
+                           data-sector-code-display />
+                </div>
+                <div class="field field-span-2 sector-description-field">
+                    <label asp-for="Sector.Description"></label>
+                    <input asp-for="Sector.Description"
+                           autocomplete="off"
+                           data-sector-description />
+                    <span asp-validation-for="Sector.Description"></span>
+                </div>
+                <div class="sector-inline-actions">
+                    <button class="button button-primary primary"
+                            type="submit"
+                            data-sector-save
+                            disabled>
+                        Salva
+                    </button>
+                    <button class="button button-secondary secondary"
+                            type="button"
+                            data-sector-cancel
+                            disabled>
+                        Annulla
+                    </button>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <form method="post" asp-page-handler="Delete" data-sector-delete-form hidden>
+        <input type="hidden" name="code" data-sector-delete-code />
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+    <script src="~/js/sectors-list.js" asp-append-version="true"></script>
+}

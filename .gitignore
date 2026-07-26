@@ -1,0 +1,19 @@
+bin/
+obj/
+build-check/
+publish/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+
+micronote-run.*.log
+
+# Configurazione privata del server (contiene credenziali).
+config/config.php
+
+*.tmp
+*.temp
+*.log
+*.pid

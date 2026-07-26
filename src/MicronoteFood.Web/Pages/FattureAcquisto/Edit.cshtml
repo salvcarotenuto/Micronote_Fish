@@ -1,0 +1,338 @@
+@page "{id:int?}"
+@model MicronoteFood.Web.Pages.FattureAcquisto.EditModel
+@using System.Globalization
+@using System.Text.Json
+@{
+    ViewData["Title"] = Model.IsNew ? "Nuova fattura di acquisto" : "Scheda fattura di acquisto";
+    ViewData["BodyClass"] = "purchase-invoice-edit-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    var initialData = new
+    {
+        id = Model.Invoice.Id,
+        causeCode = Model.Invoice.CauseCode,
+        documentNumber = Model.Invoice.DocumentNumber,
+        documentDate = Model.Invoice.DocumentDate == default
+            ? ""
+            : Model.Invoice.DocumentDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        supplier = new
+        {
+            code = Model.Invoice.SupplierCode,
+            codeDisplay = Model.Invoice.SupplierCode > 0 ? Model.Invoice.SupplierCode.ToString("00000") : "",
+            name = Model.Invoice.SupplierName
+        },
+        contraAccountCode = Model.Invoice.ContraAccountCode,
+        storeCode = Model.Invoice.StoreCode,
+        paymentCode = Model.Invoice.PaymentCode,
+        bankCode = Model.Invoice.BankCode,
+        taxableTotal = Model.Invoice.TaxableTotal,
+        vatTotal = Model.Invoice.VatTotal,
+        total = Model.Invoice.Total,
+        notes = Model.Invoice.Notes,
+        electronicInvoiceFileName = Model.Invoice.ElectronicInvoiceFileName,
+        vatRows = Model.Invoice.VatRows.Select(row => new
+        {
+            rate = row.Rate,
+            taxable = row.Taxable,
+            tax = row.Tax
+        }),
+        dueRows = Model.Invoice.DueRows.Select(row => new
+        {
+            number = row.Number,
+            amount = row.Amount,
+            date = row.Date?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "",
+            paid = row.Paid
+        })
+    };
+}
+
+<section class="module-page form-module-page supplier-form-page purchase-invoice-form-page data-form-skin"
+         data-azione="@Model.Azione"
+         data-return-url="@Model.ReturnUrl"
+         data-invoice-id="@(Model.Invoice.Id?.ToString(CultureInfo.InvariantCulture) ?? "")">
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" href="@Model.ReturnUrl" aria-label="@Model.ReturnLabel">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>@(Model.IsNew ? "Nuova fattura di acquisto" : "Scheda fattura di acquisto")</h1>
+                <p>Fattura di acquisto.</p>
+            </div>
+        </div>
+        <div class="top-actions">
+            <button class="button button-primary primary"
+                    type="button"
+                    data-purchase-invoice-save>
+                Salva
+            </button>
+            <a class="button button-secondary secondary" href="@Model.ReturnUrl">Annulla</a>
+        </div>
+    </header>
+
+    <form id="purchase-invoice-form"
+          class="entity-form"
+          method="post"
+          novalidate
+          data-enter-navigation
+          data-progress-disabled="true">
+        <input type="hidden" name="Azione" value="@Model.Azione" />
+        <fieldset class="form-frame compact-frame purchase-invoice-general-frame">
+            <legend>Dati Fattura</legend>
+            <div class="purchase-invoice-electronic-row">
+                <div class="purchase-invoice-electronic-icon" aria-hidden="true">
+                    <img src="~/images/FattEl_01.png" alt="" />
+                </div>
+                <label>Fattura elettronica</label>
+                <input type="text" readonly tabindex="-1" data-electronic-invoice-name />
+                <input type="hidden" name="ElectronicInvoicePath" data-electronic-invoice-full-path />
+                <button class="button button-primary primary purchase-invoice-electronic-button"
+                        type="button"
+                        data-electronic-invoice-open>Carica</button>
+                <button class="button button-primary primary purchase-invoice-electronic-button"
+                        type="button"
+                        data-electronic-invoice-current-preview>Visualizza</button>
+            </div>
+            <div class="purchase-invoice-general-grid">
+                <div class="field purchase-invoice-code-field">
+                    <label>Partita</label>
+                    <input value="@(Model.Invoice.Code > 0 ? Model.Invoice.Code.ToString("000000") : "")"
+                           readonly
+                           tabindex="-1" />
+                    <span>/</span>
+                    <input value="@Model.Invoice.Year"
+                           readonly
+                           tabindex="-1" />
+                </div>
+
+                <div class="field purchase-invoice-type-field">
+                    <label>Tipo documento</label>
+                    <select data-purchase-invoice-type>
+                        <option value=""></option>
+                        @foreach (var cause in Model.Invoice.Causes)
+                        {
+                            <option value="@cause.Code">@cause.Description</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="field purchase-invoice-number-field">
+                    <label>Numero fattura</label>
+                    <input type="text" autocomplete="off" autofocus data-purchase-invoice-number />
+                </div>
+
+                <div class="field purchase-invoice-date-field">
+                    <label>Data fattura</label>
+                    <span class="micronote-date-control" data-date-control>
+                        <input class="micronote-date-input is-empty" type="text" inputmode="numeric" maxlength="10" autocomplete="off" required data-purchase-invoice-date />
+                        <button class="micronote-date-button" type="button" tabindex="-1" aria-label="Seleziona data" data-date-picker-button></button>
+                    </span>
+                </div>
+
+                <div class="field purchase-invoice-supplier-field lookup-field"
+                     data-lookup-field
+                     data-lookup-type="fornitori"
+                     data-lookup-title="Fornitori"
+                     data-code-input="purchaseInvoiceSupplierCode"
+                     data-code-display="purchaseInvoiceSupplierCodeDisplay"
+                     data-label-input="purchaseInvoiceSupplierName">
+                    <label>Fornitore</label>
+                    <input id="purchaseInvoiceSupplierCode" type="hidden" />
+                    <input id="purchaseInvoiceSupplierCodeDisplay"
+                           class="purchase-invoice-supplier-code"
+                           type="text"
+                           inputmode="numeric"
+                           maxlength="5"
+                           autocomplete="off" />
+                    <input id="purchaseInvoiceSupplierName"
+                           class="purchase-invoice-supplier-name"
+                           type="text"
+                           readonly
+                           tabindex="-1" />
+                    <button class="lookup-button purchase-invoice-lookup-button"
+                            type="button"
+                            title="Seleziona fornitore"
+                            aria-label="Seleziona fornitore"
+                            data-lookup-open></button>
+                    <button class="purchase-invoice-add-button"
+                            type="button"
+                            title="Aggiungi fornitore"
+                            aria-label="Aggiungi fornitore">+</button>
+                </div>
+
+                <div class="field purchase-invoice-contra-field">
+                    <label>Contropartita</label>
+                    <select data-purchase-invoice-contra>
+                        <option value=""></option>
+                        @foreach (var account in Model.Invoice.ContraAccounts)
+                        {
+                            <option value="@account.Code">@account.Description</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="field purchase-invoice-store-field">
+                    <label>Punto vendita</label>
+                    <select data-purchase-invoice-store>
+                        <option value="0">Spese comuni</option>
+                        @foreach (var store in Model.Invoice.Stores.Where(store => store.Code != 0 && store.Code != -1))
+                        {
+                            <option value="@store.Code">@store.Description</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="field purchase-invoice-notes-field">
+                    <label>Annotazioni</label>
+                    <input type="text" autocomplete="off" data-purchase-invoice-notes />
+                </div>
+            </div>
+        </fieldset>
+
+        <div class="purchase-invoice-detail-grid">
+            <fieldset class="form-frame compact-frame purchase-invoice-vat-frame">
+                <legend>Imponibili e iva</legend>
+                <div class="field purchase-invoice-total-field">
+                    <label>Totale fattura</label>
+                    <input class="currency-display" type="text" inputmode="decimal" data-money-field data-purchase-invoice-total />
+                </div>
+
+                <table class="purchase-invoice-vat-table" aria-label="Dettaglio imponibili e iva" data-purchase-invoice-vat-table>
+                    <thead>
+                        <tr>
+                            <th>Aliquota</th>
+                            <th>Imponibile</th>
+                            <th>Iva</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < 4; i++)
+                        {
+                            <tr>
+                                <td><input type="text" inputmode="decimal" data-percent-field data-vat-rate /></td>
+                                <td><input class="currency-display" type="text" inputmode="decimal" data-money-field data-vat-taxable /></td>
+                                <td><input class="currency-display" type="text" inputmode="decimal" data-money-field data-vat-tax /></td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th>Totale</th>
+                            <td><input readonly tabindex="-1" data-purchase-invoice-vat-taxable-total /></td>
+                            <td><input readonly tabindex="-1" data-purchase-invoice-vat-tax-total /></td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div class="field purchase-invoice-inserted-field">
+                    <label>Inserito</label>
+                    <input readonly tabindex="-1" data-purchase-invoice-inserted />
+                </div>
+                <div class="field purchase-invoice-difference-field">
+                    <label>Differenza</label>
+                    <input readonly tabindex="-1" data-purchase-invoice-difference />
+                </div>
+            </fieldset>
+
+            <fieldset class="form-frame compact-frame purchase-invoice-payment-frame">
+                <legend>Pagamento</legend>
+                <div class="purchase-invoice-payment-layout">
+                    <div class="purchase-invoice-payment-fields">
+                        <div class="field purchase-invoice-payment-field">
+                            <label>Pagamento</label>
+                            <select data-purchase-invoice-payment>
+                                <option value=""></option>
+                                @foreach (var payment in Model.Invoice.Payments)
+                                {
+                                    <option value="@payment.Code">@payment.Description</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="field purchase-invoice-bank-field">
+                            <label>Banca</label>
+                            <select data-purchase-invoice-bank>
+                                <option value=""></option>
+                                @foreach (var bank in Model.Invoice.Banks)
+                                {
+                                    <option value="@bank.Code">@bank.Description</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="purchase-invoice-due-grid-wrap">
+                            <table class="purchase-invoice-due-table" aria-label="Scadenze pagamento" data-purchase-invoice-due-table>
+                                <thead>
+                                    <tr>
+                                        <th>Numero</th>
+                                        <th>Importo</th>
+                                        <th>Scadenza</th>
+                                        <th>Pagata</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (var i = 0; i < 6; i++)
+                                    {
+                                        <tr>
+                                            <td><input type="text" readonly tabindex="-1" data-due-number /></td>
+                                            <td><input class="currency-display" type="text" inputmode="decimal" data-money-field data-due-amount /></td>
+                                            <td>
+                                                <span class="micronote-date-control micronote-date-control-grid" data-date-control>
+                                                    <input class="micronote-date-input purchase-invoice-due-date is-empty" type="text" inputmode="numeric" maxlength="10" autocomplete="off" data-due-date />
+                                                    <button class="micronote-date-button" type="button" tabindex="-1" aria-label="Seleziona scadenza" data-date-picker-button></button>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <label class="check-button-field purchase-invoice-paid-check">
+                                                    <input type="checkbox" />
+                                                    <span class="check-button-wrap" aria-hidden="true"></span>
+                                                </label>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="purchase-invoice-payment-actions">
+                        <button class="button button-primary primary" type="button" data-purchase-invoice-add-payment>Aggiungi pagam.</button>
+                        <button class="button button-primary primary" type="button" data-purchase-invoice-add-bank>Aggiungi banca</button>
+                        <button class="button button-primary primary" type="button" data-purchase-invoice-calculate-due-dates>Calcola scadenze</button>
+                        <button class="button button-primary primary" type="button" data-purchase-invoice-clear-due-dates>Azzera scadenze</button>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+    </form>
+
+    <div class="purchase-invoice-payment-modal-overlay" data-payment-code-modal hidden>
+        <section class="purchase-invoice-payment-modal" role="dialog" aria-modal="true" aria-label="Nuovo codice pagamento">
+            <iframe title="Nuovo codice pagamento" data-payment-code-modal-frame></iframe>
+        </section>
+    </div>
+
+    <div class="purchase-invoice-payment-modal-overlay" data-chart-account-modal hidden>
+        <section class="purchase-invoice-payment-modal" role="dialog" aria-modal="true" aria-label="Nuovo conto banca">
+            <iframe title="Nuovo conto banca" data-chart-account-modal-frame></iframe>
+        </section>
+    </div>
+
+    <div class="purchase-invoice-payment-modal-overlay" data-stock-load-modal hidden>
+        <section class="purchase-invoice-payment-modal purchase-invoice-stock-load-modal" role="dialog" aria-modal="true" aria-label="Carico per acquisti">
+            <iframe title="Carico per acquisti" data-stock-load-modal-frame></iframe>
+        </section>
+    </div>
+    @await Html.PartialAsync("_ElectronicInvoiceListDialog", Model.ElectronicInvoiceFolderDefault)
+
+</section>
+
+<script type="application/json" data-purchase-invoice-initial>
+@Html.Raw(JsonSerializer.Serialize(initialData))
+</script>
+
+@section Scripts {
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+    <script src="~/js/lookup-fields.js" asp-append-version="true"></script>
+    <script src="~/js/money-fields.js" asp-append-version="true"></script>
+    <script src="~/js/purchase-invoice-edit.js" asp-append-version="true"></script>
+}
+

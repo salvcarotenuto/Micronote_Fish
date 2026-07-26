@@ -1,0 +1,173 @@
+@page
+@model MicronoteFood.Web.Pages.MovimentiBanca.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Movimenti bancari";
+    ViewData["BodyClass"] = "bank-movements-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string SortNumber(decimal value) => value.ToString(CultureInfo.InvariantCulture);
+    var selectedId = Model.List.SelectedId;
+}
+
+<section class="module-page bank-movements-page supplier-form-page data-form-skin" data-bank-movements>
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>Movimenti bancari</h1>
+                <p>Lista movimenti bancari</p>
+            </div>
+        </div>
+        <div class="top-actions bank-movements-actions">
+            <span class="list-records-box bank-movements-records">
+                <strong>@Model.List.Movements.Count</strong>
+                <span>record</span>
+            </span>
+            <button class="button button-primary primary" type="button" data-bank-action="new">Nuovo</button>
+            <button class="button button-primary primary" type="button" data-bank-action="edit">Modifica</button>
+            <button class="button button-primary primary" type="button" data-bank-action="delete">Cancella</button>
+            <button class="button button-primary primary bank-article-button" type="button" data-bank-action="article">Vedi articolo p.n.</button>
+            <button class="button button-primary primary" type="button" data-bank-action="print">Stampa</button>
+        </div>
+    </header>
+
+    <form class="sales-history-filters bank-movements-filters" method="get" data-bank-filters data-progress-disabled="true">
+        <fieldset class="form-frame">
+            <div class="bank-movements-filter-row">
+                <div class="field bank-year-filter">
+                    <label>Anno</label>
+                    <select name="year">
+                        @foreach (var year in Model.List.Years)
+                        {
+                            <option value="@year" selected="@(Model.List.Year == year)">@year</option>
+                        }
+                    </select>
+                </div>
+                <div class="field bank-month-filter">
+                    <label>Mese</label>
+                    <select name="month">
+                        @foreach (var month in Model.List.Months)
+                        {
+                            <option value="@month.Code" selected="@(Model.List.Month == month.Code)">@month.Description</option>
+                        }
+                    </select>
+                </div>
+                <div class="field bank-account-filter">
+                    <label>Banca</label>
+                    <select name="bankCode">
+                        <option value=""></option>
+                        @foreach (var bank in Model.List.Banks)
+                        {
+                            <option value="@bank.Code" selected="@(Model.List.BankCode == bank.Code)">@bank.Description</option>
+                        }
+                    </select>
+                </div>
+                <div class="field bank-cause-filter">
+                    <label>Causale</label>
+                    <select name="causeCode">
+                        <option value=""></option>
+                        @foreach (var cause in Model.List.Causes)
+                        {
+                            <option value="@cause.Code" selected="@(Model.List.CauseCode == cause.Code)">@cause.Description</option>
+                        }
+                    </select>
+                </div>
+                <span class="list-records-box bank-movements-total">
+                    <span>Totale</span>
+                    <strong>@Model.List.Total.ToString("N2", it)</strong>
+                </span>
+            </div>
+        </fieldset>
+    </form>
+
+
+    <form method="post" asp-page-handler="Delete" data-bank-delete-form>
+        <input type="hidden" name="deleteId" data-bank-delete-id />
+        <input type="hidden" name="year" value="@Model.List.Year" />
+        <input type="hidden" name="month" value="@(Model.List.Month == 0 ? "" : Model.List.Month.ToString(CultureInfo.InvariantCulture))" />
+        <input type="hidden" name="bankCode" value="@(Model.List.BankCode?.ToString(CultureInfo.InvariantCulture) ?? "")" />
+        <input type="hidden" name="causeCode" value="@(Model.List.CauseCode?.ToString(CultureInfo.InvariantCulture) ?? "")" />
+    </form>
+
+    <div class="list-grid-frame bank-movements-grid-frame">
+            <table class="list-grid bank-movements-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="year" data-sort-type="number">Anno</th>
+                        <th data-sort-key="code" data-sort-type="number">Partita</th>
+                        <th data-sort-key="date" data-sort-type="number">Data</th>
+                        <th data-sort-key="causeCode" data-sort-type="number">Causale</th>
+                        <th data-sort-key="causeDescription">Descrizione</th>
+                        <th data-sort-key="bankCode" data-sort-type="number">Banca</th>
+                        <th data-sort-key="bankName">Nome</th>
+                        <th data-sort-key="amount" data-sort-type="number">Importo</th>
+                        <th data-sort-key="title">Titolo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var movement in Model.List.Movements)
+                    {
+                        var rowUrl = Url.Page(
+                            "./Index",
+                            new
+                            {
+                                year = Model.List.Year,
+                                month = Model.List.Month == 0 ? (int?)null : Model.List.Month,
+                                bankCode = Model.List.BankCode,
+                                causeCode = Model.List.CauseCode,
+                                selectedId = movement.Id
+                            });
+                        <tr class="@(selectedId == movement.Id ? "selected selected-row" : "")"
+                            tabindex="0"
+                            data-bank-row
+                            data-movement-id="@movement.Id"
+                            data-sort-year="@movement.Year"
+                            data-sort-code="@movement.Code"
+                            data-sort-date="@movement.MovementDate.ToString("yyyyMMdd")"
+                            data-sort-cause-code="@movement.CauseCode"
+                            data-sort-cause-description="@movement.CauseDescription"
+                            data-sort-bank-code="@movement.BankCode"
+                            data-sort-bank-name="@movement.BankName"
+                            data-sort-amount="@SortNumber(movement.Amount)"
+                            data-sort-title="@movement.Title"
+                            data-url="@rowUrl">
+                            <td>@movement.Year</td>
+                            <td>@movement.Code.ToString("000000")</td>
+                            <td>@movement.MovementDate.ToString("dd-MM-yyyy", it)</td>
+                            <td>@movement.CauseCode.ToString("000")</td>
+                            <td>@movement.CauseDescription</td>
+                            <td>@movement.BankCode.ToString("000")</td>
+                            <td>@movement.BankName</td>
+                            <td>@Money(movement.Amount)</td>
+                            <td>@movement.Title</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (Model.List.Movements.Count == 0)
+            {
+                <div class="sales-history-empty">Nessun movimento trovato.</div>
+            }
+    </div>
+</section>
+
+
+    <div class="purchase-invoice-payment-modal-overlay" data-bank-accounting-article-modal hidden>
+        <section class="purchase-invoice-payment-modal accounting-article-modal" role="dialog" aria-modal="true" aria-label="Articolo di contabilita">
+            <iframe title="Articolo di contabilita" data-bank-accounting-article-modal-frame></iframe>
+        </section>
+    </div>
+@section Scripts {
+    <script src="~/js/bank-movements.js" asp-append-version="true"></script>
+}
+
+
+
+
+
+
+
+

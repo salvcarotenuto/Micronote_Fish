@@ -1,0 +1,235 @@
+@page
+@model MicronoteFood.Web.Pages.AcquistiPerArticolo.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Acquisti per articolo";
+    ViewData["BodyClass"] = "stock-purchase-stats-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Quantity(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Percent(decimal value) => value == 0 ? "" : value.ToString("N2", it) + " %";
+    string Date(DateOnly? value) => value is null ? "" : value.Value.ToString("dd-MM-yyyy", it);
+    string SortNumber(decimal value) => value.ToString(CultureInfo.InvariantCulture);
+}
+
+<section class="module-page stock-movements-page stock-purchase-stats-page supplier-form-page data-form-skin"
+         data-stock-purchase-stats>
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>Acquisti per articolo</h1>
+                <p>Statistica acquisti di magazzino con raggruppamento per articolo</p>
+            </div>
+        </div>
+        <div class="top-actions sales-history-actions purchase-stats-actions">
+            <span class="list-records-box purchase-stats-records">
+                <strong>@Model.Report.Articles.Count</strong>
+                <span>record</span>
+            </span>
+            <button class="button button-primary primary" type="submit" form="purchase-stats-filters" data-purchase-stats-refresh>Elabora</button>
+            <button class="button button-primary primary" type="button" data-purchase-stats-action="article">Scheda articolo</button>
+            <button class="button button-primary primary" type="button" data-purchase-stats-action="account">E/conto articolo</button>
+            <button class="button button-primary primary" type="button" data-purchase-stats-action="verify">Verifica prezzi</button>
+            <button class="button button-primary primary" type="button" data-purchase-stats-action="print">Stampa</button>
+        </div>
+    </header>
+
+    <form id="purchase-stats-filters"
+          class="stock-movements-filters stock-purchase-stats-filters"
+          method="get"
+          data-purchase-stats-filters
+          data-progress-message="Elaborazione statistica in corso..."
+          data-progress-minimum-time="700">
+        <input type="hidden" name="run" value="true" />
+        <fieldset class="form-frame">
+            <div class="purchase-stats-filter-row">
+                <div class="field">
+                    <label>Dalla data</label>
+                    <span class="micronote-date-control" data-date-control>
+                        <input type="hidden"
+                               name="dateFrom"
+                               value="@Model.Report.DateFrom.ToString("yyyy-MM-dd")"
+                               data-purchase-stats-date-hidden />
+                        <input class="micronote-date-input"
+                               type="text"
+                               inputmode="numeric"
+                               maxlength="10"
+                               autocomplete="off"
+                               value="@Model.Report.DateFrom.ToString("dd/MM/yyyy", it)"
+                               data-purchase-stats-date-display />
+                         <button class="micronote-date-button"
+                                 type="button"
+                                 tabindex="-1"
+                                 aria-label="Seleziona data iniziale"
+                                 data-date-picker-button
+                                 data-purchase-stats-date-button></button>
+                    </span>
+                </div>
+                <div class="field">
+                    <label>Alla data</label>
+                    <span class="micronote-date-control" data-date-control>
+                        <input type="hidden"
+                               name="dateTo"
+                               value="@Model.Report.DateTo.ToString("yyyy-MM-dd")"
+                               data-purchase-stats-date-hidden />
+                        <input class="micronote-date-input"
+                               type="text"
+                               inputmode="numeric"
+                               maxlength="10"
+                               autocomplete="off"
+                               value="@Model.Report.DateTo.ToString("dd/MM/yyyy", it)"
+                               data-purchase-stats-date-display />
+                         <button class="micronote-date-button"
+                                 type="button"
+                                 tabindex="-1"
+                                 aria-label="Seleziona data finale"
+                                 data-date-picker-button
+                                 data-purchase-stats-date-button></button>
+                    </span>
+                </div>
+                <div class="field purchase-stats-search-field">
+                    <label>Cerca articolo</label>
+                    <input name="search"
+                           value="@Model.Report.Search"
+                           autocomplete="off"
+                           data-purchase-stats-search />
+                </div>
+                <div class="field purchase-stats-store-field">
+                    <label>Punto vendita</label>
+                    <select name="storeCode">
+                        <option value=""></option>
+                        @foreach (var store in Model.Report.Stores)
+                        {
+                            <option value="@store.Code" selected="@(Model.Report.StoreCode == store.Code)">@store.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="field purchase-stats-price-field">
+                    <label>Prezzi variati</label>
+                    <input value="" readonly tabindex="-1" data-purchase-stats-price-count />
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <section class="stock-movements-panel purchase-stats-main-panel">
+        <h2>Lista articoli acquistati</h2>
+        <div class="list-grid-frame stock-movements-grid-frame purchase-stats-grid-frame">
+            <table class="list-grid stock-movements-grid purchase-stats-grid">
+                <colgroup>
+                    <col class="purchase-stats-col-article" />
+                    <col class="purchase-stats-col-description" />
+                    <col class="purchase-stats-col-unit" />
+                    <col class="purchase-stats-col-metric" span="7" />
+                    <col class="purchase-stats-col-date" />
+                    <col class="purchase-stats-col-share" />
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th data-sort-key="articleCode">Articolo</th>
+                        <th data-sort-key="description">Descrizione</th>
+                        <th data-sort-key="unitMeasure">U.m.</th>
+                        <th data-sort-key="quantity" data-sort-type="number">Quantità</th>
+                        <th data-sort-key="amount" data-sort-type="number">Valore</th>
+                        <th data-sort-key="standardCost" data-sort-type="number">Costo std.</th>
+                        <th data-sort-key="averageCost" data-sort-type="number">Costo medio</th>
+                        <th data-sort-key="thirdLastPrice" data-sort-type="number">3°ult. prezzo</th>
+                        <th data-sort-key="secondLastPrice" data-sort-type="number">2°ult. prezzo</th>
+                        <th data-sort-key="lastPrice" data-sort-type="number">Ultimo prezzo</th>
+                        <th data-sort-key="lastPurchaseDate" data-sort-type="number">Ultimo acq.</th>
+                        <th data-sort-key="share" data-sort-type="number">Quota</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var article in Model.Report.Articles)
+                    {
+                        <tr tabindex="0"
+                            data-purchase-stats-row
+                            data-article-code="@article.ArticleCode"
+                            data-article-description="@article.Description"
+                            data-sort-article-code="@article.ArticleCode"
+                            data-sort-description="@article.Description"
+                            data-sort-unit-measure="@article.UnitMeasure"
+                            data-sort-quantity="@SortNumber(article.Quantity)"
+                            data-sort-amount="@SortNumber(article.Amount)"
+                            data-sort-standard-cost="@SortNumber(article.StandardCost)"
+                            data-sort-average-cost="@SortNumber(article.AverageCost)"
+                            data-sort-third-last-price="@SortNumber(article.ThirdLastPrice)"
+                            data-sort-second-last-price="@SortNumber(article.SecondLastPrice)"
+                            data-sort-last-price="@SortNumber(article.LastPrice)"
+                            data-sort-last-purchase-date="@(article.LastPurchaseDate?.ToString("yyyyMMdd") ?? "")"
+                            data-sort-share="@SortNumber(article.Share)">
+                            <td>@article.ArticleCode</td>
+                            <td>@article.Description</td>
+                            <td>@article.UnitMeasure</td>
+                            <td>@Quantity(article.Quantity)</td>
+                            <td>@Money(article.Amount)</td>
+                            <td data-price-cell>@Money(article.StandardCost)</td>
+                            <td data-average-price>@Money(article.AverageCost)</td>
+                            <td data-price-cell>@Money(article.ThirdLastPrice)</td>
+                            <td data-price-cell>@Money(article.SecondLastPrice)</td>
+                            <td data-price-cell>@Money(article.LastPrice)</td>
+                            <td>@Date(article.LastPurchaseDate)</td>
+                            <td>@Percent(article.Share)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (Model.Report.IsLoaded && Model.Report.Articles.Count == 0)
+            {
+                <div class="sales-history-empty">Nessun acquisto trovato.</div>
+            }
+        </div>
+    </section>
+
+    <section class="stock-movements-panel purchase-stats-detail-panel">
+        <h2>Dettaglio acquisti per fornitore</h2>
+        <div class="purchase-stats-detail-layout">
+            <div class="list-grid-frame purchase-stats-detail-frame">
+                <table class="list-grid purchase-stats-detail-grid">
+                    <colgroup>
+                        <col class="purchase-stats-detail-col-code" />
+                        <col class="purchase-stats-detail-col-name" />
+                        <col class="purchase-stats-detail-col-number" />
+                        <col class="purchase-stats-detail-col-number" />
+                        <col class="purchase-stats-detail-col-number" />
+                        <col class="purchase-stats-detail-col-number" />
+                        <col class="purchase-stats-detail-col-date" />
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>Fornitore</th>
+                            <th>Nome</th>
+                            <th>Quantità</th>
+                            <th>Importo</th>
+                            <th>Costo medio</th>
+                            <th>Ultimo prezzo</th>
+                            <th>Data ultimo acq.</th>
+                        </tr>
+                    </thead>
+                    <tbody data-purchase-stats-supplier-body></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <div class="purchase-invoice-payment-modal-overlay" data-purchase-stats-article-modal hidden>
+        <section class="purchase-invoice-payment-modal stock-load-article-card-modal" role="dialog" aria-modal="true" aria-label="Scheda articolo">
+            <iframe title="Scheda articolo" data-purchase-stats-article-modal-frame></iframe>
+        </section>
+    </div>
+
+    <div class="purchase-invoice-payment-modal-overlay" data-purchase-stats-account-modal hidden>
+        <section class="purchase-invoice-payment-modal stock-movement-document-modal" role="dialog" aria-modal="true" aria-label="Estratto conto articolo">
+            <iframe title="Estratto conto articolo" data-purchase-stats-account-modal-frame></iframe>
+        </section>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/purchase-stats.js" asp-append-version="true"></script>
+}
+

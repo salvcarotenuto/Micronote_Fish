@@ -1,0 +1,142 @@
+@page
+@model MicronoteFood.Web.Pages.Mastri.IndexModel
+@{
+    ViewData["Title"] = "Mastri di conto";
+    ViewData["BodyClass"] = "list-module";
+}
+
+<section class="list-page ledger-master-list-page small-table-page"
+         data-list-page
+         data-menu-url="/"
+         data-next-ledger-master-code="@Model.NextCode.ToString("000")">
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Mastri di conto</strong>
+                <small>Micronote Food - Tabelle contabili</small>
+            </span>
+        </a>
+        <div class="list-title-actions">
+            <button class="list-title-button" type="button" data-ledger-master-action="new">Aggiungi</button>
+            <button class="list-title-button" type="button" data-ledger-master-action="edit">Modifica</button>
+            <button class="list-title-button" type="button" data-ledger-master-action="delete">Elimina</button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <span hidden data-page-message data-message-variant="error"
+              data-message-text="@Model.ErrorMessage"></span>
+    }
+
+    <section class="list-panel">
+        <div class="list-grid-frame ledger-master-grid-frame small-table-grid-frame" data-ledger-master-grid>
+            <table class="list-grid ledger-master-grid small-table-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="code" data-sort-type="number">Codice</th>
+                        <th data-sort-key="description">Descrizione</th>
+                        <th data-sort-key="type">Tipo</th>
+                        <th data-sort-key="locked">Bloccato</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var master in Model.Masters)
+                    {
+                        <tr tabindex="0"
+                            data-ledger-master-row
+                            data-sort-code="@master.Code"
+                            data-sort-description="@master.Description"
+                            data-sort-type="@master.Type"
+                            data-sort-locked="@(master.Locked ? "1" : "0")"
+                            data-code="@master.Code"
+                            data-code-display="@master.Code.ToString("000")"
+                            data-description="@master.Description"
+                            data-type="@master.Type"
+                            data-locked="@(master.Locked ? "true" : "false")"
+                            data-selected="@(Model.Master.Code == master.Code ? "true" : "false")"
+                            data-delete-code="@master.Code"
+                            data-record-label="@master.Description">
+                            <td class="code-cell">@master.Code.ToString("000")</td>
+                            <td>@master.Description</td>
+                            <td>@master.Type</td>
+                            <td>@(master.Locked ? "Sì" : "")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="list-empty" data-ledger-master-empty hidden>
+                Nessun mastro trovato.
+            </div>
+        </div>
+    </section>
+
+    <form method="post"
+          asp-page-handler="Save"
+          class="entity-form small-table-editor supplier-form-page data-form-skin ledger-master-form-page"
+          data-ledger-master-editor
+          data-enter-navigation>
+        <input asp-for="Master.IsNew" type="hidden" data-ledger-master-is-new />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <fieldset class="form-frame compact-frame" data-ledger-master-editor-fields disabled>
+            <legend>Scheda mastro</legend>
+            <div class="ledger-master-fields-row">
+                <div class="field ledger-master-code-field">
+                    <label asp-for="Master.Code"></label>
+                    <input asp-for="Master.Code"
+                           value="@(Model.Master.Code > 0 ? Model.Master.Code.ToString("000") : "")"
+                           inputmode="numeric"
+                           maxlength="3"
+                           pattern="[0-9]{1,3}"
+                           autocomplete="off"
+                           readonly
+                           data-ledger-master-code />
+                    <span asp-validation-for="Master.Code"></span>
+                </div>
+                <div class="field ledger-master-description-field">
+                    <label asp-for="Master.Description"></label>
+                    <input asp-for="Master.Description" autocomplete="off" data-ledger-master-description />
+                    <span asp-validation-for="Master.Description"></span>
+                </div>
+                <div class="field ledger-master-type-field">
+                    <label asp-for="Master.Type"></label>
+                    <select asp-for="Master.Type" data-ledger-master-type>
+                        <option value=""></option>
+                        @foreach (var option in Model.TypeOptions)
+                        {
+                            <option value="@option.Code">@option.Code - @option.Description</option>
+                        }
+                    </select>
+                    <span asp-validation-for="Master.Type"></span>
+                </div>
+                <div class="field-check ledger-master-locked-field">
+                    <label class="check-button-field">
+                        <span class="check-text">Bloccato</span>
+                        <input asp-for="Master.Locked" type="checkbox" data-ledger-master-locked />
+                        <span class="check-button-wrap" aria-hidden="true"></span>
+                    </label>
+                </div>
+                <div class="small-table-actions ledger-master-actions">
+                    <button class="button button-primary primary" type="submit" data-ledger-master-save disabled>
+                        Salva
+                    </button>
+                    <button class="button button-secondary secondary" type="button" data-ledger-master-cancel disabled>
+                        Annulla
+                    </button>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <form method="post" asp-page-handler="Delete" data-ledger-master-delete-form hidden>
+        <input type="hidden" name="code" data-ledger-master-delete-code />
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+    <script src="~/js/ledger-masters-list.js" asp-append-version="true"></script>
+}

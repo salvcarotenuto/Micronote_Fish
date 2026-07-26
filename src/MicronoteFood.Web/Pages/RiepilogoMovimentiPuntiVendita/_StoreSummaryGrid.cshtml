@@ -1,0 +1,95 @@
+@model MicronoteFood.Web.Models.StoreSummaryGridViewModel
+@using System.Globalization
+@{
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Percent(decimal value) => value == 0 ? "" : value.ToString("N2", it) + " %";
+    var gridWidth = 424 + (Model.Stores.Count * 258) + (Model.IncludeCommon ? 258 : 0);
+}
+
+<table class="list-grid stock-movements-grid store-summary-grid" style="width: @(gridWidth)px; min-width: @(gridWidth)px;">
+    <colgroup>
+        <col class="store-summary-col-account" />
+        <col class="store-summary-col-description" />
+        <col class="store-summary-col-money" />
+        <col class="store-summary-col-percent" />
+        @foreach (var _ in Model.Stores)
+        {
+            <col class="store-summary-col-gap" />
+            <col class="store-summary-col-money" />
+            <col class="store-summary-col-percent" />
+            <col class="store-summary-col-percent" />
+        }
+        @if (Model.IncludeCommon)
+        {
+            <col class="store-summary-col-gap" />
+            <col class="store-summary-col-money" />
+            <col class="store-summary-col-percent" />
+            <col class="store-summary-col-percent" />
+        }
+    </colgroup>
+    <thead>
+        <tr>
+            <th>Conto</th>
+            <th>@(Model.IncludeCommon ? "Costi" : "Ricavi")</th>
+            <th>@(Model.IncludeCommon ? "Totale" : "")</th>
+            <th>Quota</th>
+            @foreach (var store in Model.Stores)
+            {
+                <th></th>
+                <th>@store.Name</th>
+                <th>Quota cst.</th>
+                <th>Quota ric.</th>
+            }
+            @if (Model.IncludeCommon)
+            {
+                <th></th>
+                <th>Spese comuni</th>
+                <th>Quota cst.</th>
+                <th>Quota ric.</th>
+            }
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var row in Model.Grid.Rows)
+        {
+            if (row.IsSeparator)
+            {
+                <tr class="store-summary-separator">
+                    <td colspan="@(4 + (Model.Stores.Count * 4) + (Model.IncludeCommon ? 4 : 0))"></td>
+                </tr>
+                continue;
+            }
+
+            <tr class="@(row.IsTotal ? "store-summary-total-row" : null)"
+                tabindex="0"
+                data-store-summary-row
+                data-store-summary-grid="@(Model.IncludeCommon ? "costs" : "revenues")"
+                data-account-code="@(row.AccountCode?.ToString() ?? "")"
+                data-account-description="@row.Description">
+                <td>@(row.AccountCode?.ToString("000") ?? "")</td>
+                <td>@row.Description</td>
+                <td>@Money(row.Total)</td>
+                <td>@Percent(row.Share)</td>
+                @for (var index = 0; index < Model.Stores.Count; index++)
+                {
+                    var value = index < row.StoreValues.Count
+                        ? row.StoreValues[index]
+                        : new MicronoteFood.Web.Models.StoreMovementSummaryStoreValue(0, 0, 0);
+                    <td></td>
+                    <td>@Money(value.Amount)</td>
+                    <td>@Percent(value.CostShare)</td>
+                    <td>@Percent(value.RevenueShare)</td>
+                }
+                @if (Model.IncludeCommon)
+                {
+                    var common = row.CommonValue;
+                    <td></td>
+                    <td>@Money(common?.Amount ?? 0)</td>
+                    <td>@Percent(common?.CostShare ?? 0)</td>
+                    <td>@Percent(common?.RevenueShare ?? 0)</td>
+                }
+            </tr>
+        }
+    </tbody>
+</table>

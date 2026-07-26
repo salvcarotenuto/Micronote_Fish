@@ -1,0 +1,126 @@
+@page
+@model MicronoteFood.Web.Pages.Sottogruppi.IndexModel
+@{
+    ViewData["Title"] = "Sottogruppi di magazzino";
+    ViewData["BodyClass"] = "list-module";
+}
+
+<section class="list-page subgroup-list-page small-table-page"
+         data-list-page
+         data-menu-url="/"
+         data-next-code="@Model.DisplayCode.ToString("000")">
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Sottogruppi di magazzino</strong>
+                <small>Micronote Food - Tabelle di base</small>
+            </span>
+        </a>
+        <div class="list-title-actions">
+            <button class="list-title-button" type="button" data-subgroup-action="new">
+                Aggiungi
+            </button>
+            <button class="list-title-button" type="button" data-subgroup-action="edit">
+                Modifica
+            </button>
+            <button class="list-title-button" type="button" data-subgroup-action="delete">
+                Elimina
+            </button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <span hidden data-page-message data-message-variant="error"
+              data-message-text="@Model.ErrorMessage"></span>
+    }
+
+    <section class="list-panel">
+        <div class="list-grid-frame subgroup-grid-frame small-table-grid-frame" data-subgroup-grid>
+            <table class="list-grid subgroup-grid small-table-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="code" data-sort-type="number">Codice</th>
+                        <th data-sort-key="description">Descrizione</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var subgroup in Model.Subgroups)
+                    {
+                        <tr tabindex="0"
+                            data-subgroup-row
+                            data-sort-code="@subgroup.Code"
+                            data-sort-description="@subgroup.Description"
+                            data-code="@subgroup.Code"
+                            data-description="@subgroup.Description"
+                            data-selected="@(Model.Subgroup.Code == subgroup.Code ? "true" : "false")"
+                            data-delete-code="@subgroup.Code"
+                            data-record-label="@subgroup.Description">
+                            <td class="code-cell">@subgroup.Code.ToString("000")</td>
+                            <td>@subgroup.Description</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="list-empty" data-subgroup-empty hidden>
+                Nessun sottogruppo trovato.
+            </div>
+        </div>
+    </section>
+
+    <form method="post"
+          asp-page-handler="Save"
+          class="entity-form small-table-editor supplier-form-page data-form-skin subgroup-form-page"
+          data-subgroup-editor
+          data-enter-navigation>
+        <input asp-for="Subgroup.Code" type="hidden" data-subgroup-code />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <fieldset class="form-frame compact-frame" data-subgroup-editor-fields disabled>
+            <legend>Scheda sottogruppo</legend>
+            <div class="form-grid form-grid-4 form-frame-grid small-table-fields-row">
+                <div class="field field-code">
+                    <label>Codice</label>
+                    <input type="text"
+                           class="readonly-field code-display"
+                           readonly
+                           tabindex="-1"
+                           value="@(Model.Subgroup.Code == 0 ? Model.DisplayCode.ToString("000") : Model.Subgroup.Code.ToString("000"))"
+                           data-subgroup-code-display />
+                </div>
+                <div class="field field-span-2 small-table-description-field">
+                    <label asp-for="Subgroup.Description"></label>
+                    <input asp-for="Subgroup.Description"
+                           autocomplete="off"
+                           data-subgroup-description />
+                    <span asp-validation-for="Subgroup.Description"></span>
+                </div>
+                <div class="small-table-actions">
+                    <button class="button button-primary primary"
+                            type="submit"
+                            data-subgroup-save
+                            disabled>
+                        Salva
+                    </button>
+                    <button class="button button-secondary secondary"
+                            type="button"
+                            data-subgroup-cancel
+                            disabled>
+                        Annulla
+                    </button>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <form method="post" asp-page-handler="Delete" data-subgroup-delete-form hidden>
+        <input type="hidden" name="code" data-subgroup-delete-code />
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+    <script src="~/js/subgroups-list.js" asp-append-version="true"></script>
+}

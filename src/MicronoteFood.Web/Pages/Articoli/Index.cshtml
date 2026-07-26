@@ -1,0 +1,175 @@
+@page
+@model MicronoteFood.Web.Pages.Articoli.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Articoli";
+    ViewData["BodyClass"] = "list-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Percent(decimal value) => value == 0 ? "" : value.ToString("N2", it) + " %";
+}
+
+<section class="list-page article-list-page" data-list-page data-menu-url="/">
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Articoli</strong>
+                <small>Micronote Food - Anagrafica articoli di magazzino</small>
+            </span>
+        </a>
+        <div class="list-title-actions">
+            <span class="list-records-box article-records-box">
+                <strong data-article-count>@Model.Articles.Count</strong>
+                <span>record</span>
+            </span>
+            <a class="list-title-button" asp-page="./Edit">Nuovo</a>
+            <button class="list-title-button" type="button" data-article-action="edit">
+                Modifica
+            </button>
+            <button class="list-title-button" type="button" data-article-action="delete">
+                Elimina
+            </button>
+            <button class="list-title-button" type="button" data-article-action="print">
+                Stampa lista
+            </button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <span hidden data-page-message data-message-variant="error"
+              data-message-text="@Model.ErrorMessage"></span>
+    }
+
+    <section class="list-panel">
+        <div class="list-toolbar article-list-toolbar">
+            <div class="list-filter-field article-search-field">
+                <label for="article-search">Cerca</label>
+                <div class="list-search-control">
+                    <input id="article-search"
+                           type="text"
+                           placeholder="Descrizione articolo"
+                           autocomplete="off"
+                           autofocus
+                           data-article-search />
+                    <button class="list-search-clear"
+                            type="button"
+                            aria-label="Pulisci filtro"
+                            data-article-search-clear
+                            hidden>×</button>
+                </div>
+            </div>
+            <div class="list-filter-field article-filter-field">
+                <label for="article-category">Categoria</label>
+                <select id="article-category" asp-items="Model.CategoryItems" data-article-category>
+                    <option value=""></option>
+                </select>
+            </div>
+            <div class="list-filter-field article-filter-field">
+                <label for="article-group">Gruppo</label>
+                <select id="article-group" asp-items="Model.GroupItems" data-article-group>
+                    <option value=""></option>
+                </select>
+            </div>
+            <div class="list-filter-field article-filter-field">
+                <label for="article-subgroup">Sottogruppo</label>
+                <select id="article-subgroup" asp-items="Model.SubgroupItems" data-article-subgroup>
+                    <option value=""></option>
+                </select>
+            </div>
+            <div class="list-filter-field article-supplier-filter-field">
+                <label for="article-supplier">Fornitore</label>
+                <select id="article-supplier" asp-items="Model.SupplierItems" data-article-supplier>
+                    <option value=""></option>
+                </select>
+            </div>
+        </div>
+
+        <div class="list-grid-frame article-grid-frame" data-article-grid>
+            <table class="list-grid article-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="code">Codice</th>
+                        <th data-sort-key="description">Descrizione</th>
+                        <th data-sort-key="unitMeasure">Un. mis.</th>
+                        <th data-sort-key="category">Categoria</th>
+                        <th data-sort-key="group">Gruppo</th>
+                        <th data-sort-key="subgroup">Sottogruppo</th>
+                        <th data-sort-key="standardCost" data-sort-type="number">Costo std</th>
+                        <th data-sort-key="vatRate" data-sort-type="number">Iva</th>
+                        <th data-sort-key="supplier">Fornitore</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var article in Model.Articles)
+                    {
+                        <tr tabindex="0"
+                            data-article-row
+                            data-filter-text="@($"{article.Code} {article.Description}")"
+                            data-category-code="@article.CategoryCode"
+                            data-group-code="@article.GroupCode"
+                            data-subgroup-code="@article.SubgroupCode"
+                            data-supplier-code="@article.SupplierCode"
+                            data-sort-code="@article.Code"
+                            data-sort-description="@article.Description"
+                            data-sort-unit-measure="@article.UnitMeasureCode"
+                            data-sort-category="@article.CategoryDescription"
+                            data-sort-group="@article.GroupDescription"
+                            data-sort-subgroup="@article.SubgroupDescription"
+                            data-sort-standard-cost="@article.StandardCost.ToString(CultureInfo.InvariantCulture)"
+                            data-sort-vat-rate="@article.VatRate.ToString(CultureInfo.InvariantCulture)"
+                            data-sort-supplier="@article.SupplierName"
+                            data-edit-url="@Url.Page("./Edit", new { code = article.Code })"
+                            data-delete-code="@article.Code"
+                            data-print-code="@article.Code"
+                            data-record-label="@article.Description">
+                            <td class="code-cell">@article.Code</td>
+                            <td>@article.Description</td>
+                            <td>@article.UnitMeasureCode</td>
+                            <td>@article.CategoryDescription</td>
+                            <td>@article.GroupDescription</td>
+                            <td>@article.SubgroupDescription</td>
+                            <td>@Money(article.StandardCost)</td>
+                            <td>@Percent(article.VatRate)</td>
+                            <td>@article.SupplierName</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="list-empty" data-article-empty hidden>
+                Nessun articolo trovato.
+            </div>
+        </div>
+    </section>
+
+    <form method="post" asp-page-handler="Delete" data-article-delete-form hidden>
+        <input type="hidden" name="code" data-article-delete-code />
+    </form>
+
+    <div class="report-preview-backdrop" data-article-print-preview hidden>
+        <section class="report-preview-window" role="dialog" aria-modal="true" aria-labelledby="articlePrintPreviewTitle">
+            <header class="report-preview-toolbar">
+                <div>
+                    <strong id="articlePrintPreviewTitle">Anteprima lista articoli</strong>
+                    <span data-article-print-summary></span>
+                </div>
+                <div class="report-preview-actions">
+                    <button type="button" data-article-preview-zoom-out aria-label="Riduci anteprima">−</button>
+                    <span data-article-preview-zoom-label>100%</span>
+                    <button type="button" data-article-preview-zoom-in aria-label="Ingrandisci anteprima">+</button>
+                    <button type="button" data-article-preview-print>Stampa</button>
+                    <button type="button" data-article-preview-pdf>File PDF</button>
+                    <button type="button" class="report-preview-close" data-article-preview-close>Chiudi</button>
+                </div>
+            </header>
+            <div class="report-preview-viewport">
+                <div class="report-preview-document" data-article-preview-document></div>
+            </div>
+        </section>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/articles-list.js" asp-append-version="true"></script>
+}

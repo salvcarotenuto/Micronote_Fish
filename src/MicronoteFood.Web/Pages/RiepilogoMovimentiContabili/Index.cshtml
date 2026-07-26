@@ -1,0 +1,118 @@
+@page
+@model MicronoteFood.Web.Pages.RiepilogoMovimentiContabili.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Riepilogo movimenti contabili";
+    ViewData["BodyClass"] = "accounting-movement-summary-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Total(decimal value) => value.ToString("N2", it);
+    string Percent(decimal value) => value == 0 ? "" : value.ToString("N1", it) + " %";
+}
+
+<section class="module-page stock-movements-page accounting-movement-summary-page supplier-form-page data-form-skin">
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>Riepilogo movimenti contabili</h1>
+                <p>Riepilogo dei movimenti di acquisto e di vendita, di incasso e pagamento</p>
+            </div>
+        </div>
+        <div class="top-actions accounting-movement-summary-actions">
+            <span class="list-records-box"><strong>@Model.Report.RecordCount</strong><span>record</span></span>
+            <button class="button button-primary primary" type="submit" form="accounting-movement-summary-filters">Elabora</button>
+        </div>
+    </header>
+
+    <form id="accounting-movement-summary-filters" class="stock-movements-filters store-summary-filters" method="get"
+          data-progress-message="Elaborazione riepilogo contabile in corso..." data-progress-minimum-time="500">
+        <input type="hidden" name="run" value="true" />
+        <fieldset class="form-frame">
+            <div class="store-summary-filter-row">
+                <div class="field">
+                    <label>Esercizio</label>
+                    <select name="year">
+                        @foreach (var year in Model.Report.Years)
+                        {
+                            <option value="@year" selected="@(Model.Report.Year == year)">@year</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <div class="accounting-movement-summary-layout">
+        <section class="stock-movements-panel accounting-summary-panel accounting-summary-purchases">
+            <h2>Acquisti del periodo</h2>
+            <div class="list-grid-frame accounting-summary-grid-frame">
+                <table class="list-grid accounting-summary-grid accounting-summary-vat-grid">
+                    <thead><tr><th>Punto v.</th><th>Nome</th><th>Imponibile</th><th>IVA</th><th>Totale</th><th>Quota</th></tr></thead>
+                    <tbody>
+                    @foreach (var row in Model.Report.Purchases)
+                    {
+                        <tr class="@(row.IsTotal ? "accounting-summary-total-row" : null)"><td>@(row.Code?.ToString("000") ?? "")</td><td>@row.Description</td><td>@Money(row.Taxable)</td><td>@Money(row.Vat)</td><td>@Money(row.Total)</td><td>@Percent(row.Share)</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="stock-movements-panel accounting-summary-panel accounting-summary-revenues">
+            <h2>Ricavi del periodo</h2>
+            <div class="list-grid-frame accounting-summary-grid-frame">
+                <table class="list-grid accounting-summary-grid accounting-summary-vat-grid">
+                    <thead><tr><th>Punto v.</th><th>Nome</th><th>Imponibile</th><th>IVA</th><th>Totale</th><th>Quota</th></tr></thead>
+                    <tbody>
+                    @foreach (var row in Model.Report.Revenues)
+                    {
+                        <tr class="@(row.IsTotal ? "accounting-summary-total-row" : null)"><td>@(row.Code?.ToString("000") ?? "")</td><td>@row.Description</td><td>@Money(row.Taxable)</td><td>@Money(row.Vat)</td><td>@Money(row.Total)</td><td>@Percent(row.Share)</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <aside class="accounting-summary-totals-panel">
+            <h2>Riepilogo movimenti del periodo</h2>
+            <div><span>Totale acquisti</span><strong>@Total(Model.Report.TotalPurchases)</strong></div>
+            <div><span>Totale costi</span><strong>@Total(Model.Report.TotalCosts)</strong></div>
+            <div><span>Totale vendite</span><strong>@Total(Model.Report.TotalRevenues)</strong></div>
+            <div><span>Totale incassi</span><strong>@Total(Model.Report.TotalCollections)</strong></div>
+            <div><span>Totale pagamenti</span><strong>@Money(Model.Report.TotalPayments)</strong></div>
+        </aside>
+
+        <section class="stock-movements-panel accounting-summary-panel accounting-summary-costs">
+            <h2>Costi del periodo</h2>
+            <div class="list-grid-frame accounting-summary-grid-frame">
+                <table class="list-grid accounting-summary-grid accounting-summary-amount-grid">
+                    <thead><tr><th>Conto</th><th>Descrizione</th><th>Importo</th><th>Quota</th></tr></thead>
+                    <tbody>
+                    @foreach (var row in Model.Report.Costs)
+                    {
+                        <tr class="@(row.IsTotal ? "accounting-summary-total-row" : null)"><td>@(row.Code?.ToString("000") ?? "")</td><td>@row.Description</td><td>@Money(row.Amount)</td><td>@Percent(row.Share)</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="stock-movements-panel accounting-summary-panel accounting-summary-collections">
+            <h2>Incassi del periodo</h2>
+            <div class="list-grid-frame accounting-summary-grid-frame">
+                <table class="list-grid accounting-summary-grid accounting-summary-amount-grid">
+                    <thead><tr><th>Conto</th><th>Descrizione</th><th>Importo</th><th>Quota</th></tr></thead>
+                    <tbody>
+                    @foreach (var row in Model.Report.Collections)
+                    {
+                        <tr class="@(row.IsTotal ? "accounting-summary-total-row" : null)"><td>@(row.Code?.ToString("000") ?? "")</td><td>@row.Description</td><td>@Money(row.Amount)</td><td>@Percent(row.Share)</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</section>

@@ -1,0 +1,60 @@
+@model string
+
+<div class="purchase-invoice-fe-overlay" data-electronic-invoice-dialog hidden>
+    <section class="purchase-invoice-fe-dialog" role="dialog" aria-modal="true" aria-labelledby="electronicInvoiceFeTitle" data-electronic-invoice-path data-electronic-invoice-path-value="@Model" data-mode="server">
+        <div class="purchase-invoice-fe-titlebar">
+            <span>Micronote</span>
+        </div>
+        <div class="purchase-invoice-fe-heading">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <h2 id="electronicInvoiceFeTitle">Lista fatture elettroniche</h2>
+        </div>
+        <div class="purchase-invoice-fe-path-row purchase-invoice-fe-search-row">
+            <label>Cerca</label>
+            <input type="text" autocomplete="off" data-electronic-invoice-search />
+            <button type="button" class="purchase-invoice-fe-clear" data-electronic-invoice-search-clear>X</button>
+            <input class="purchase-invoice-fe-count" value="0 file" readonly tabindex="-1" data-electronic-invoice-count />
+        </div>
+        <div class="purchase-invoice-fe-grid-frame">
+            <table class="purchase-invoice-fe-grid">
+                <thead>
+                    <tr>
+                        <th>Nome file</th>
+                        <th>Tipo</th>
+                        <th>Ultima modifica</th>
+                        <th>Dimensione</th>
+                    </tr>
+                </thead>
+                <tbody data-electronic-invoice-files>
+                </tbody>
+            </table>
+        </div>
+        <div class="purchase-invoice-fe-preview" data-electronic-invoice-preview-box hidden></div>
+        <div class="purchase-invoice-fe-actions">
+            <button class="button button-primary primary" type="button" data-electronic-invoice-accept>Apri</button>
+            <button class="button button-primary primary" type="button" data-electronic-invoice-preview>Visualizza</button>
+            <button class="button button-primary primary" type="button" data-electronic-invoice-delete>Elimina</button>
+            <button class="button button-secondary secondary" type="button" data-electronic-invoice-close>Annulla</button>
+        </div>
+    </section>
+</div>
+
+<div class="purchase-invoice-xml-overlay" data-electronic-invoice-viewer hidden>
+    <section class="purchase-invoice-xml-dialog" role="dialog" aria-modal="true" aria-labelledby="electronicInvoiceXmlTitle" tabindex="-1" data-electronic-invoice-viewer-panel>
+        <div class="purchase-invoice-fe-titlebar">
+            <span>Micronote</span>
+        </div>
+        <div class="purchase-invoice-fe-heading">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <h2 id="electronicInvoiceXmlTitle" data-electronic-invoice-viewer-title>Fattura elettronica</h2>
+        </div>
+        <iframe class="purchase-invoice-xml-frame"
+                title="Visualizzazione fattura elettronica"
+                data-electronic-invoice-viewer-frame></iframe>
+        <div class="purchase-invoice-xml-actions">
+            <button class="button button-secondary secondary" type="button" data-electronic-invoice-viewer-close>Chiudi</button>
+        </div>
+    </section>
+</div>
+
+

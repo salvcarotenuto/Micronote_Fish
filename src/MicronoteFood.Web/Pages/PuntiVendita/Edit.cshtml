@@ -1,0 +1,142 @@
+@page "{code:int?}"
+@model MicronoteFood.Web.Pages.PuntiVendita.EditModel
+@{
+    ViewData["Title"] = Model.IsNew ? "Nuovo punto vendita" : "Scheda punto vendita";
+}
+
+<section class="module-page form-module-page supplier-form-page data-form-skin store-form-page">
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="./Index" aria-label="Esci dalla scheda">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>@(Model.IsNew ? "Nuovo punto vendita" : "Scheda punto vendita")</h1>
+                <p>
+                    @(Model.IsNew
+                        ? "Registrazione di un nuovo punto vendita."
+                        : $"Codice {Model.Store.Code:000}")
+                </p>
+            </div>
+        </div>
+        <div class="top-actions">
+            <button class="button button-primary primary" type="submit" form="store-form">
+                Salva
+            </button>
+            <a class="button button-secondary secondary" asp-page="./Index">Annulla</a>
+        </div>
+    </header>
+
+    <form id="store-form"
+          method="post"
+          class="entity-form"
+          data-enter-navigation>
+        <input asp-for="Store.Code" type="hidden" />
+        <input asp-for="Azione" type="hidden" />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <fieldset class="form-frame compact-frame">
+            <legend>Anagrafica</legend>
+            <div class="form-grid form-grid-4 form-frame-grid">
+                <div class="store-name-row">
+                    <div class="field field-code">
+                        <label>Codice</label>
+                        <input type="text"
+                               class="readonly-field code-display"
+                               readonly
+                               tabindex="-1"
+                               value="@(Model.IsNew ? Model.DisplayCode.ToString("000") : Model.Store.Code.ToString("000"))" />
+                    </div>
+                    <div class="field store-name-field">
+                        <label asp-for="Store.Name"></label>
+                        <input asp-for="Store.Name" autofocus />
+                        <span asp-validation-for="Store.Name"></span>
+                    </div>
+                    <div class="field field-active field-store-active field-check">
+                        <div class="check-button-field">
+                            <input asp-for="Store.IsActive" />
+                            <label class="check-text" asp-for="Store.IsActive">
+                                Punto attivo
+                            </label>
+                            <label class="check-button-wrap"
+                                   for="Store_IsActive"
+                                   aria-label="Punto attivo"></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="field field-span-2 store-description-field">
+                    <label asp-for="Store.Description"></label>
+                    <input asp-for="Store.Description" />
+                </div>
+                <div class="field field-span-2">
+                    <label asp-for="Store.SectorCode"></label>
+                    <select asp-for="Store.SectorCode" asp-items="Model.Sectors">
+                        <option value=""></option>
+                    </select>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="form-frame compact-frame">
+            <legend>Sede</legend>
+            <div class="form-grid form-grid-4 form-frame-grid">
+                <div class="store-location-row">
+                    <div class="field store-city-field">
+                        <label asp-for="Store.City"></label>
+                        <input asp-for="Store.City"
+                               list="ComuniList"
+                               autocomplete="off"
+                               data-comune-city />
+                    </div>
+                    <div class="field store-province-field">
+                        <label asp-for="Store.Province"></label>
+                        <input asp-for="Store.Province"
+                               class="text-uppercase"
+                               maxlength="2"
+                               data-comune-province />
+                    </div>
+                    <div class="field store-postal-field">
+                        <label asp-for="Store.PostalCode"></label>
+                        <input asp-for="Store.PostalCode"
+                               inputmode="numeric"
+                               data-comune-postal-code />
+                    </div>
+                </div>
+                <div class="field field-span-2 store-address-field">
+                    <label asp-for="Store.Address"></label>
+                    <input asp-for="Store.Address" />
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="form-frame compact-frame">
+            <legend>Contatti</legend>
+            <div class="form-grid form-grid-4 form-frame-grid">
+                <div class="field field-span-2">
+                    <label asp-for="Store.Contact"></label>
+                    <input asp-for="Store.Contact" />
+                </div>
+                <div class="field field-span-2">
+                    <label asp-for="Store.Phone"></label>
+                    <input asp-for="Store.Phone" inputmode="tel" />
+                </div>
+                <div class="field field-span-2">
+                    <label asp-for="Store.Mobile"></label>
+                    <input asp-for="Store.Mobile" inputmode="tel" />
+                </div>
+                <div class="field field-span-2">
+                    <label asp-for="Store.Email"></label>
+                    <input asp-for="Store.Email" type="email" />
+                    <span asp-validation-for="Store.Email"></span>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+    <datalist id="ComuniList"></datalist>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/comuni-assist.js" asp-append-version="true"></script>
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+}

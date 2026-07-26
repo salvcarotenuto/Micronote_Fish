@@ -1,0 +1,110 @@
+@page
+@model MicronoteFood.Web.Pages.CodiciPagamento.IndexModel
+@{
+    ViewData["Title"] = "Codici di pagamento";
+    ViewData["BodyClass"] = "list-module";
+}
+
+<section class="list-page payment-code-list-page" data-list-page data-menu-url="/">
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Codici di pagamento</strong>
+                <small>Micronote Food - Tabelle contabili</small>
+            </span>
+        </a>
+        <div class="list-title-actions">
+            <a class="list-title-button" asp-page="./Edit">Aggiungi</a>
+            <button class="list-title-button" type="button" data-payment-code-action="edit">
+                Modifica
+            </button>
+            <button class="list-title-button" type="button" data-payment-code-action="delete">
+                Elimina
+            </button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <span hidden data-page-message data-message-variant="error"
+              data-message-text="@Model.ErrorMessage"></span>
+    }
+
+    <section class="list-panel">
+        <div class="list-toolbar payment-code-toolbar">
+            <div class="list-filter-field list-search-field">
+                <label for="payment-code-search">Cerca</label>
+                <div class="list-search-control">
+                    <input id="payment-code-search"
+                           type="text"
+                           placeholder="Descrizione pagamento"
+                           autocomplete="off"
+                           autofocus
+                           data-payment-code-search />
+                    <button class="list-search-clear"
+                            type="button"
+                            aria-label="Pulisci filtro"
+                            data-payment-code-search-clear
+                            hidden>
+                        ×
+                    </button>
+                </div>
+            </div>
+            <span class="list-records-box">
+                <strong data-payment-code-count>@Model.Payments.Count</strong>
+                <span>record</span>
+            </span>
+        </div>
+
+        <div class="list-grid-frame payment-code-grid-frame" data-payment-code-grid>
+            <table class="list-grid payment-code-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="code" data-sort-type="number">Codice</th>
+                        <th data-sort-key="description">Descrizione</th>
+                        <th data-sort-key="abbreviation">Sigla</th>
+                        <th data-sort-key="paymentType">Tipo</th>
+                        <th data-sort-key="dueDates" data-sort-type="number">N.ro scad.</th>
+                        <th data-sort-key="startFrom">Decorrenza</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var payment in Model.Payments)
+                    {
+                        <tr tabindex="0"
+                            data-payment-code-row
+                            data-filter-description="@payment.Description"
+                            data-sort-code="@payment.Code"
+                            data-sort-description="@payment.Description"
+                            data-sort-abbreviation="@payment.Abbreviation"
+                            data-sort-payment-type="@payment.PaymentType"
+                            data-sort-due-dates="@payment.DueDates"
+                            data-sort-start-from="@payment.StartFrom"
+                            data-edit-url="@Url.Page("./Edit", new { code = payment.Code })"
+                            data-delete-code="@payment.Code"
+                            data-record-label="@payment.Description">
+                            <td class="code-cell">@payment.Code.ToString("000")</td>
+                            <td>@payment.Description</td>
+                            <td>@payment.Abbreviation</td>
+                            <td>@payment.PaymentType</td>
+                            <td>@payment.DueDates</td>
+                            <td>@payment.StartFrom</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="list-empty" data-payment-code-empty hidden>
+                Nessun codice pagamento trovato.
+            </div>
+        </div>
+    </section>
+
+    <form method="post" asp-page-handler="Delete" data-payment-code-delete-form hidden>
+        <input type="hidden" name="code" data-payment-code-delete-code />
+    </form>
+</section>
+
+@section Scripts {
+    <script src="~/js/payment-codes-list.js" asp-append-version="true"></script>
+}

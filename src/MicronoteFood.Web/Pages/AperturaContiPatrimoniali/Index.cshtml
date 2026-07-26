@@ -1,0 +1,155 @@
+@page
+@model MicronoteFood.Web.Pages.AperturaContiPatrimoniali.IndexModel
+@using System.Globalization
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Apertura conti patrimoniali";
+    ViewData["BodyClass"] = "opening-balance-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Total(decimal value) => value.ToString("N2", it);
+}
+
+<section class="list-page article-list-page opening-balance-page" data-opening-balance>
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Apertura conti patrimoniali</strong>
+                <small>Calcolo e registrazione scritture di apertura esercizio</small>
+            </span>
+        </a>
+        <div class="list-title-actions opening-balance-actions">
+            <span class="list-records-box article-records-box opening-balance-records">
+                <strong>@Model.List.Rows.Count</strong>
+                <span>record</span>
+            </span>
+            <button class="list-title-button" type="submit" form="opening-balance-form">Salva</button>
+            <a class="list-title-button" asp-page="/Index" data-opening-balance-exit>Esci</a>
+        </div>
+    </header>
+
+    <form id="opening-balance-form"
+          method="post"
+          data-progress-disabled="true"
+          data-opening-balance-form
+          data-enter-navigation>
+        <input asp-for="Payload" type="hidden" data-opening-balance-payload />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <div class="opening-balance-box">
+            <fieldset class="form-frame opening-balance-filter-frame">
+                <div class="opening-balance-filter-grid">
+                    <div class="field opening-balance-year-field">
+                        <label>Esercizio di apertura</label>
+                        <select name="year" data-opening-balance-year>
+                            @foreach (var year in Model.List.Years)
+                            {
+                                <option value="@year" selected="@(year == Model.List.Year)">@year</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="field opening-balance-date-field">
+                        <label>Data movimento</label>
+                        <span class="micronote-date-control" data-opening-date-control>
+                            <input asp-for="MovementDate"
+                                   class="micronote-date-input"
+                                   type="text"
+                                   inputmode="numeric"
+                                   maxlength="10"
+                                   autocomplete="off"
+                                   readonly
+                                   tabindex="-1"
+                                   data-opening-date-display />
+                        </span>
+                    </div>
+                    <div class="opening-balance-filter-actions">
+                        <button class="button button-primary primary opening-balance-calculate-button"
+                                type="submit"
+                                asp-page-handler="Calculate"
+                                data-opening-balance-calculate>Calcola saldi</button>
+                        <button class="button button-primary primary opening-balance-clear-button"
+                                type="button"
+                                data-opening-balance-clear>Azzera tutto</button>
+                    </div>
+                </div>
+            </fieldset>
+
+            <section class="opening-balance-panel">
+                <div class="list-grid-frame opening-balance-grid-frame">
+                    <table class="list-grid opening-balance-grid" data-opening-balance-table>
+                    <thead>
+                        <tr>
+                            <th data-sort-key="master" data-sort-type="number">Mastro</th>
+                            <th data-sort-key="masterDescription">Descrizione</th>
+                            <th data-sort-key="account" data-sort-type="number">Conto</th>
+                            <th data-sort-key="accountDescription">Descrizione</th>
+                            <th data-sort-key="debit" data-sort-type="number">Dare</th>
+                            <th data-sort-key="credit" data-sort-type="number">Avere</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.List.Rows)
+                        {
+                            <tr data-opening-balance-row
+                                data-account-code="@row.AccountCode"
+                                data-sort-master="@row.MasterCode"
+                                data-sort-master-description="@row.MasterDescription"
+                                data-sort-account="@row.AccountCode"
+                                data-sort-account-description="@row.AccountDescription"
+                                data-sort-debit="@row.Debit.ToString(CultureInfo.InvariantCulture)"
+                                data-sort-credit="@row.Credit.ToString(CultureInfo.InvariantCulture)">
+                                <td>@row.MasterCode.ToString("000")</td>
+                                <td>@row.MasterDescription</td>
+                                <td>@row.AccountCode.ToString("000")</td>
+                                <td>@row.AccountDescription</td>
+                                <td>
+                                    <input type="text"
+                                           inputmode="decimal"
+                                           autocomplete="off"
+                                           value="@Money(row.Debit)"
+                                           data-opening-balance-amount="debit" />
+                                </td>
+                                <td>
+                                    <input type="text"
+                                           inputmode="decimal"
+                                           autocomplete="off"
+                                           value="@Money(row.Credit)"
+                                           data-opening-balance-amount="credit" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    </table>
+                </div>
+                <div class="opening-balance-totals">
+                    <div class="stock-total-box opening-balance-total-box">
+                        <span class="stock-total-title">Totale Dare</span>
+                        <input type="text" value="@Total(Model.List.DebitTotal)" readonly tabindex="-1" data-opening-balance-total="debit" />
+                    </div>
+                    <div class="stock-total-box opening-balance-total-box">
+                        <span class="stock-total-title">Totale Avere</span>
+                        <input type="text" value="@Total(Model.List.CreditTotal)" readonly tabindex="-1" data-opening-balance-total="credit" />
+                    </div>
+                </div>
+            </section>
+        </div>
+    </form>
+</section>
+
+@if (!string.IsNullOrWhiteSpace(Model.SavedMessage))
+{
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            window.MicronoteMessageBox?.show({
+                title: "Apertura conti patrimoniali",
+                message: @Html.Raw(JsonSerializer.Serialize(Model.SavedMessage)),
+                variant: "success"
+            });
+        });
+    </script>
+}
+
+@section Scripts {
+    <script src="~/js/opening-balance.js" asp-append-version="true"></script>
+}

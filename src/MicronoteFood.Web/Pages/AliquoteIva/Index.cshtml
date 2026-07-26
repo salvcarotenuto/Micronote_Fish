@@ -1,0 +1,150 @@
+@page
+@model MicronoteFood.Web.Pages.AliquoteIva.IndexModel
+@{
+    ViewData["Title"] = "Aliquote IVA";
+    ViewData["BodyClass"] = "list-module";
+}
+
+<section class="list-page vat-rate-list-page small-table-page" data-list-page data-menu-url="/">
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Aliquote IVA</strong>
+                <small>Micronote Food - Tabelle contabili</small>
+            </span>
+        </a>
+        <div class="list-title-actions">
+            <button class="list-title-button" type="button" data-vat-rate-action="new">Aggiungi</button>
+            <button class="list-title-button" type="button" data-vat-rate-action="edit">Modifica</button>
+            <button class="list-title-button" type="button" data-vat-rate-action="delete">Elimina</button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <span hidden data-page-message data-message-variant="error"
+              data-message-text="@Model.ErrorMessage"></span>
+    }
+
+    <section class="list-panel">
+        <div class="list-grid-frame vat-rate-grid-frame small-table-grid-frame" data-vat-rate-grid>
+            <table class="list-grid vat-rate-grid small-table-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="code">Codice</th>
+                        <th data-sort-key="description">Descrizione</th>
+                        <th data-sort-key="rate" data-sort-type="number">Aliquota</th>
+                        <th data-sort-key="deduction" data-sort-type="number">Detrazione</th>
+                        <th data-sort-key="nature">F.E. cod. esenz.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var rate in Model.Rates)
+                    {
+                        <tr tabindex="0"
+                            data-vat-rate-row
+                            data-sort-code="@rate.Code"
+                            data-sort-description="@rate.Description"
+                            data-sort-rate="@rate.Rate"
+                            data-sort-deduction="@rate.Deduction"
+                            data-sort-nature="@rate.ElectronicInvoiceNature"
+                            data-code="@rate.Code"
+                            data-description="@rate.Description"
+                            data-rate="@IndexModel.PercentText(rate.Rate)"
+                            data-deduction="@IndexModel.PercentText(rate.Deduction)"
+                            data-nature="@rate.ElectronicInvoiceNature"
+                            data-selected="@(Model.Rate.Code == rate.Code ? "true" : "false")"
+                            data-delete-code="@rate.Code"
+                            data-record-label="@rate.Description">
+                            <td class="code-cell">@rate.Code</td>
+                            <td>@rate.Description</td>
+                            <td>@IndexModel.PercentText(rate.Rate)</td>
+                            <td>@IndexModel.PercentText(rate.Deduction)</td>
+                            <td>@rate.ElectronicInvoiceNature</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="list-empty" data-vat-rate-empty hidden>
+                Nessuna aliquota IVA trovata.
+            </div>
+        </div>
+    </section>
+
+    <form method="post"
+          asp-page-handler="Save"
+          class="entity-form small-table-editor supplier-form-page data-form-skin vat-rate-form-page"
+          data-vat-rate-editor
+          data-enter-navigation>
+        <input asp-for="Rate.IsNew" type="hidden" data-vat-rate-is-new />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <fieldset class="form-frame compact-frame" data-vat-rate-editor-fields disabled>
+            <legend>Scheda aliquota IVA</legend>
+            <div class="vat-rate-fields-row">
+                <div class="field vat-rate-code-field">
+                    <label asp-for="Rate.Code"></label>
+                    <input asp-for="Rate.Code" autocomplete="off" data-vat-rate-code />
+                    <span asp-validation-for="Rate.Code"></span>
+                </div>
+                <div class="field vat-rate-description-field">
+                    <label asp-for="Rate.Description"></label>
+                    <input asp-for="Rate.Description" autocomplete="off" data-vat-rate-description />
+                    <span asp-validation-for="Rate.Description"></span>
+                </div>
+                <div class="field vat-rate-percent-field vat-rate-rate-field">
+                    <label asp-for="Rate.Rate"></label>
+                    <input asp-for="Rate.Rate"
+                           value="@IndexModel.PercentText(Model.Rate.Rate)"
+                           inputmode="decimal"
+                           maxlength="6"
+                           autocomplete="off"
+                           data-percent-field
+                           data-percent-integer-digits="3"
+                           data-vat-rate-value />
+                </div>
+                <div class="field vat-rate-percent-field vat-rate-deduction-field">
+                    <label asp-for="Rate.Deduction"></label>
+                    <input asp-for="Rate.Deduction"
+                           value="@IndexModel.PercentText(Model.Rate.Deduction)"
+                           inputmode="decimal"
+                           maxlength="6"
+                           autocomplete="off"
+                           data-percent-field
+                           data-percent-integer-digits="3"
+                           data-vat-rate-deduction />
+                </div>
+                <div class="field vat-rate-nature-field">
+                    <label asp-for="Rate.ElectronicInvoiceNature"></label>
+                    <select asp-for="Rate.ElectronicInvoiceNature"
+                            data-vat-rate-nature>
+                        <option value=""></option>
+                        @foreach (var option in Model.NatureOptions)
+                        {
+                            <option value="@option.Code">@option.Code</option>
+                        }
+                    </select>
+                </div>
+                <div class="small-table-actions vat-rate-actions">
+                    <button class="button button-primary primary" type="submit" data-vat-rate-save disabled>
+                        Salva
+                    </button>
+                    <button class="button button-secondary secondary" type="button" data-vat-rate-cancel disabled>
+                        Annulla
+                    </button>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <form method="post" asp-page-handler="Delete" data-vat-rate-delete-form hidden>
+        <input type="hidden" name="code" data-vat-rate-delete-code />
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+    <script src="~/js/vat-rates-list.js" asp-append-version="true"></script>
+}

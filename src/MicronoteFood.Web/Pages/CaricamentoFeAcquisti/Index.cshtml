@@ -1,0 +1,83 @@
+@page
+@model MicronoteFood.Web.Pages.CaricamentoFeAcquisti.IndexModel
+@{
+    ViewData["Title"] = "Caricamento FE acquisti";
+    ViewData["BodyClass"] = "electronic-invoice-upload-module";
+}
+
+<section class="list-page electronic-invoice-upload-page" data-electronic-invoice-upload>
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-bak.png" alt="" />
+            <span>
+                <strong>Caricamento FE acquisti</strong>
+                <small>Caricamento XML e P7M nella cartella transitoria aziendale</small>
+            </span>
+        </a>
+        <div class="list-title-actions electronic-invoice-upload-actions">
+            <span class="list-records-box electronic-invoice-upload-records">
+                <strong data-fe-upload-count>0</strong>
+                <span>file</span>
+            </span>
+        </div>
+    </header>
+
+    <form class="entity-form electronic-invoice-upload-form" method="post" enctype="multipart/form-data" data-progress-disabled="true">
+        @Html.AntiForgeryToken()
+        <input type="file" accept=".xml,.p7m" webkitdirectory multiple hidden data-fe-upload-input />
+
+        <fieldset class="form-frame electronic-invoice-upload-frame">
+            <div class="list-toolbar electronic-invoice-upload-toolbar">
+                <div class="list-filter-field electronic-invoice-upload-path-field">
+                    <label>Cartella di destinazione</label>
+                    <input type="text" value="@Model.TransitFolder" readonly tabindex="-1" />
+                </div>
+                <button class="list-title-button" type="button" data-fe-upload-select>Seleziona cartella</button>
+                <button class="list-title-button" type="button" data-fe-upload-clear>Pulisci esito</button>
+                <a class="list-title-button" asp-page="/Index">Esci</a>
+            </div>
+
+
+            <div class="electronic-invoice-upload-progress" data-fe-upload-progress>
+                <div class="electronic-invoice-upload-progress-bar">
+                    <span data-fe-upload-progress-bar></span>
+                </div>
+                <div class="electronic-invoice-upload-progress-text" data-fe-upload-progress-text>In attesa di selezione</div>
+            </div>
+            <div class="electronic-invoice-upload-body">
+                <div class="list-grid-frame electronic-invoice-upload-grid-frame">
+                    <table class="list-grid electronic-invoice-upload-grid">
+                        <thead>
+                            <tr>
+                                <th>File</th>
+                                <th>Tipo</th>
+                                <th>Dimensione</th>
+                                <th>Esito</th>
+                                <th>Messaggio</th>
+                            </tr>
+                        </thead>
+                        <tbody data-fe-upload-rows>
+                            <tr class="empty-row"><td colspan="5">Nessun caricamento effettuato.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="electronic-invoice-upload-summary" aria-live="polite">
+                    <div><span>Selezionati</span><strong data-fe-upload-selected>0</strong></div>
+                    <div><span>Caricati</span><strong data-fe-upload-uploaded>0</strong></div>
+                    <div><span>Gia presenti</span><strong data-fe-upload-existing>0</strong></div>
+                    <div><span>Scartati</span><strong data-fe-upload-skipped>0</strong></div>
+                    <div><span>Errori</span><strong data-fe-upload-errors>0</strong></div>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+</section>
+
+@section Scripts {
+    <script src="~/js/electronic-invoice-upload.js" asp-append-version="true"></script>
+}
+
+
+
+

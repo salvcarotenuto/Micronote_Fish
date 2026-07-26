@@ -1,0 +1,229 @@
+@page
+@model MicronoteFood.Web.Pages.Vendite.StoricoModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Storico vendite";
+    ViewData["BodyClass"] = "sales-history-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string SortNumber(decimal value) => value.ToString(CultureInfo.InvariantCulture);
+    var months = it.DateTimeFormat.MonthNames
+        .Take(12)
+        .Select((name, index) => new { Number = index + 1, Name = it.TextInfo.ToTitleCase(name) })
+        .ToArray();
+}
+
+<section class="module-page sales-history-page supplier-form-page data-form-skin" data-sales-history>
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>Storico vendite</h1>
+                <p>Lista delle vendite ordinate per data.</p>
+            </div>
+        </div>
+        <div class="top-actions sales-history-actions">
+            <span class="list-records-box sales-history-records">
+                <strong>@Model.History.Sales.Count</strong>
+                <span>record</span>
+            </span>
+            <a class="button button-primary primary" asp-page="./Index">Nuovo</a>
+            <button class="button button-primary primary" type="button" data-sales-history-action="edit">
+                Modifica
+            </button>
+            <button class="button button-primary primary" type="button" data-sales-history-action="delete">
+                Cancella
+            </button>
+            <button class="button button-primary primary sales-history-article-button"
+                    type="button"
+                    data-sales-history-action="article">
+                Vedi articolo p.n.
+            </button>
+            <button class="button button-primary primary"
+                    type="button"
+                    data-sales-history-action="print">
+                Stampa lista
+            </button>
+        </div>
+    </header>
+
+    <form class="sales-history-filters" method="get" data-sales-history-filters data-progress-disabled="true">
+        <fieldset class="form-frame">
+            <div class="sales-history-filter-row">
+                <div class="field">
+                    <label>Anno</label>
+                    <select name="year">
+                        @foreach (var year in Model.History.Years)
+                        {
+                            <option value="@year" selected="@(Model.History.Year == year)">@year</option>
+                        }
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Mese</label>
+                    <select name="month">
+                        <option value="0" selected="@(Model.History.Month == 0)"></option>
+                        @foreach (var month in months)
+                        {
+                            <option value="@month.Number" selected="@(Model.History.Month == month.Number)">@month.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <form method="post" asp-page-handler="Delete" data-sales-history-delete-form>
+        <input type="hidden" name="saleId" data-sales-history-delete-id />
+        <input type="hidden" name="year" value="@Model.History.Year" />
+        <input type="hidden" name="month" value="@Model.History.Month" />
+    </form>
+
+    <div class="sales-history-layout">
+        <div class="sales-history-main">
+            <section class="sales-history-panel">
+                <h2>Lista vendite</h2>
+                <div class="list-grid-frame sales-history-grid-frame">
+                    <table class="list-grid sales-history-grid">
+                        <thead>
+                            <tr>
+                                <th data-sort-key="year" data-sort-type="number">Anno</th>
+                                <th data-sort-key="code" data-sort-type="number">Partita</th>
+                                <th data-sort-key="date" data-sort-type="number">Data</th>
+                                <th data-sort-key="net" data-sort-type="number">Imponibile</th>
+                                <th data-sort-key="nonTaxable" data-sort-type="number">Non impon.</th>
+                                <th data-sort-key="vat" data-sort-type="number">Iva</th>
+                                <th data-sort-key="total" data-sort-type="number">Totale</th>
+                                <th data-sort-key="cash" data-sort-type="number">Contanti</th>
+                                <th data-sort-key="card" data-sort-type="number">Carta</th>
+                                <th data-sort-key="tickets" data-sort-type="number">Tickets</th>
+                                <th data-sort-key="checks" data-sort-type="number">Assegni</th>
+                                <th data-sort-key="other" data-sort-type="number">C. transitoria</th>
+                                <th data-sort-key="suspended" data-sort-type="number">Sospesi</th>
+                                <th data-sort-key="losses" data-sort-type="number">Ammanchi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var sale in Model.History.Sales)
+                            {
+                                <tr tabindex="0"
+                                    data-sales-history-row
+                                    data-sale-id="@sale.Id"
+                                    data-accounting-movement-id="@(sale.AccountingMovementId?.ToString() ?? "")"
+                                    data-sale-year="@sale.Year"
+                                    data-sale-code="@sale.Code"
+                                    data-sort-year="@sale.Year"
+                                    data-sort-code="@sale.Code"
+                                    data-sort-date="@sale.MovementDate.ToString("yyyyMMdd", CultureInfo.InvariantCulture)"
+                                    data-sort-net="@SortNumber(sale.Net)"
+                                    data-sort-non-taxable="@SortNumber(sale.NonTaxable)"
+                                    data-sort-vat="@SortNumber(sale.Vat)"
+                                    data-sort-total="@SortNumber(sale.Total)"
+                                    data-sort-cash="@SortNumber(sale.Cash)"
+                                    data-sort-card="@SortNumber(sale.Card)"
+                                    data-sort-tickets="@SortNumber(sale.Tickets)"
+                                    data-sort-checks="@SortNumber(sale.Checks)"
+                                    data-sort-other="@SortNumber(sale.Other)"
+                                    data-sort-suspended="@SortNumber(sale.Suspended)"
+                                    data-sort-losses="@SortNumber(sale.Losses)">
+                                    <td>@sale.Year</td>
+                                    <td>@sale.Code.ToString("000000")</td>
+                                    <td>@sale.MovementDate.ToString("dd MMMM yyyy", it)</td>
+                                    <td>@Money(sale.Net)</td>
+                                    <td>@Money(sale.NonTaxable)</td>
+                                    <td>@Money(sale.Vat)</td>
+                                    <td>@Money(sale.Total)</td>
+                                    <td>@Money(sale.Cash)</td>
+                                    <td>@Money(sale.Card)</td>
+                                    <td>@Money(sale.Tickets)</td>
+                                    <td>@Money(sale.Checks)</td>
+                                    <td>@Money(sale.Other)</td>
+                                    <td>@Money(sale.Suspended)</td>
+                                    <td>@Money(sale.Losses)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    @if (Model.History.Sales.Count == 0)
+                    {
+                        <div class="sales-history-empty">Nessuna vendita trovata.</div>
+                    }
+                </div>
+            </section>
+
+            <section class="sales-history-panel sales-history-detail-panel">
+                <h2>Dettaglio vendite</h2>
+                <div class="list-grid-frame sales-history-detail-frame">
+                    <table class="list-grid sales-history-grid sales-history-detail-grid">
+                        <thead>
+                            <tr>
+                                <th>Punto v.</th>
+                                <th>Nome</th>
+                                <th>Imponibile</th>
+                                <th>Non impon.</th>
+                                <th>Iva</th>
+                                <th>Totale</th>
+                                <th>Contanti</th>
+                                <th>Carta</th>
+                                <th>Tickets</th>
+                                <th>Assegni</th>
+                                <th>C.transitoria</th>
+                                <th>Sospesi</th>
+                                <th>Ammanchi</th>
+                            </tr>
+                        </thead>
+                        <tbody data-sales-history-detail-body></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <aside class="sales-history-totals">
+            <h2>Totali del periodo</h2>
+            <div><span>Imponibile</span><strong>@Money(Model.History.Totals.Net)</strong></div>
+            <div><span>Non imponibile</span><strong>@Money(Model.History.Totals.NonTaxable)</strong></div>
+            <div><span>I.v.a.</span><strong>@Money(Model.History.Totals.Vat)</strong></div>
+            <div><span>Totale vendite</span><strong>@Money(Model.History.Totals.Total)</strong></div>
+            <div><span>Contanti</span><strong>@Money(Model.History.Totals.Cash)</strong></div>
+            <div><span>Carta</span><strong>@Money(Model.History.Totals.Card)</strong></div>
+            <div><span>Tickets</span><strong>@Money(Model.History.Totals.Tickets)</strong></div>
+            <div><span>Assegni</span><strong>@Money(Model.History.Totals.Checks)</strong></div>
+            <div><span>Cassa trans.</span><strong>@Money(Model.History.Totals.Other)</strong></div>
+            <div><span>Sospesi</span><strong>@Money(Model.History.Totals.Suspended)</strong></div>
+            <div><span>Ammanchi</span><strong>@Money(Model.History.Totals.Losses)</strong></div>
+        </aside>
+    </div>
+
+    <div class="report-preview-backdrop" data-sales-history-print-preview hidden>
+        <section class="report-preview-window" role="dialog" aria-modal="true" aria-labelledby="salesHistoryPrintPreviewTitle">
+            <header class="report-preview-toolbar">
+                <div>
+                    <strong id="salesHistoryPrintPreviewTitle">Anteprima storico vendite</strong>
+                    <span data-sales-history-print-summary></span>
+                </div>
+                <div class="report-preview-actions">
+                    <button type="button" data-sales-history-preview-zoom-out aria-label="Riduci anteprima">−</button>
+                    <span data-sales-history-preview-zoom-label>100%</span>
+                    <button type="button" data-sales-history-preview-zoom-in aria-label="Ingrandisci anteprima">+</button>
+                    <button type="button" data-sales-history-preview-print>Stampa</button>
+                    <button type="button" class="report-preview-close" data-sales-history-preview-close>Chiudi</button>
+                </div>
+            </header>
+            <div class="report-preview-viewport">
+                <div class="report-preview-document" data-sales-history-preview-document></div>
+            </div>
+        </section>
+    </div>
+</section>
+
+<div class="purchase-invoice-payment-modal-overlay" data-sales-history-article-modal hidden>
+    <section class="purchase-invoice-payment-modal accounting-article-modal" role="dialog" aria-modal="true" aria-label="Articolo di contabilita">
+        <iframe title="Articolo di contabilita" data-sales-history-article-modal-frame></iframe>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="~/js/sales-history.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,99 @@
+@page
+@model MicronoteFood.Web.Pages.GiacenzaInizialeArticoli.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Giacenza iniziale articoli";
+    ViewData["BodyClass"] = "initial-article-stock-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Quantity(decimal value) => value == 0 ? "" : value.ToString("N3", it);
+    string SortNumber(decimal value) => value.ToString(CultureInfo.InvariantCulture);
+}
+
+<section class="list-page article-list-page initial-article-stock-page" data-initial-article-stock>
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Giacenza iniziale articoli</strong>
+                <small>Registrazione / modifica giacenza iniziale articoli in magazzino</small>
+            </span>
+        </a>
+        <div class="list-title-actions initial-article-stock-actions">
+            <span class="list-records-box article-records-box initial-article-stock-records">
+                <strong>@Model.Rows.Count</strong>
+                <span>record</span>
+            </span>
+            <button class="list-title-button" type="submit" form="initial-article-stock-form">Salva</button>
+            <a class="list-title-button" asp-page="/Index" data-initial-stock-exit>Esci</a>
+        </div>
+    </header>
+
+    <form id="initial-article-stock-form"
+          method="post"
+          data-progress-disabled="true"
+          data-initial-stock-form
+          data-enter-navigation>
+        <input asp-for="Payload" type="hidden" data-initial-stock-payload />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <fieldset class="form-frame initial-article-stock-frame">
+            <div class="list-grid-frame initial-article-stock-grid-frame">
+                <table class="list-grid initial-article-stock-grid">
+                    <thead>
+                        <tr>
+                            <th data-sort-key="code">Codice</th>
+                            <th data-sort-key="description">Descrizione</th>
+                            <th data-sort-key="unitMeasure">U.m.</th>
+                            <th data-sort-key="category">Categoria</th>
+                            <th data-sort-key="group">Gruppo</th>
+                            <th data-sort-key="quantity" data-sort-type="number">Quantità</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.Rows)
+                        {
+                            <tr data-initial-stock-row
+                                data-code="@row.Code"
+                                data-sort-code="@row.Code"
+                                data-sort-description="@row.Description"
+                                data-sort-unit-measure="@row.UnitMeasure"
+                                data-sort-category="@row.Category"
+                                data-sort-group="@row.Group"
+                                data-sort-quantity="@SortNumber(row.Quantity)">
+                                <td>@row.Code</td>
+                                <td>@row.Description</td>
+                                <td>@row.UnitMeasure</td>
+                                <td>@row.Category</td>
+                                <td>@row.Group</td>
+                                <td>
+                                    <input type="text"
+                                           inputmode="decimal"
+                                           autocomplete="off"
+                                           value="@Quantity(row.Quantity)"
+                                           data-initial-stock-quantity />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </fieldset>
+    </form>
+</section>
+
+@if (!string.IsNullOrWhiteSpace(Model.SavedMessage))
+{
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            window.MicronoteMessageBox?.show({
+                title: "Giacenza iniziale articoli",
+                message: "@Model.SavedMessage",
+                variant: "success"
+            });
+        });
+    </script>
+}
+
+@section Scripts {
+    <script src="~/js/initial-article-stock.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,390 @@
+@page
+@model MicronoteFood.Web.Pages.MovimentiMagazzino.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Movimenti di magazzino";
+    ViewData["BodyClass"] = "stock-movements-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Quantity(decimal value) => value == 0 ? "" : value.ToString("N3", it);
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Percent(decimal value) => value == 0 ? "" : value.ToString("N2", it) + " %";
+    string SortNumber(decimal value) => value.ToString(CultureInfo.InvariantCulture);
+}
+
+<section class="module-page stock-movements-page supplier-form-page data-form-skin" data-stock-movements>
+    <header class="module-header stock-movements-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>Movimenti di magazzino</h1>
+                <p>Lista movimenti di magazzino (carico e scarico)</p>
+            </div>
+        </div>
+        <div class="top-actions stock-toolbar-actions">
+            <span class="list-records-box stock-movements-records">
+                <strong>@Model.List.Movements.Count</strong>
+                <span>record</span>
+            </span>
+            <button class="button button-primary primary" type="button" data-stock-action="article">Vedi articolo</button>
+            <button class="button button-primary primary" type="button" data-stock-action="movement">Vedi movimento</button>
+            <button class="button button-primary primary" type="button" data-stock-action="print">Stampa</button>
+            <button class="button button-primary primary" type="button" data-stock-action="exit">Esci</button>
+        </div>
+    </header>
+
+    <form class="stock-movements-filters" method="get" data-stock-filters data-progress-disabled="true">
+        <fieldset class="form-frame">
+            <div class="stock-filter-grid">
+                <div class="stock-filter-left">
+                    <div class="field">
+                        <label>Dalla data</label>
+                        <span class="micronote-date-control" data-date-control>
+                            <input type="hidden"
+                                   name="dateFrom"
+                                   value="@Model.List.DateFrom.ToString("yyyy-MM-dd")"
+                                   data-stock-date-hidden />
+                            <input class="micronote-date-input"
+                                   type="text"
+                                   inputmode="numeric"
+                                   maxlength="10"
+                                   autocomplete="off"
+                                   value="@Model.List.DateFrom.ToString("dd/MM/yyyy", it)"
+                                   data-stock-date-display />
+                            <button class="micronote-date-button"
+                                    type="button"
+                                    tabindex="-1"
+                                    aria-label="Seleziona data iniziale"
+                                    data-date-picker-button></button>
+                        </span>
+                    </div>
+                    <div class="field">
+                        <label>Alla data</label>
+                        <span class="micronote-date-control" data-date-control>
+                            <input type="hidden"
+                                   name="dateTo"
+                                   value="@Model.List.DateTo.ToString("yyyy-MM-dd")"
+                                   data-stock-date-hidden />
+                            <input class="micronote-date-input"
+                                   type="text"
+                                   inputmode="numeric"
+                                   maxlength="10"
+                                   autocomplete="off"
+                                   value="@Model.List.DateTo.ToString("dd/MM/yyyy", it)"
+                                   data-stock-date-display />
+                            <button class="micronote-date-button"
+                                    type="button"
+                                    tabindex="-1"
+                                    aria-label="Seleziona data finale"
+                                    data-date-picker-button></button>
+                        </span>
+                    </div>
+                    <div class="stock-type-row">
+                        <div class="field-check stock-toggle">
+                            <label class="check-button-field stock-movement-checkbox" aria-label="Carico">
+                                <span class="check-text">Carico</span>
+                                <input type="checkbox" name="includeLoads" value="true" checked="@Model.List.IncludeLoads" />
+                                <span class="check-button-wrap" aria-hidden="true"></span>
+                            </label>
+                            <input type="hidden" name="includeLoads" value="false" />
+                        </div>
+                        <div class="field-check stock-toggle">
+                            <label class="check-button-field stock-movement-checkbox" aria-label="Scarico">
+                                <span class="check-text">Scarico</span>
+                                <input type="checkbox" name="includeUnloads" value="true" checked="@Model.List.IncludeUnloads" />
+                                <span class="check-button-wrap" aria-hidden="true"></span>
+                            </label>
+                            <input type="hidden" name="includeUnloads" value="false" />
+                        </div>
+                    </div>
+                </div>
+                <div class="stock-filter-center">
+                    <div class="field">
+                        <label>Categoria</label>
+                        <select name="categoryCode">
+                            <option value=""></option>
+                            @foreach (var item in Model.List.Categories)
+                            {
+                                <option value="@item.Code" selected="@(Model.List.CategoryCode == item.Code)">@item.Description</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Gruppo</label>
+                        <select name="groupCode">
+                            <option value=""></option>
+                            @foreach (var item in Model.List.Groups)
+                            {
+                                <option value="@item.Code" selected="@(Model.List.GroupCode == item.Code)">@item.Description</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>St.gruppo</label>
+                        <select name="subgroupCode">
+                            <option value=""></option>
+                            @foreach (var item in Model.List.Subgroups)
+                            {
+                                <option value="@item.Code" selected="@(Model.List.SubgroupCode == item.Code)">@item.Description</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="stock-filter-right">
+                    <div class="field stock-article-filter">
+                        <label>Articolo</label>
+                        <input id="stockMovementArticleCode"
+                               name="articleCode"
+                               value="@Model.List.ArticleCode"
+                               autocomplete="off"
+                               data-stock-article-code />
+                        <input id="stockMovementArticleDescription"
+                               value="@Model.List.ArticleDescription"
+                               readonly
+                               tabindex="-1"
+                               data-stock-article-description />
+                        <button class="lookup-button stock-movements-article-lookup-button"
+                                type="button"
+                                title="Seleziona articolo"
+                                aria-label="Seleziona articolo"
+                                data-stock-article-lookup-open></button>
+                    </div>
+                    <div class="field stock-subject-filter lookup-field"
+                         data-lookup-field
+                         data-lookup-type="clienti"
+                         data-lookup-title="Clienti"
+                         data-code-input="customerCode"
+                         data-code-display="customerCodeDisplay"
+                         data-label-input="customerNameDisplay">
+                        <label>Cliente</label>
+                        <input id="customerCode"
+                               name="customerCode"
+                               type="hidden"
+                               value="@(Model.List.CustomerCode?.ToString() ?? "")" />
+                        <input id="customerCodeDisplay"
+                               type="text"
+                               value="@(Model.List.CustomerCode?.ToString("00000") ?? "")"
+                               inputmode="numeric"
+                               maxlength="5"
+                               data-stock-subject-code />
+                        <input id="customerNameDisplay"
+                               value="@Model.List.CustomerName"
+                               readonly
+                               tabindex="-1"
+                               data-stock-subject-name />
+                        <button class="lookup-button stock-movements-subject-lookup-button"
+                                type="button"
+                                title="Seleziona cliente"
+                                aria-label="Seleziona cliente"
+                                data-lookup-open></button>
+                    </div>
+                    <div class="field stock-subject-filter lookup-field"
+                         data-lookup-field
+                         data-lookup-type="fornitori"
+                         data-lookup-title="Fornitori"
+                         data-code-input="supplierCode"
+                         data-code-display="supplierCodeDisplay"
+                         data-label-input="supplierNameDisplay">
+                        <label>Fornitore</label>
+                        <input id="supplierCode"
+                               name="supplierCode"
+                               type="hidden"
+                               value="@(Model.List.SupplierCode?.ToString() ?? "")" />
+                        <input id="supplierCodeDisplay"
+                               type="text"
+                               value="@(Model.List.SupplierCode?.ToString("00000") ?? "")"
+                               inputmode="numeric"
+                               maxlength="5"
+                               data-stock-subject-code />
+                        <input id="supplierNameDisplay"
+                               value="@Model.List.SupplierName"
+                               readonly
+                               tabindex="-1"
+                               data-stock-subject-name />
+                        <button class="lookup-button stock-movements-subject-lookup-button"
+                                type="button"
+                                title="Seleziona fornitore"
+                                aria-label="Seleziona fornitore"
+                                data-lookup-open></button>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <section class="stock-movements-panel">
+        <div class="list-grid-frame stock-movements-grid-frame">
+            <table class="list-grid stock-movements-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="year" data-sort-type="number">Anno</th>
+                        <th data-sort-key="code" data-sort-type="number">Partita</th>
+                        <th data-sort-key="causeCode" data-sort-type="number">Causale</th>
+                        <th data-sort-key="causeDescription">Causale</th>
+                        <th data-sort-key="date" data-sort-type="number">Data mov.</th>
+                        <th data-sort-key="documentNumber">Num. doc.</th>
+                        <th data-sort-key="articleCode">Articolo</th>
+                        <th data-sort-key="articleDescription">Descrizione</th>
+                        <th data-sort-key="movementType">C/S</th>
+                        <th data-sort-key="unitMeasure">U.m.</th>
+                        <th data-sort-key="quantity" data-sort-type="number">Quantità</th>
+                        <th data-sort-key="price" data-sort-type="number">Prezzo</th>
+                        <th data-sort-key="amount" data-sort-type="number">Importo</th>
+                        <th data-sort-key="vatRate" data-sort-type="number">Iva</th>
+                        <th data-sort-key="subjectType">C/F</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var movement in Model.List.Movements)
+                    {
+                        var rowUrl = Url.Page(
+                            "./Index",
+                            new
+                            {
+                                dateFrom = Model.List.DateFrom.ToString("yyyy-MM-dd"),
+                                dateTo = Model.List.DateTo.ToString("yyyy-MM-dd"),
+                                articleCode = Model.List.ArticleCode,
+                                categoryCode = Model.List.CategoryCode,
+                                groupCode = Model.List.GroupCode,
+                                subgroupCode = Model.List.SubgroupCode,
+                                includeLoads = Model.List.IncludeLoads,
+                                includeUnloads = Model.List.IncludeUnloads,
+                                customerCode = Model.List.CustomerCode,
+                                supplierCode = Model.List.SupplierCode,
+                                selectedKey = movement.Key
+                            });
+                        <tr class="@(Model.List.SelectedKey == movement.Key ? "selected selected-row" : "")"
+                            tabindex="0"
+                            data-stock-row
+                            data-row-key="@movement.Key"
+                            data-article-code="@movement.ArticleCode"
+                            data-stock-load-id="@movement.StockLoadId"
+                            data-sale-id="@movement.SaleId"
+                            data-sector="@movement.Sector"
+                            data-sort-year="@movement.Year"
+                            data-sort-code="@movement.Code"
+                            data-sort-cause-code="@movement.CauseCode"
+                            data-sort-cause-description="@movement.CauseDescription"
+                            data-sort-date="@movement.MovementDate.ToString("yyyyMMdd")"
+                            data-sort-document-number="@movement.DocumentNumber"
+                            data-sort-article-code="@movement.ArticleCode"
+                            data-sort-article-description="@movement.ArticleDescription"
+                            data-sort-movement-type="@movement.MovementType"
+                            data-sort-unit-measure="@movement.UnitMeasure"
+                            data-sort-quantity="@SortNumber(movement.Quantity)"
+                            data-sort-price="@SortNumber(movement.Price)"
+                            data-sort-amount="@SortNumber(movement.Amount)"
+                            data-sort-vat-rate="@SortNumber(movement.VatRate)"
+                            data-sort-subject-type="@movement.SubjectType"
+                            data-url="@rowUrl">
+                            <td>@movement.Year</td>
+                            <td>@movement.Code.ToString("000000")</td>
+                            <td>@movement.CauseCode.ToString("000")</td>
+                            <td>@movement.CauseDescription</td>
+                            <td>@movement.MovementDate.ToString("dd-MM-yyyy", it)</td>
+                            <td>@movement.DocumentNumber</td>
+                            <td>@movement.ArticleCode</td>
+                            <td>@movement.ArticleDescription</td>
+                            <td>@movement.MovementType</td>
+                            <td>@movement.UnitMeasure</td>
+                            <td>@Quantity(movement.Quantity)</td>
+                            <td>@Money(movement.Price)</td>
+                            <td>@Money(movement.Amount)</td>
+                            <td>@Percent(movement.VatRate)</td>
+                            <td>@movement.SubjectType</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (Model.List.Movements.Count == 0)
+            {
+                <div class="sales-history-empty">Nessun movimento trovato.</div>
+            }
+        </div>
+    </section>
+
+    <footer class="stock-movements-footer">
+        <div class="stock-totals">
+            <div class="stock-total-box">
+                <span class="stock-total-title">Giacenza iniziale</span>
+                <span class="stock-total-label">Quantità</span>
+                <span class="stock-total-label">Valore</span>
+                <input value="@Quantity(Model.List.Totals.InitialQuantity)" readonly tabindex="-1" />
+                <input value="@Money(Model.List.Totals.InitialValue)" readonly tabindex="-1" />
+            </div>
+            <div class="stock-total-box">
+                <span class="stock-total-title">Totale carico</span>
+                <span class="stock-total-label">Quantità</span>
+                <span class="stock-total-label">Valore</span>
+                <input value="@Quantity(Model.List.Totals.LoadQuantity)" readonly tabindex="-1" />
+                <input value="@Money(Model.List.Totals.LoadValue)" readonly tabindex="-1" />
+            </div>
+            <div class="stock-total-box">
+                <span class="stock-total-title">Totale scarico</span>
+                <span class="stock-total-label">Quantità</span>
+                <span class="stock-total-label">Valore</span>
+                <input value="@Quantity(Model.List.Totals.UnloadQuantity)" readonly tabindex="-1" />
+                <input value="@Money(Model.List.Totals.UnloadValue)" readonly tabindex="-1" />
+            </div>
+            <div class="stock-total-box">
+                <span class="stock-total-title">Giacenza</span>
+                <span class="stock-total-label">Quantità</span>
+                <span class="stock-total-label">Valore</span>
+                <input value="@Quantity(Model.List.Totals.StockQuantity)" readonly tabindex="-1" />
+                <input value="@Money(Model.List.Totals.StockValue)" readonly tabindex="-1" />
+            </div>
+        </div>
+    </footer>
+
+    <div class="stock-load-article-lookup" hidden data-stock-article-lookup>
+        <div class="stock-load-article-lookup-dialog" role="dialog" aria-modal="true" aria-labelledby="stock-movement-article-lookup-title">
+            <div class="stock-load-article-lookup-title" id="stock-movement-article-lookup-title">Lista articoli</div>
+            <div class="stock-load-article-lookup-frame" tabindex="0">
+                <table class="stock-load-article-lookup-table">
+                    <thead>
+                        <tr>
+                            <th><button type="button" data-article-sort="code">Codice</button></th>
+                            <th><button type="button" data-article-sort="description">Descrizione</button></th>
+                            <th><button type="button" data-article-sort="category">Categoria</button></th>
+                            <th><button type="button" data-article-sort="group">Gruppo</button></th>
+                            <th><button type="button" data-article-sort="subgroup">Sottogruppo</button></th>
+                            <th><button type="button" data-article-sort="price">Costo std</button></th>
+                            <th><button type="button" data-article-sort="vatRate">Aliq. iva</button></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="stock-load-article-lookup-tools">
+                <label>Cerca</label>
+                <input type="text" autocomplete="off" data-article-search />
+                <label>Categoria</label>
+                <select data-article-category></select>
+                <label>Fornitore</label>
+                <select data-article-supplier></select>
+                <label>Records</label>
+                <input type="text" readonly tabindex="-1" data-article-count />
+                <button class="button button-primary primary" type="button" data-article-ok>OK</button>
+                <button class="button button-secondary secondary" type="button" data-article-cancel>Annulla</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="purchase-invoice-payment-modal-overlay" data-stock-movement-article-modal hidden>
+        <section class="purchase-invoice-payment-modal stock-load-article-card-modal" role="dialog" aria-modal="true" aria-label="Scheda articolo">
+            <iframe title="Scheda articolo" data-stock-movement-article-modal-frame></iframe>
+        </section>
+    </div>
+
+    <div class="purchase-invoice-payment-modal-overlay" data-stock-movement-document-modal hidden>
+        <section class="purchase-invoice-payment-modal stock-movement-document-modal" role="dialog" aria-modal="true" aria-label="Documento origine">
+            <iframe title="Documento origine" data-stock-movement-document-modal-frame></iframe>
+        </section>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/lookup-fields.js" asp-append-version="true"></script>
+    <script src="~/js/stock-movements.js" asp-append-version="true"></script>
+}

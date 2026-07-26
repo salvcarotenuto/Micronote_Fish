@@ -1,0 +1,43 @@
+@page
+@model MicronoteFood.Web.Pages.ScaricoPerditeResi.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Scarico per perdite e resi";
+    ViewData["BodyClass"] = "stock-unload-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+}
+<section class="module-page stock-unload-page supplier-form-page data-form-skin" data-stock-unload>
+  <header class="module-header">
+    <div class="module-title-identity">
+      <a class="module-title-logo" asp-page="/Index"><img src="~/images/micronote-logo.jpeg" alt="" /></a>
+      <div><h1>Scarico per perdite e resi</h1><p>Registrazione, cancellazione e modifica movimenti di scarico per perdite e resi.</p></div>
+    </div>
+    <div class="top-actions">
+      <span class="list-records-box"><strong>@Model.List.Rows.Count</strong><span>record</span></span>
+      <button class="button button-primary primary" data-unload-action="new">Nuovo</button>
+      <button class="button button-primary primary" data-unload-action="edit">Modifica</button>
+      <button class="button button-primary primary" data-unload-action="delete">Cancella</button>
+      <button class="button button-primary primary" data-unload-action="print">Stampa</button>
+    </div>
+  </header>
+  <form class="stock-unload-filters" method="get" data-unload-filters>
+    <fieldset class="form-frame"><legend>Applica filtri</legend><div class="stock-unload-filter-row">
+      <div class="field"><label>Anno</label><select name="year">@foreach(var y in Model.List.Years){<option value="@y" selected="@(y==Model.List.Year)">@y</option>}</select></div>
+      <div class="field"><label>Mese</label><select name="month"><option value=""></option>@for(var m=1;m<=12;m++){<option value="@m" selected="@(m==Model.List.Month)">@it.DateTimeFormat.GetMonthName(m)</option>}</select></div>
+      <div class="field"><label>Tipo movimento</label><select name="causeCode"><option value=""></option><option value="14" selected="@(Model.List.CauseCode==14)">Scarico per perdite</option><option value="15" selected="@(Model.List.CauseCode==15)">Reso a fornitore</option></select></div>
+      <div class="field"><label>Punto vendita</label><select name="storeCode"><option value=""></option>@foreach(var s in Model.List.Stores){<option value="@s.Code" selected="@(s.Code==Model.List.StoreCode)">@s.Description</option>}</select></div>
+    </div></fieldset>
+  </form>
+  <section class="stock-unload-list"><div class="panel-title">Lista movimenti di scarico</div>
+    <div class="list-grid-frame stock-unload-grid-frame"><table class="list-grid stock-unload-grid">
+      <thead><tr><th data-sort="year">Anno</th><th data-sort="code">Partita</th><th data-sort="date">Data</th><th data-sort="cause">Causale</th><th data-sort="article">Articolo</th><th data-sort="description">Descrizione</th><th data-sort="quantity">Quantità</th><th data-sort="store">Punto vend.</th><th data-sort="supplierCode">Ditta</th><th data-sort="supplier">Nome</th></tr></thead>
+      <tbody>@foreach(var r in Model.List.Rows){<tr tabindex="0" class="@(r.Key==Model.List.SelectedKey?"selected selected-row":"")" data-unload-row data-id="@r.Id" data-year="@r.Year" data-code="@r.Code" data-key="@r.Key"
+        data-sort-year="@r.Year" data-sort-code="@r.Code" data-sort-date="@r.Date.ToString("yyyyMMdd")" data-sort-cause="@r.Cause" data-sort-article="@r.ArticleCode" data-sort-description="@r.Description" data-sort-quantity="@r.Quantity.ToString(CultureInfo.InvariantCulture)" data-sort-store="@r.Store" data-sort-supplier-code="@r.SupplierCode" data-sort-supplier="@r.Supplier">
+        <td>@r.Year</td><td>@r.Code.ToString("000000")</td><td>@r.Date.ToString("dd MMMM yyyy",it)</td><td>@r.Cause</td><td>@r.ArticleCode</td><td>@r.Description</td><td>@r.Quantity.ToString("N3",it)</td><td>@r.Store</td><td>@(r.SupplierCode==0?"":r.SupplierCode.ToString("00000"))</td><td>@r.Supplier</td>
+      </tr>}</tbody>
+    </table></div>
+  </section>
+  <form method="post" asp-page-handler="Delete" data-unload-delete-form><input type="hidden" name="id" /><input type="hidden" name="year" /></form>
+  <div class="report-preview-backdrop" data-unload-preview hidden><section class="report-preview-window"><header class="report-preview-toolbar"><strong>Anteprima lista scarichi</strong><div class="report-preview-actions"><button type="button" data-preview-print>Stampa</button><button type="button" data-preview-close>Chiudi</button></div></header><div class="report-preview-viewport"><div class="report-preview-document" data-preview-document></div></div></section></div>
+</section>
+@section Scripts { <script src="~/js/stock-unload.js" asp-append-version="true"></script> }

@@ -1,0 +1,168 @@
+@page
+@model MicronoteFood.Web.Pages.ScaricoPerditeResi.EditModel
+@using System.Globalization
+@{
+ ViewData["Title"]="Scarico articoli"; ViewData["BodyClass"]="stock-unload-edit-module";
+ var it=CultureInfo.GetCultureInfo("it-IT");
+}
+<section class="module-page stock-unload-edit-page supplier-form-page data-form-skin">
+ <header class="module-header">
+  <div class="module-title-identity"><a class="module-title-logo" href="@(Model.ReturnTo=="list" ? Model.ReturnUrl ?? "/ScaricoPerditeResi" : "/")"><img src="~/images/micronote-logo.jpeg" alt=""/></a><div><h1>Scarico articoli</h1><p>Scarico per perdite e resi a fornitore.</p></div></div>
+  <div class="top-actions">
+   <button class="button button-primary primary" type="button" data-unload-save>Salva</button>
+   <a class="button button-secondary secondary"
+      href="@(Model.ReturnTo == "list" ? Model.ReturnUrl ?? "/ScaricoPerditeResi" : "/")">Annulla</a>
+  </div>
+ </header>
+ <form id="stockUnloadForm" method="post" class="entity-form" novalidate data-unload-edit data-enter-navigation>
+  <input type="hidden" asp-for="ReturnTo"/><input type="hidden" asp-for="ReturnUrl"/><input type="hidden" asp-for="Document.IsNew"/><input type="hidden" asp-for="Document.Id"/><input type="hidden" asp-for="Document.Year"/><input type="hidden" asp-for="Document.Code"/>
+  <fieldset class="form-frame"><legend>Scarico articoli</legend>
+   <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+   <div class="stock-unload-edit-grid">
+    <div class="field stock-unload-code-field">
+     <label>Numero di partita</label>
+     <div class="stock-unload-code-pair">
+      <input value="@Model.Document.Code.ToString("000000")" readonly tabindex="-1"/>
+      <span>/</span>
+      <input value="@Model.Document.Year" readonly tabindex="-1" aria-label="Anno"/>
+     </div>
+    </div>
+    <div class="field"><label>Tipo di movimento</label><select asp-for="Document.CauseCode" data-unload-cause><option value="14">Scarico per perdite</option><option value="15">Reso a fornitore</option></select></div>
+    <div class="field">
+     <label>Data movimento</label>
+     <span class="micronote-date-control" data-date-control>
+      <input asp-for="Document.Date"
+             type="hidden"
+             value="@Model.Document.Date.ToString("yyyy-MM-dd")"
+             data-filter-date-hidden/>
+      <input class="micronote-date-input"
+             type="text"
+             inputmode="numeric"
+             maxlength="10"
+             autocomplete="off"
+             value="@Model.Document.Date.ToString("dd/MM/yyyy")"
+             data-filter-date-display/>
+      <button class="micronote-date-button"
+              type="button"
+              tabindex="-1"
+              aria-label="Seleziona data movimento"
+              data-date-picker-button></button>
+     </span>
+    </div>
+    <div class="field stock-unload-article-field">
+     <label>Articolo</label>
+     <div class="stock-unload-article-control">
+      <input asp-for="Document.ArticleCode" type="hidden" data-unload-article/>
+      <input class="stock-unload-article-code"
+             type="text"
+             value="@Model.Document.ArticleCode"
+             autocomplete="off"
+             required
+             aria-required="true"
+             data-unload-article-code/>
+      <input asp-for="Document.ArticleDescription"
+             class="stock-unload-article-description"
+             autocomplete="off"
+             readonly
+             tabindex="-1"
+             data-unload-description/>
+      <button class="lookup-button"
+              type="button"
+              title="Seleziona articolo"
+              aria-label="Seleziona articolo"
+              data-unload-article-lookup-open></button>
+     </div>
+    </div>
+    <div class="field stock-unload-store-field"><label>Punto vendita</label><select asp-for="Document.StoreCode"><option value="0"></option>@foreach(var s in Model.Mask.Stores.Where(store => store.Code != 0)){<option value="@s.Code">@s.Description</option>}</select></div>
+    <div class="field stock-unload-supplier-field lookup-field"
+         data-lookup-field
+         data-lookup-type="fornitori"
+         data-lookup-title="Fornitori"
+         data-code-input="stockUnloadSupplierCode"
+         data-code-display="stockUnloadSupplierCodeDisplay"
+         data-label-input="stockUnloadSupplierName">
+     <label>Fornitore</label>
+     <div class="stock-unload-supplier-control">
+      <input asp-for="Document.SupplierCode"
+             id="stockUnloadSupplierCode"
+             type="hidden"
+             data-unload-supplier/>
+      <input id="stockUnloadSupplierCodeDisplay"
+             class="stock-unload-supplier-code"
+             type="text"
+             inputmode="numeric"
+             maxlength="5"
+             autocomplete="off"
+             value="@(Model.Document.SupplierCode == 0 ? "" : Model.Document.SupplierCode.ToString("00000"))"
+             data-unload-supplier-code/>
+      <input asp-for="Document.SupplierName"
+             id="stockUnloadSupplierName"
+             class="stock-unload-supplier-name"
+             type="text"
+             readonly
+             tabindex="-1"
+             data-unload-supplier-name/>
+      <button class="lookup-button"
+              type="button"
+              title="Seleziona fornitore"
+              aria-label="Seleziona fornitore"
+              data-lookup-open
+              data-unload-supplier-lookup></button>
+     </div>
+    </div>
+    <div class="field stock-unload-unit-field"><label>Unità di misura</label><input asp-for="Document.UnitMeasure" readonly tabindex="-1" data-unload-unit/></div>
+    <div class="field stock-unload-quantity-field">
+     <label>Quantità</label>
+     <input asp-for="Document.Quantity"
+            type="text"
+            inputmode="decimal"
+            maxlength="10"
+            autocomplete="off"
+            required
+            aria-required="true"
+            value="@(Model.Document.Quantity == 0 ? "" : Model.Document.Quantity.ToString("N3", it))"
+            data-decimal-field
+            data-decimal-integer-digits="6"
+            data-decimal-digits="3"/>
+    </div>
+    <div class="field stock-unload-stock-field"><label>Giacenza</label><input value="@Model.Document.Stock.ToString("N2",it)" readonly tabindex="-1" data-unload-stock/></div>
+   </div>
+  </fieldset>
+ </form>
+ <div class="stock-load-article-lookup" hidden data-unload-article-lookup>
+  <div class="stock-load-article-lookup-dialog" role="dialog" aria-modal="true" aria-labelledby="stock-unload-article-lookup-title">
+   <div class="stock-load-article-lookup-title" id="stock-unload-article-lookup-title">Lista articoli</div>
+   <div class="stock-load-article-lookup-frame" tabindex="0" data-unload-article-lookup-frame>
+    <table class="stock-load-article-lookup-table">
+     <thead><tr><th>Codice</th><th>Descrizione</th><th>U.m.</th></tr></thead>
+     <tbody>
+      @foreach (var article in Model.Mask.Articles)
+      {
+       <tr tabindex="-1"
+           data-unload-article-row
+           data-code="@article.Code"
+           data-description="@article.Description"
+           data-unit="@article.UnitMeasure">
+        <td>@article.Code</td><td>@article.Description</td><td>@article.UnitMeasure</td>
+       </tr>
+      }
+     </tbody>
+    </table>
+   </div>
+   <div class="stock-load-article-lookup-tools stock-unload-article-lookup-tools">
+    <label>Cerca</label>
+    <input type="text" autocomplete="off" data-unload-article-search/>
+    <label>Records</label>
+    <input type="text" readonly tabindex="-1" data-unload-article-count/>
+    <button class="button button-primary primary" type="button" data-unload-article-ok>OK</button>
+    <button class="button button-secondary secondary" type="button" data-unload-article-cancel>Annulla</button>
+   </div>
+  </div>
+ </div>
+</section>
+@section Scripts {
+ <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+ <script src="~/js/lookup-fields.js" asp-append-version="true"></script>
+ <script src="~/js/filter-date-picker.js" asp-append-version="true"></script>
+ <script src="~/js/stock-unload-edit.js" asp-append-version="true"></script>
+}

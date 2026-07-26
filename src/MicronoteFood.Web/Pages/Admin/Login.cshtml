@@ -1,0 +1,105 @@
+@page
+@model MicronoteFood.Web.Pages.Admin.LoginModel
+@{
+    ViewData["Title"] = "Amministrazione sistema";
+    ViewData["BodyClass"] = "system-admin-login-page";
+}
+
+<div class="system-admin-login-background" aria-hidden="true">
+    <img src="~/images/micronote-bak.png" alt="" />
+</div>
+
+<div class="system-admin-overlay active">
+    <section class="system-admin-dialog system-admin-login-dialog" role="dialog" aria-modal="true" aria-labelledby="system-admin-title">
+        <header class="system-admin-login-brand">
+            <img src="~/images/micronote-05.jpeg" alt="" />
+            <div>
+                <h1 id="system-admin-title">Micronote Food</h1>
+                <p>Amministrazione sistema</p>
+            </div>
+            <img class="system-admin-login-tool-image" src="~/images/tools-04.png" alt="" />
+        </header>
+        <header class="system-admin-title">Credenziali amministratore</header>
+        <form method="post" novalidate autocomplete="off" data-form-type="other">
+            <div class="password-manager-decoys" aria-hidden="true">
+                <input type="text" name="fake-admin-user" autocomplete="username" tabindex="-1" />
+                <input type="password" name="fake-admin-password" autocomplete="current-password" tabindex="-1" />
+            </div>
+            <div class="system-admin-body data-form-skin">
+                <div class="system-admin-form-grid">
+                    <div class="field">
+                        <label asp-for="UserName">Nome utente</label>
+                        <input asp-for="UserName" maxlength="50" autocomplete="new-password" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" autofocus />
+                    </div>
+                    <div class="field">
+                        <label asp-for="Password">Password</label>
+                        <div class="settings-password-control">
+                            <input asp-for="Password" maxlength="100" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" data-form-type="other" type="password" />
+                            <button class="settings-password-toggle" type="button" data-password-toggle="Password" tabindex="-1" aria-label="Mostra password" title="Mostra password">
+                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <footer class="system-admin-actions">
+                <a class="button secondary system-admin-cancel-button" asp-page="/Index">Annulla</a>
+                <button class="button button-primary" type="submit">Conferma</button>
+            </footer>
+        </form>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+            const input = document.getElementById(button.dataset.passwordToggle);
+            button.addEventListener('click', () => {
+                const hidden = input.type === 'password';
+                input.type = hidden ? 'text' : 'password';
+                button.classList.toggle('active', hidden);
+                input.focus();
+            });
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                window.location.href = '@Url.Page("/Index")';
+            }
+        });
+
+        @if (Model.ErrorMessage is not null)
+        {
+            <text>
+            window.addEventListener('load', () => {
+                window.MicronoteMessageBox?.show({
+                    title: 'Micronote Food - accesso amministrativo',
+                    message: @Json.Serialize(Model.ErrorMessage),
+                    detail: @Json.Serialize(Model.ErrorDetail ?? ""),
+                    variant: 'error',
+                    onConfirm: () => {
+                        const userName = document.getElementById('UserName');
+                        userName?.focus();
+                        userName?.select?.();
+                    }
+                });
+            });
+            </text>
+        }
+    </script>
+}
+
+
+
+
+
+
+
+
+
+
+

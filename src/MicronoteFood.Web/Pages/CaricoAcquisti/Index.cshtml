@@ -1,0 +1,286 @@
+@page
+@model MicronoteFood.Web.Pages.CaricoAcquisti.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Lista carico di magazzino";
+    ViewData["BodyClass"] = "stock-loads-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Quantity(decimal value) => value == 0 ? "" : value.ToString("N3", it);
+    string SortNumber(decimal value) => value.ToString(CultureInfo.InvariantCulture);
+    var selectedKey = Model.List.SelectedKey;
+}
+
+<section class="module-page stock-loads-page supplier-form-page data-form-skin" data-stock-loads>
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>Lista carico di magazzino</h1>
+                <p>Lista dei documenti di carico ordinati per data.</p>
+            </div>
+        </div>
+        <div class="top-actions sales-history-actions stock-loads-actions">
+            <span class="list-records-box stock-loads-records">
+                <strong>@Model.List.Documents.Count</strong>
+                <span>record</span>
+            </span>
+            <button class="button button-primary primary" type="button" data-stock-load-action="new">Nuovo</button>
+            <button class="button button-primary primary" type="button" data-stock-load-action="edit">Modifica</button>
+            <button class="button button-primary primary" type="button" data-stock-load-action="delete">Cancella</button>
+            <button class="button button-primary primary" type="button" data-stock-load-action="print">Stampa</button>
+            <button class="button button-primary primary stock-loads-electronic-button" type="button" data-stock-load-action="invoice">Vedi fatt. el.</button>
+        </div>
+    </header>
+
+    <form class="sales-history-filters stock-loads-filters" method="get" data-stock-load-filters data-progress-disabled="true">
+        <fieldset class="form-frame">
+            <div class="stock-loads-filter-row">
+                <div class="field stock-loads-year-filter">
+                    <label>Anno</label>
+                    <select name="year">
+                        @foreach (var year in Model.List.Years)
+                        {
+                            <option value="@year" selected="@(Model.List.Year == year)">@year</option>
+                        }
+                    </select>
+                </div>
+                <div class="field stock-loads-month-filter">
+                    <label>Mese</label>
+                    <select name="month">
+                        <option value=""></option>
+                        @foreach (var month in Model.List.Months)
+                        {
+                            <option value="@month.Value" selected="@(Model.List.Month == month.Value)">
+                                @month.Description
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="field stock-loads-supplier-filter">
+                    <label>Fornitore</label>
+                    <select name="supplierCode">
+                        <option value=""></option>
+                        @foreach (var supplier in Model.List.Suppliers)
+                        {
+                            <option value="@supplier.Code" selected="@(Model.List.SupplierCode == supplier.Code)">
+                                @supplier.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="field stock-loads-store-filter">
+                    <label>Punto v.</label>
+                    <select name="storeCode">
+                        <option value=""></option>
+                        @foreach (var store in Model.List.Stores)
+                        {
+                            <option value="@store.Code" selected="@(Model.List.StoreCode == store.Code)">
+                                @store.Description
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="field stock-loads-article-filter">
+                    <label>Articolo</label>
+                    <input id="stockLoadFilterArticleCode"
+                           name="articleCode"
+                           value="@Model.List.ArticleCode"
+                           autocomplete="off" />
+                    <input id="stockLoadFilterArticleDescription"
+                           value="@Model.List.ArticleDescription"
+                           readonly
+                           aria-readonly="true"
+                           tabindex="-1" />
+                    <button class="lookup-button stock-loads-article-lookup-button"
+                            type="button"
+                            title="Seleziona articolo"
+                            aria-label="Seleziona articolo"
+                            data-stock-load-article-lookup-open></button>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <div class="stock-loads-layout stock-loads-layout-no-totals">
+        <section class="stock-loads-main">
+            <div class="list-grid-frame stock-loads-grid-frame">
+                <table class="list-grid stock-loads-grid">
+                        <thead>
+                            <tr>
+                                <th data-sort-key="year" data-sort-type="number">Anno</th>
+                                <th data-sort-key="code" data-sort-type="number">Partita</th>
+                                <th data-sort-key="documentNumber">Numero</th>
+                                <th data-sort-key="documentDate" data-sort-type="number">Data</th>
+                                <th data-sort-key="supplierCode" data-sort-type="number">Fornitore</th>
+                                <th data-sort-key="supplierName">Nome</th>
+                                <th data-sort-key="goods" data-sort-type="number">Merce</th>
+                                <th data-sort-key="vat" data-sort-type="number">Iva</th>
+                                <th data-sort-key="total" data-sort-type="number">Totale</th>
+                                <th data-sort-key="electronicInvoice">Fatt. elettronica</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var document in Model.List.Documents)
+                            {
+                                var rowUrl = Url.Page(
+                                    "./Index",
+                                    new
+                                    {
+                                        year = Model.List.Year,
+                                        month = Model.List.Month,
+                                        supplierCode = Model.List.SupplierCode,
+                                        storeCode = Model.List.StoreCode,
+                                        articleCode = Model.List.ArticleCode,
+                                        selectedKey = document.Key
+                                    });
+                                <tr class="@(selectedKey == document.Key ? "selected selected-row" : "")"
+                                    tabindex="0"
+                                    data-stock-load-row
+                                    data-stock-load-id="@document.Id"
+                                    data-stock-load-key="@document.Key"
+                                    data-url="@rowUrl"
+                                    data-sort-year="@document.Year"
+                                    data-sort-code="@document.Code"
+                                    data-sort-document-number="@document.DocumentNumber"
+                                    data-sort-document-date="@document.DocumentDate.ToString("yyyyMMdd")"
+                                    data-sort-supplier-code="@document.SupplierCode"
+                                    data-sort-supplier-name="@document.SupplierName"
+                                    data-sort-goods="@SortNumber(document.Goods)"
+                                    data-sort-vat="@SortNumber(document.Vat)"
+                                    data-sort-total="@SortNumber(document.Total)"
+                                    data-sort-electronic-invoice="@document.ElectronicInvoiceName"
+                                    data-electronic-invoice-name="@document.ElectronicInvoiceName">
+                                    <td>@document.Year</td>
+                                    <td>@document.Code.ToString("000000")</td>
+                                    <td>@document.DocumentNumber</td>
+                                    <td>@document.DocumentDate.ToString("dd-MM-yyyy", it)</td>
+                                    <td>@(document.SupplierCode == 0 ? "" : document.SupplierCode.ToString("00000"))</td>
+                                    <td>@document.SupplierName</td>
+                                    <td>@Money(document.Goods)</td>
+                                    <td>@Money(document.Vat)</td>
+                                    <td>@Money(document.Total)</td>
+                                    <td>@document.ElectronicInvoiceName</td>
+                                </tr>
+                            }
+                        </tbody>
+                </table>
+                @if (Model.List.Documents.Count == 0)
+                {
+                    <div class="sales-history-empty">Nessun documento trovato.</div>
+                }
+            </div>
+
+            <div class="list-grid-frame stock-loads-detail-frame">
+                <table class="list-grid stock-loads-detail-grid">
+                        <thead>
+                            <tr>
+                                <th>Articolo</th>
+                                <th>Descrizione</th>
+                                <th>U.m.</th>
+                                <th>Quantità</th>
+                                <th>Prezzo</th>
+                                <th>Sconto</th>
+                                <th>Importo</th>
+                                <th>Aliq. iva</th>
+                            </tr>
+                        </thead>
+                        <tbody data-stock-load-detail-body>
+                            @foreach (var detail in Model.List.Details)
+                            {
+                                <tr>
+                                    <td>@detail.ArticleCode</td>
+                                    <td>@detail.Description</td>
+                                    <td>@detail.UnitMeasure</td>
+                                    <td>@Quantity(detail.Quantity)</td>
+                                    <td>@Money(detail.Price)</td>
+                                    <td>@(detail.Discount == 0 ? "" : detail.Discount.ToString("N2", it) + " %")</td>
+                                    <td>@Money(detail.Amount)</td>
+                                    <td>@(detail.VatRate == 0 ? "" : detail.VatRate.ToString("N2", it) + " %")</td>
+                                </tr>
+                            }
+                        </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <div class="stock-load-article-lookup" hidden data-stock-load-filter-article-lookup>
+        <div class="stock-load-article-lookup-dialog" role="dialog" aria-modal="true" aria-labelledby="stock-load-filter-article-lookup-title">
+            <div class="stock-load-article-lookup-title" id="stock-load-filter-article-lookup-title">Lista articoli</div>
+            <div class="stock-load-article-lookup-frame" tabindex="0">
+                <table class="stock-load-article-lookup-table">
+                    <thead>
+                        <tr>
+                            <th><button type="button" data-article-sort="code">Codice</button></th>
+                            <th><button type="button" data-article-sort="description">Descrizione</button></th>
+                            <th><button type="button" data-article-sort="category">Categoria</button></th>
+                            <th><button type="button" data-article-sort="group">Gruppo</button></th>
+                            <th><button type="button" data-article-sort="subgroup">Sottogruppo</button></th>
+                            <th><button type="button" data-article-sort="price">Costo std</button></th>
+                            <th><button type="button" data-article-sort="vatRate">Aliq. iva</button></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="stock-load-article-lookup-tools">
+                <label>Cerca</label>
+                <input type="text" autocomplete="off" data-article-search />
+                <label>Categoria</label>
+                <select data-article-category></select>
+                <label>Fornitore</label>
+                <select data-article-supplier></select>
+                <label>Records</label>
+                <input type="text" readonly tabindex="-1" data-article-count />
+                <button class="button button-primary primary" type="button" data-article-ok>OK</button>
+                <button class="button button-secondary secondary" type="button" data-article-cancel>Annulla</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="purchase-invoice-xml-overlay" data-stock-load-electronic-invoice-viewer hidden>
+        <section class="purchase-invoice-xml-dialog" role="dialog" aria-modal="true" aria-labelledby="stockLoadListXmlTitle" tabindex="-1" data-stock-load-electronic-invoice-viewer-panel>
+            <div class="purchase-invoice-fe-titlebar">
+                <span>Micronote</span>
+            </div>
+            <div class="purchase-invoice-fe-heading stock-loads-xml-heading">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+                <h2 id="stockLoadListXmlTitle" data-stock-load-electronic-invoice-viewer-title>Fattura elettronica</h2>
+            </div>
+            <iframe class="purchase-invoice-xml-frame"
+                    title="Visualizzazione fattura elettronica"
+                    data-stock-load-electronic-invoice-viewer-frame></iframe>
+            <div class="purchase-invoice-xml-actions">
+                <button class="button button-secondary secondary" type="button" data-stock-load-electronic-invoice-viewer-close>Chiudi</button>
+            </div>
+        </section>
+    </div>
+
+    <div class="report-preview-backdrop" data-stock-loads-print-preview hidden>
+        <section class="report-preview-window" role="dialog" aria-modal="true" aria-labelledby="stockLoadsPrintPreviewTitle">
+            <header class="report-preview-toolbar">
+                <div>
+                    <strong id="stockLoadsPrintPreviewTitle">Anteprima lista documenti di carico</strong>
+                    <span data-stock-loads-print-summary></span>
+                </div>
+                <div class="report-preview-actions">
+                    <button type="button" data-stock-loads-preview-zoom-out aria-label="Riduci anteprima">−</button>
+                    <span data-stock-loads-preview-zoom-label>100%</span>
+                    <button type="button" data-stock-loads-preview-zoom-in aria-label="Ingrandisci anteprima">+</button>
+                    <button type="button" data-stock-loads-preview-print>Stampa</button>
+                    <button type="button" class="report-preview-close" data-stock-loads-preview-close>Chiudi</button>
+                </div>
+            </header>
+            <div class="report-preview-viewport">
+                <div class="report-preview-document" data-stock-loads-preview-document></div>
+            </div>
+        </section>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/stock-loads.js" asp-append-version="true"></script>
+}

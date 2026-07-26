@@ -1,0 +1,122 @@
+@page
+@model MicronoteFood.Web.Pages.PuntiVendita.IndexModel
+@{
+    ViewData["Title"] = "Punti vendita";
+    ViewData["BodyClass"] = "list-module";
+}
+
+<section class="list-page store-list-page" data-list-page data-menu-url="/">
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Punti vendita</strong>
+                <small>Micronote Food - Tabelle di base</small>
+            </span>
+        </a>
+        <div class="list-title-actions">
+            <a class="list-title-button" asp-page="./Edit">Aggiungi</a>
+            <button class="list-title-button" type="button" data-store-action="edit">
+                Modifica
+            </button>
+            <button class="list-title-button" type="button" data-store-action="delete">
+                Elimina
+            </button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <span hidden data-page-message data-message-variant="error"
+              data-message-text="@Model.ErrorMessage"></span>
+    }
+
+    <section class="list-panel">
+        <div class="list-toolbar">
+            <div class="list-filter-field list-search-field">
+                <label for="store-search">Cerca</label>
+                <div class="list-search-control">
+                    <input id="store-search"
+                           type="text"
+                           placeholder="Nome, descrizione o città"
+                           autocomplete="off"
+                           autofocus
+                           data-store-search />
+                    <button class="list-search-clear"
+                            type="button"
+                            aria-label="Pulisci filtro"
+                            data-store-search-clear
+                            hidden>
+                        ×
+                    </button>
+                </div>
+            </div>
+            <span class="list-records-box">
+                <strong data-store-count>@Model.Stores.Count</strong>
+                <span>record</span>
+            </span>
+        </div>
+
+        <div class="list-grid-frame store-grid-frame" data-store-grid>
+            <table class="list-grid store-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="code" data-sort-type="number">Codice</th>
+                        <th data-sort-key="name">Nome</th>
+                        <th data-sort-key="description">Descrizione</th>
+                        <th data-sort-key="sectorDescription">Settore</th>
+                        <th data-sort-key="city">Sede</th>
+                        <th data-sort-key="province">Prov.</th>
+                        <th data-sort-key="contact">Contatto</th>
+                        <th data-sort-key="phone">Telefono</th>
+                        <th data-sort-key="mobile">Cellulare</th>
+                        <th data-sort-key="email">E-mail</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var store in Model.Stores)
+                    {
+                        <tr tabindex="0"
+                            data-store-row
+                            data-filter-name="@($"{store.Name} {store.Description} {store.City}")"
+                            data-sort-code="@store.Code"
+                            data-sort-name="@store.Name"
+                            data-sort-description="@store.Description"
+                            data-sort-sector-description="@store.SectorDescription"
+                            data-sort-city="@store.City"
+                            data-sort-province="@store.Province"
+                            data-sort-contact="@store.Contact"
+                            data-sort-phone="@store.Phone"
+                            data-sort-mobile="@store.Mobile"
+                            data-sort-email="@store.Email"
+                            data-edit-url="@Url.Page("./Edit", new { code = store.Code })"
+                            data-delete-code="@store.Code"
+                            data-record-label="@store.Name">
+                            <td class="code-cell">@store.Code.ToString("000")</td>
+                            <td>@store.Name</td>
+                            <td>@store.Description</td>
+                            <td>@store.SectorDescription</td>
+                            <td>@store.City</td>
+                            <td>@store.Province</td>
+                            <td>@store.Contact</td>
+                            <td>@store.Phone</td>
+                            <td>@store.Mobile</td>
+                            <td>@store.Email</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="list-empty" data-store-empty hidden>
+                Nessun punto vendita trovato.
+            </div>
+        </div>
+    </section>
+
+    <form method="post" asp-page-handler="Delete" data-store-delete-form hidden>
+        <input type="hidden" name="code" data-store-delete-code />
+    </form>
+</section>
+
+@section Scripts {
+    <script src="~/js/stores-list.js" asp-append-version="true"></script>
+}

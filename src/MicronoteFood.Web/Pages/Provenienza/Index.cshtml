@@ -1,0 +1,102 @@
+@page
+@model MicronoteFood.Web.Pages.Provenienza.IndexModel
+@{
+    ViewData["Title"] = "Provenienza articoli";
+    ViewData["BodyClass"] = "list-module";
+}
+
+<section class="list-page subgroup-list-page small-table-page"
+         data-list-page data-menu-url="/"
+         data-next-code="@Model.DisplayCode.ToString("000")">
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Provenienza articoli</strong>
+                <small>Micronote Fish - Tabelle di magazzino</small>
+            </span>
+        </a>
+        <div class="list-title-actions">
+            <button class="list-title-button" type="button" data-subgroup-action="new">Aggiungi</button>
+            <button class="list-title-button" type="button" data-subgroup-action="edit">Modifica</button>
+            <button class="list-title-button" type="button" data-subgroup-action="delete">Elimina</button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <span hidden data-page-message data-message-variant="error"
+              data-message-text="@Model.ErrorMessage"></span>
+    }
+
+    <section class="list-panel">
+        <div class="list-grid-frame subgroup-grid-frame small-table-grid-frame" data-subgroup-grid>
+            <table class="list-grid subgroup-grid small-table-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="code" data-sort-type="number">Codice</th>
+                        <th data-sort-key="description">Descrizione</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var value in Model.Values)
+                    {
+                        <tr tabindex="0" data-subgroup-row
+                            data-sort-code="@value.Code"
+                            data-sort-description="@value.Description"
+                            data-code="@value.Code"
+                            data-description="@value.Description"
+                            data-selected="@(Model.Value.Code == value.Code ? "true" : "false")"
+                            data-delete-code="@value.Code"
+                            data-record-label="@value.Description">
+                            <td class="code-cell">@value.Code.ToString("000")</td>
+                            <td>@value.Description</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="list-empty" data-subgroup-empty hidden>Nessuna provenienza trovata.</div>
+        </div>
+    </section>
+
+    <form method="post" asp-page-handler="Save"
+          class="entity-form small-table-editor supplier-form-page data-form-skin subgroup-form-page"
+          data-subgroup-editor data-enter-navigation>
+        <input asp-for="Value.Code" type="hidden" data-subgroup-code />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+        <fieldset class="form-frame compact-frame" data-subgroup-editor-fields disabled>
+            <legend>Scheda provenienza</legend>
+            <div class="form-grid form-grid-4 form-frame-grid small-table-fields-row">
+                <div class="field field-code">
+                    <label>Codice</label>
+                    <input type="text" class="readonly-field code-display"
+                           readonly tabindex="-1"
+                           value="@(Model.Value.Code == 0 ? Model.DisplayCode.ToString("000") : Model.Value.Code.ToString("000"))"
+                           data-subgroup-code-display />
+                </div>
+                <div class="field field-span-2 small-table-description-field">
+                    <label asp-for="Value.Description"></label>
+                    <input asp-for="Value.Description" autocomplete="off"
+                           data-subgroup-description />
+                    <span asp-validation-for="Value.Description"></span>
+                </div>
+                <div class="small-table-actions">
+                    <button class="button button-primary primary" type="submit"
+                            data-subgroup-save disabled>Salva</button>
+                    <button class="button button-secondary secondary" type="button"
+                            data-subgroup-cancel disabled>Annulla</button>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <form method="post" asp-page-handler="Delete" data-subgroup-delete-form hidden>
+        <input type="hidden" name="code" data-subgroup-delete-code />
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+    <script src="~/js/subgroups-list.js" asp-append-version="true"></script>
+}

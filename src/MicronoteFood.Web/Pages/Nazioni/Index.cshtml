@@ -1,0 +1,158 @@
+@page
+@model MicronoteFood.Web.Pages.Nazioni.IndexModel
+@{
+    ViewData["Title"] = "Nazioni";
+    ViewData["BodyClass"] = "list-module";
+}
+
+<section class="list-page nazioni-list-page small-table-page" data-list-page data-menu-url="/">
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Nazioni</strong>
+                <small>Micronote Food - Tabelle territorio</small>
+            </span>
+        </a>
+        <div class="list-title-actions">
+            <button class="list-title-button" type="button" data-nation-action="new">Aggiungi</button>
+            <button class="list-title-button" type="button" data-nation-action="edit">Modifica</button>
+            <button class="list-title-button" type="button" data-nation-action="delete">Elimina</button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <span hidden data-page-message data-message-variant="error"
+              data-message-text="@Model.ErrorMessage"></span>
+    }
+
+    <section class="list-panel">
+        <div class="list-grid-frame nazioni-grid-frame small-table-grid-frame" data-nation-grid>
+            <table class="list-grid nazioni-grid small-table-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="code">Codice</th>
+                        <th data-sort-key="name">Nome</th>
+                        <th data-sort-key="abbreviation1">Sigla 1</th>
+                        <th data-sort-key="abbreviation2">Sigla 2</th>
+                        <th data-sort-key="iso">ISO</th>
+                        <th data-sort-key="taxCode">Cod. fiscale</th>
+                        <th data-sort-key="zone">Zona</th>
+                        <th data-sort-key="regime">Regime</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var nation in Model.Nations)
+                    {
+                        <tr tabindex="0"
+                            data-nation-row
+                            data-sort-code="@nation.Code.ToString("D3")"
+                            data-sort-name="@nation.Name"
+                            data-sort-abbreviation1="@nation.Abbreviation1"
+                            data-sort-abbreviation2="@nation.Abbreviation2"
+                            data-sort-iso="@nation.Iso"
+                            data-sort-tax-code="@nation.TaxCode"
+                            data-sort-zone="@nation.Zone"
+                            data-sort-regime="@nation.Regime"
+                            data-code="@nation.Code"
+                            data-code-display="@nation.Code.ToString("D3")"
+                            data-name="@nation.Name"
+                            data-abbreviation1="@nation.Abbreviation1"
+                            data-abbreviation2="@nation.Abbreviation2"
+                            data-iso="@nation.Iso"
+                            data-tax-code="@nation.TaxCode"
+                            data-zone="@nation.Zone"
+                            data-regime="@nation.Regime"
+                            data-selected="@(Model.Nation.Code == nation.Code ? "true" : "false")"
+                            data-delete-code="@nation.Code"
+                            data-record-label="@nation.Name">
+                            <td>@nation.Code.ToString("D3")</td>
+                            <td>@nation.Name</td>
+                            <td>@nation.Abbreviation1</td>
+                            <td>@nation.Abbreviation2</td>
+                            <td>@nation.Iso</td>
+                            <td>@nation.TaxCode</td>
+                            <td>@nation.Zone</td>
+                            <td>@nation.Regime</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="list-empty" data-nation-empty hidden>
+                Nessuna nazione trovata.
+            </div>
+        </div>
+    </section>
+
+    <form method="post"
+          asp-page-handler="Save"
+          class="entity-form small-table-editor supplier-form-page data-form-skin nazioni-form-page"
+          data-nation-editor
+          data-enter-navigation>
+        <input asp-for="Nation.IsNew" type="hidden" data-nation-is-new />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <fieldset class="form-frame compact-frame" data-nation-editor-fields disabled>
+            <legend>Scheda nazione</legend>
+            <div class="nazioni-fields-row">
+                <div class="field nazioni-code-field">
+                    <label asp-for="Nation.Code"></label>
+                    <input asp-for="Nation.Code" type="hidden" data-nation-code />
+                    <input value="@(Model.Nation.Code > 0 ? Model.Nation.Code.ToString("D3") : "")"
+                           placeholder="Automatico"
+                           autocomplete="off"
+                           readonly
+                           data-nation-code-display />
+                </div>
+                <div class="field nazioni-name-field">
+                    <label asp-for="Nation.Name"></label>
+                    <input asp-for="Nation.Name" autocomplete="off" data-nation-name />
+                    <span asp-validation-for="Nation.Name"></span>
+                </div>
+                <div class="field nazioni-abbreviation-field nazioni-sigla1-field">
+                    <label asp-for="Nation.Abbreviation1"></label>
+                    <input asp-for="Nation.Abbreviation1" class="text-uppercase" autocomplete="off" data-nation-abbreviation1 />
+                </div>
+                <div class="field nazioni-abbreviation-field nazioni-sigla2-field">
+                    <label asp-for="Nation.Abbreviation2"></label>
+                    <input asp-for="Nation.Abbreviation2" class="text-uppercase" autocomplete="off" data-nation-abbreviation2 />
+                </div>
+                <div class="field nazioni-tax-field">
+                    <label asp-for="Nation.TaxCode"></label>
+                    <input asp-for="Nation.TaxCode" class="text-uppercase" autocomplete="off" data-nation-tax-code />
+                </div>
+                <div class="field nazioni-short-field nazioni-zone-field">
+                    <label asp-for="Nation.Zone"></label>
+                    <input asp-for="Nation.Zone" class="text-uppercase" autocomplete="off" data-nation-zone />
+                </div>
+                <div class="field nazioni-short-field nazioni-iso-field">
+                    <label asp-for="Nation.Iso"></label>
+                    <input asp-for="Nation.Iso" class="text-uppercase" autocomplete="off" data-nation-iso />
+                </div>
+                <div class="field nazioni-short-field nazioni-regime-field">
+                    <label asp-for="Nation.Regime"></label>
+                    <input asp-for="Nation.Regime" class="text-uppercase" autocomplete="off" data-nation-regime />
+                </div>
+                <div class="small-table-actions nazioni-actions">
+                    <button class="button button-primary primary" type="submit" data-nation-save disabled>
+                        Salva
+                    </button>
+                    <button class="button button-secondary secondary" type="button" data-nation-cancel disabled>
+                        Annulla
+                    </button>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <form method="post" asp-page-handler="Delete" data-nation-delete-form hidden>
+        <input type="hidden" name="code" data-nation-delete-code />
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+    <script src="~/js/nazioni-list.js" asp-append-version="true"></script>
+}

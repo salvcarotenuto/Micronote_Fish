@@ -1,0 +1,235 @@
+@page
+@model MicronoteFood.Web.Pages.PrimaNota.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Movimenti contabili di prima nota";
+    ViewData["BodyClass"] = "accounting-movements-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string SortNumber(decimal value) => value.ToString(CultureInfo.InvariantCulture);
+    var selectedId = Model.List.SelectedId;
+}
+
+<section class="module-page accounting-movements-page supplier-form-page data-form-skin" data-accounting-movements>
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>Movimenti contabili di prima nota</h1>
+                <p>Lista movimenti contabili di prima nota.</p>
+            </div>
+        </div>
+        <div class="top-actions sales-history-actions accounting-movements-actions">
+            <span class="list-records-box accounting-movements-records">
+                <strong>@Model.List.Movements.Count</strong>
+                <span>record</span>
+            </span>
+            <button class="button button-primary primary" type="button" data-accounting-action="new">Nuovo</button>
+            <button class="button button-primary primary" type="button" data-accounting-action="edit">Modifica</button>
+            <button class="button button-primary primary" type="button" data-accounting-action="delete">Cancella</button>
+            <button class="button button-primary primary accounting-article-button" type="button" data-accounting-action="article">Vedi articolo p.n.</button>
+            <button class="button button-primary primary" type="button" data-accounting-action="print">Stampa</button>
+        </div>
+    </header>
+
+    <form class="sales-history-filters accounting-movements-filters" method="get" data-accounting-filters data-progress-disabled="true">
+        <fieldset class="form-frame">
+            <div class="accounting-movements-filter-row">
+                <div class="field">
+                    <label>Dal</label>
+                    <span class="micronote-date-control" data-date-control>
+                        <input type="hidden" name="dateFrom" value="@Model.List.DateFrom.ToString("yyyy-MM-dd")" data-filter-date-hidden />
+                        <input class="micronote-date-input" type="text" inputmode="numeric" maxlength="10" autocomplete="off"
+                               value="@Model.List.DateFrom.ToString("dd/MM/yyyy", it)" data-filter-date-display />
+                        <button class="micronote-date-button" type="button" tabindex="-1"
+                                aria-label="Seleziona data iniziale" data-date-picker-button></button>
+                    </span>
+                </div>
+                <div class="field">
+                    <label>Al</label>
+                    <span class="micronote-date-control" data-date-control>
+                        <input type="hidden" name="dateTo" value="@Model.List.DateTo.ToString("yyyy-MM-dd")" data-filter-date-hidden />
+                        <input class="micronote-date-input" type="text" inputmode="numeric" maxlength="10" autocomplete="off"
+                               value="@Model.List.DateTo.ToString("dd/MM/yyyy", it)" data-filter-date-display />
+                        <button class="micronote-date-button" type="button" tabindex="-1"
+                                aria-label="Seleziona data finale" data-date-picker-button></button>
+                    </span>
+                </div>
+                <div class="field accounting-cause-filter">
+                    <label>Causale</label>
+                    <select name="causeCode">
+                        <option value=""></option>
+                        @foreach (var cause in Model.List.Causes)
+                        {
+                            <option value="@cause.Code" selected="@(Model.List.CauseCode == cause.Code)">
+                                @cause.Description
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="field accounting-type-filter">
+                    <label>Tipo</label>
+                    <select name="movementType">
+                        <option value=""></option>
+                        @foreach (var type in Model.List.MovementTypes)
+                        {
+                            <option value="@type.Code" selected="@(Model.List.MovementType == type.Code)">
+                                @type.Description
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="field accounting-supplier-filter lookup-field"
+                     data-lookup-field
+                     data-lookup-type="fornitori"
+                     data-lookup-title="Fornitori"
+                     data-code-input="supplierCode"
+                     data-code-display="supplierCodeDisplay"
+                     data-label-input="supplierNameDisplay">
+                    <label>Fornitore</label>
+                    <input id="supplierCode"
+                           name="supplierCode"
+                           type="hidden"
+                           value="@(Model.List.SupplierCode?.ToString() ?? "")" />
+                    <input type="text"
+                           id="supplierCodeDisplay"
+                           value="@(Model.List.SupplierCode?.ToString("00000") ?? "")"
+                           inputmode="numeric"
+                           maxlength="5"
+                           data-accounting-supplier-code />
+                    <input id="supplierNameDisplay"
+                           value="@Model.List.SupplierName"
+                           readonly
+                           tabindex="-1"
+                           data-accounting-supplier-name />
+                    <button class="lookup-button"
+                            type="button"
+                            title="Seleziona fornitore"
+                            aria-label="Seleziona fornitore"
+                            data-lookup-open></button>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+
+    <form method="post" asp-page-handler="Delete" data-accounting-delete-form>
+        <input type="hidden" name="movementId" data-accounting-delete-id />
+        <input type="hidden" name="dateFrom" value="@Model.List.DateFrom.ToString("yyyy-MM-dd")" />
+        <input type="hidden" name="dateTo" value="@Model.List.DateTo.ToString("yyyy-MM-dd")" />
+        <input type="hidden" name="causeCode" value="@(Model.List.CauseCode?.ToString(CultureInfo.InvariantCulture) ?? "")" />
+        <input type="hidden" name="movementType" value="@Model.List.MovementType" />
+        <input type="hidden" name="supplierCode" value="@(Model.List.SupplierCode?.ToString(CultureInfo.InvariantCulture) ?? "")" />
+    </form>
+    <section class="accounting-movements-panel">
+        <div class="list-grid-frame accounting-movements-grid-frame">
+            <table class="list-grid accounting-movements-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="year" data-sort-type="number">Anno</th>
+                        <th data-sort-key="code" data-sort-type="number">Partita</th>
+                        <th data-sort-key="date" data-sort-type="number">Data</th>
+                        <th data-sort-key="documentNumber">Num. doc.</th>
+                        <th data-sort-key="causeCode" data-sort-type="number">Causale</th>
+                        <th data-sort-key="causeDescription">Causale</th>
+                        <th data-sort-key="amount" data-sort-type="number">Importo</th>
+                        <th data-sort-key="subjectType">C/F/B/D</th>
+                        <th data-sort-key="subjectCode" data-sort-type="number">Ditta</th>
+                        <th data-sort-key="subjectName">Nome</th>
+                        <th data-sort-key="notes">Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var movement in Model.List.Movements)
+                    {
+                        var rowUrl = Url.Page(
+                            "./Index",
+                            new
+                            {
+                                dateFrom = Model.List.DateFrom.ToString("yyyy-MM-dd"),
+                                dateTo = Model.List.DateTo.ToString("yyyy-MM-dd"),
+                                causeCode = Model.List.CauseCode,
+                                movementType = Model.List.MovementType,
+                                supplierCode = Model.List.SupplierCode,
+                                selectedId = movement.Id
+                            });
+                        <tr class="@(selectedId == movement.Id ? "selected selected-row" : "")"
+                            tabindex="0"
+                            data-accounting-row
+                            data-movement-id="@movement.Id"
+                             data-movement-year="@movement.Year"
+                             data-movement-sector="@movement.Sector"
+                             data-movement-code="@movement.Code"
+                             data-movement-document="@movement.SourceDocument"
+                             data-sort-year="@movement.Year"
+                             data-sort-code="@movement.Code"
+                             data-sort-date="@movement.MovementDate.ToString("yyyyMMdd")"
+                             data-sort-document-number="@movement.DocumentNumber"
+                             data-sort-cause-code="@movement.CauseCode"
+                             data-sort-cause-description="@movement.CauseDescription"
+                             data-sort-amount="@SortNumber(movement.Amount)"
+                             data-sort-subject-type="@movement.SubjectType"
+                             data-sort-subject-code="@movement.SubjectCode"
+                             data-sort-subject-name="@movement.SubjectName"
+                             data-sort-notes="@movement.Notes"
+                             data-print-enabled="@movement.PrintEnabled.ToString().ToLowerInvariant()"
+                             data-url="@rowUrl">
+                            <td>@movement.Year</td>
+                            <td>@movement.Code.ToString("000000")</td>
+                            <td>@movement.MovementDate.ToString("dd-MM-yyyy", it)</td>
+                            <td>@movement.DocumentNumber</td>
+                            <td>@movement.CauseCode.ToString("000")</td>
+                            <td>@movement.CauseDescription</td>
+                            <td>@Money(movement.Amount)</td>
+                            <td>@movement.SubjectType</td>
+                            <td>@(movement.SubjectCode == 0 ? "" : movement.SubjectCode.ToString("00000"))</td>
+                            <td>@movement.SubjectName</td>
+                            <td>@movement.Notes</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (Model.List.Movements.Count == 0)
+            {
+                <div class="sales-history-empty">Nessun movimento trovato.</div>
+            }
+        </div>
+    </section>
+
+    <div class="report-preview-backdrop" data-accounting-print-preview hidden>
+        <section class="report-preview-window" role="dialog" aria-modal="true" aria-labelledby="accountingPrintPreviewTitle">
+            <header class="report-preview-toolbar">
+                <div>
+                    <strong id="accountingPrintPreviewTitle">Anteprima movimenti contabili di prima nota</strong>
+                    <span data-accounting-print-summary></span>
+                </div>
+                <div class="report-preview-actions">
+                    <button type="button" data-accounting-preview-zoom-out aria-label="Riduci anteprima">−</button>
+                    <span data-accounting-preview-zoom-label>100%</span>
+                    <button type="button" data-accounting-preview-zoom-in aria-label="Ingrandisci anteprima">+</button>
+                    <button type="button" data-accounting-preview-print>Stampa</button>
+                    <button type="button" class="report-preview-close" data-accounting-preview-close>Chiudi</button>
+                </div>
+            </header>
+            <div class="report-preview-viewport">
+                <div class="report-preview-document" data-accounting-preview-document></div>
+            </div>
+        </section>
+    </div>
+</section>
+
+
+<div class="purchase-invoice-payment-modal-overlay" data-accounting-article-modal hidden>
+    <section class="purchase-invoice-payment-modal accounting-article-modal" role="dialog" aria-modal="true" aria-label="Articolo di contabilita">
+        <iframe title="Articolo di contabilita" data-accounting-article-modal-frame></iframe>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="~/js/lookup-fields.js" asp-append-version="true"></script>
+    <script src="~/js/filter-date-picker.js" asp-append-version="true"></script>
+    <script src="~/js/accounting-movements.js" asp-append-version="true"></script>
+}
+

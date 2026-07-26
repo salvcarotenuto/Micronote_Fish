@@ -1,0 +1,287 @@
+@page
+@model MicronoteFood.Web.Pages.SchedaContabile.IndexModel
+@using System.Globalization
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Scheda contabile";
+    ViewData["BodyClass"] = "accounting-statement-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string MoneyTotal(decimal value) => value.ToString("N2", it);
+    string DateValue(DateOnly value) => value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    string DateDisplay(DateOnly value) => value.ToString("dd/MM/yyyy", it);
+    var accountsJson = JsonSerializer.Serialize(Model.Report.Accounts.Select(account => new
+    {
+        masterCode = account.MasterCode,
+        masterDescription = account.MasterDescription,
+        accountCode = account.AccountCode,
+        accountDescription = account.AccountDescription,
+        typeCode = account.TypeCode,
+        typeDescription = account.TypeDescription
+    }));
+}
+
+<section class="module-page stock-movements-page accounting-statement-page supplier-form-page data-form-skin"
+         data-accounting-statement
+         data-return-url="@Model.ReturnUrl"
+         data-read-only-navigation="@Model.IsReadOnlyNavigation.ToString().ToLowerInvariant()"
+         data-is-loaded="@Model.Report.IsLoaded.ToString().ToLowerInvariant()">
+    <header class="module-header stock-movements-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" href="@Model.ReturnUrl" aria-label="Torna alla pagina precedente">
+                <img src="~/images/micronote-bak.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>Scheda contabile</h1>
+                <p>Visualizzazione e stampa scheda contabile</p>
+            </div>
+        </div>
+        <div class="top-actions accounting-statement-actions">
+            <span class="list-records-box accounting-statement-records">
+                <strong>@Model.Report.RecordCount</strong>
+                <span>record</span>
+            </span>
+            <button class="button button-primary primary" type="button" data-accounting-statement-action="movement">Vedi movimento</button>
+            <button class="button button-primary primary" type="button" data-accounting-statement-action="article">Vedi articolo p.n.</button>
+            <button class="button button-primary primary" type="button" data-accounting-statement-action="print">Stampa</button>
+        </div>
+    </header>
+
+    <form class="stock-movements-filters accounting-statement-filters"
+          method="get"
+          data-accounting-statement-filters
+          data-progress-message="Elaborazione scheda contabile in corso..."
+          data-progress-minimum-time="500">
+        @if (Model.ReturnUrl != "/")
+        {
+            <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+        }
+        <fieldset class="form-frame">
+            <div class="accounting-statement-filter-row">
+                <div class="field accounting-statement-account-field">
+                    <label>Conto</label>
+                    <input name="accountCode"
+                           value="@(Model.Report.AccountCode?.ToString("000") ?? "")"
+                           readonly
+                           data-statement-account-code />
+                    <input value="@Model.Report.AccountDescription"
+                           readonly
+                           tabindex="-1"
+                           data-statement-account-description />
+                </div>
+                <div class="field accounting-statement-date-field">
+                    <label>Dalla data</label>
+                    <span class="micronote-date-control" data-date-control>
+                        <input type="hidden"
+                               name="dateFrom"
+                               value="@DateValue(Model.Report.DateFrom)"
+                               data-statement-date-hidden
+                               data-statement-date-from />
+                        <input class="micronote-date-input"
+                               type="text"
+                               value="@DateDisplay(Model.Report.DateFrom)"
+                               readonly
+                               tabindex="-1"
+                               data-statement-date-display
+                               data-statement-date-from-display />
+                    </span>
+                </div>
+                <div class="field accounting-statement-date-field">
+                    <label>Alla data</label>
+                    <span class="micronote-date-control" data-date-control>
+                        <input type="hidden"
+                               name="dateTo"
+                               value="@DateValue(Model.Report.DateTo)"
+                               data-statement-date-hidden
+                               data-statement-date-to />
+                        <input class="micronote-date-input"
+                               type="text"
+                               value="@DateDisplay(Model.Report.DateTo)"
+                               readonly
+                               tabindex="-1"
+                               data-statement-date-display
+                               data-statement-date-to-display />
+                    </span>
+                </div>
+                <button class="button button-primary primary accounting-statement-change"
+                        type="button"
+                        data-statement-change>Cambia</button>
+            </div>
+        </fieldset>
+    </form>
+
+    <section class="stock-movements-panel accounting-statement-panel">
+        <div class="list-grid-frame stock-movements-grid-frame accounting-statement-grid-frame">
+            <table class="list-grid stock-movements-grid accounting-statement-grid">
+                <thead>
+                    <tr>
+                        <th>Partita</th>
+                        <th>Data</th>
+                        <th>Num. doc.</th>
+                        <th>Causale</th>
+                        <th>Descrizione</th>
+                        <th>Ctpartita</th>
+                        <th>Descrizione</th>
+                        <th>Dare</th>
+                        <th>Avere</th>
+                        <th>Saldo</th>
+                        <th>Segno</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Report.Rows)
+                    {
+                        <tr tabindex="0"
+                            data-accounting-statement-row
+                            data-id="@(row.Id?.ToString() ?? "")"
+                            data-year="@(row.Year?.ToString() ?? "")"
+                            data-sector="@(row.Sector?.ToString() ?? "")"
+                            data-code="@(row.Code?.ToString() ?? "")"
+                            data-cause="@(row.CauseCode?.ToString() ?? "")">
+                            <td>@(row.Code?.ToString("000000") ?? "")</td>
+                            <td>@(row.MovementDate?.ToString("dd-MM-yyyy", it) ?? "")</td>
+                            <td>@row.DocumentNumber</td>
+                            <td>@(row.CauseCode?.ToString("000") ?? "")</td>
+                            <td>@row.CauseDescription</td>
+                            <td>@(row.CounterpartCode?.ToString("000") ?? "")</td>
+                            <td>@row.CounterpartDescription</td>
+                            <td>@Money(row.Debit)</td>
+                            <td>@Money(row.Credit)</td>
+                            <td>@Money(row.Balance)</td>
+                            <td>@row.Sign</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr class="accounting-statement-total-row">
+                        <td class="accounting-statement-total-label" colspan="7">TOTALI</td>
+                        <td><input value="@MoneyTotal(Model.Report.TotalDebit)" readonly tabindex="-1" /></td>
+                        <td><input value="@MoneyTotal(Model.Report.TotalCredit)" readonly tabindex="-1" /></td>
+                        <td><input value="@MoneyTotal(Model.Report.Balance)" readonly tabindex="-1" /></td>
+                        <td><input value="@Model.Report.BalanceSign" readonly tabindex="-1" /></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+
+    <div class="accounting-statement-choice" hidden data-statement-choice>
+        <div class="accounting-statement-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="statement-choice-title">
+            <div class="stock-load-article-lookup-title" id="statement-choice-title">Selezione conto</div>
+            <div class="accounting-statement-choice-frame">
+                <div class="field statement-choice-account">
+                    <label>Conto</label>
+                    <input type="text" autocomplete="off" data-choice-account-code />
+                    <input type="text" readonly tabindex="-1" data-choice-account-description />
+                    <button class="lookup-button stock-movements-article-lookup-button"
+                            type="button"
+                            tabindex="-1"
+                            title="Seleziona conto"
+                            aria-label="Seleziona conto"
+                            data-choice-account-lookup></button>
+                </div>
+                <div class="field statement-choice-date">
+                    <label>Dalla data</label>
+                    <span class="micronote-date-control" data-date-control>
+                        <input type="hidden" data-statement-date-hidden data-choice-date-from />
+                        <input class="micronote-date-input"
+                               type="text"
+                               inputmode="numeric"
+                               maxlength="10"
+                               autocomplete="off"
+                               data-statement-date-display
+                               data-choice-date-from-display />
+                        <button class="micronote-date-button"
+                                type="button"
+                                tabindex="-1"
+                                aria-label="Seleziona data iniziale"
+                                data-date-picker-button></button>
+                    </span>
+                </div>
+                <div class="field statement-choice-date">
+                    <label>Alla data</label>
+                    <span class="micronote-date-control" data-date-control>
+                        <input type="hidden" data-statement-date-hidden data-choice-date-to />
+                        <input class="micronote-date-input"
+                               type="text"
+                               inputmode="numeric"
+                               maxlength="10"
+                               autocomplete="off"
+                               data-statement-date-display
+                               data-choice-date-to-display />
+                        <button class="micronote-date-button"
+                                type="button"
+                                tabindex="-1"
+                                aria-label="Seleziona data finale"
+                                data-date-picker-button></button>
+                    </span>
+                </div>
+            </div>
+            <div class="accounting-statement-choice-actions">
+                <button class="button button-primary primary" type="button" data-choice-confirm>Conferma</button>
+                <button class="button button-secondary secondary" type="button" data-choice-cancel>Annulla</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="accounting-statement-account-lookup" hidden data-account-lookup>
+        <div class="accounting-statement-account-lookup-dialog" role="dialog" aria-modal="true" aria-labelledby="account-lookup-title">
+            <div class="stock-load-article-lookup-title" id="account-lookup-title">Piano dei conti</div>
+            <div class="accounting-statement-account-lookup-body">
+                <div class="list-grid-frame accounting-statement-account-grid-frame">
+                    <table class="list-grid accounting-statement-account-grid">
+                        <thead>
+                            <tr>
+                                <th>Mastro</th>
+                                <th>Descrizione</th>
+                                <th>Conto</th>
+                                <th>Descrizione</th>
+                                <th>Tipo</th>
+                            </tr>
+                        </thead>
+                        <tbody data-account-lookup-body></tbody>
+                    </table>
+                </div>
+                <div class="accounting-statement-account-type-buttons">
+                    <button type="button" data-account-type="P">Patrimoniali</button>
+                    <button type="button" data-account-type="C">Costi</button>
+                    <button type="button" data-account-type="R">Ricavi</button>
+                    <button type="button" data-account-type="">Tutti</button>
+                </div>
+            </div>
+            <div class="accounting-statement-account-lookup-footer">
+                <label>Mastro</label>
+                <select data-account-master>
+                    <option value=""></option>
+                    @foreach (var master in Model.Report.Accounts
+                                        .GroupBy(account => new { account.MasterCode, account.MasterDescription })
+                                        .OrderBy(group => group.Key.MasterCode))
+                    {
+                        <option value="@master.Key.MasterCode">@master.Key.MasterCode.ToString("000") - @master.Key.MasterDescription</option>
+                    }
+                </select>
+                <label>Cerca</label>
+                <input type="text" data-account-search />
+                <span class="list-records-box accounting-statement-lookup-records">
+                    <strong data-account-count>@Model.Report.Accounts.Count</strong>
+                    <span>record</span>
+                </span>
+                <button class="button button-primary primary" type="button" data-account-ok>OK</button>
+                <button class="button button-secondary secondary" type="button" data-account-cancel>Annulla</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="application/json" data-accounting-statement-accounts>@Html.Raw(accountsJson)</script>
+</section>
+
+
+<div class="purchase-invoice-payment-modal-overlay" data-accounting-statement-article-modal hidden>
+    <section class="purchase-invoice-payment-modal accounting-article-modal" role="dialog" aria-modal="true" aria-label="Articolo di contabilita">
+        <iframe title="Articolo di contabilita" data-accounting-statement-article-modal-frame></iframe>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="~/js/accounting-statement.js" asp-append-version="true"></script>
+}

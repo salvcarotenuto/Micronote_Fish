@@ -1,0 +1,182 @@
+@page "{code:int?}"
+@model MicronoteFood.Web.Pages.Utenti.EditModel
+@{
+    ViewData["Title"] = Model.IsNew ? "Nuovo utente" : "Scheda utente";
+}
+
+<section class="module-page form-module-page supplier-form-page data-form-skin user-form-page">
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="./Index" aria-label="Esci dalla scheda">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>@(Model.IsNew ? "Nuovo utente" : "Scheda utente")</h1>
+                <p>
+                    @(Model.IsNew
+                        ? "Inserimento di una nuova anagrafica."
+                        : $"Codice {Model.AppUser.Code:000}")
+                </p>
+            </div>
+        </div>
+        <div class="top-actions">
+            <button class="button button-primary primary"
+                    type="button"
+                    data-user-save>
+                Salva
+            </button>
+            <a class="button button-secondary secondary" asp-page="./Index">Annulla</a>
+        </div>
+    </header>
+
+    <form id="user-form"
+          method="post"
+          class="entity-form"
+          data-progress-disabled="true"
+          data-enter-navigation>
+        <input asp-for="AppUser.Code" type="hidden" />
+        <input asp-for="Azione" type="hidden" />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <fieldset class="form-frame compact-frame">
+            <legend>Anagrafica</legend>
+            <div class="form-grid form-grid-4 form-frame-grid">
+                <div class="user-name-row">
+                    <div class="field field-code">
+                        <label>Codice</label>
+                        <input type="text"
+                               class="readonly-field code-display"
+                               readonly
+                               tabindex="-1"
+                               value="@(Model.IsNew ? Model.DisplayCode.ToString("000") : Model.AppUser.Code.ToString("000"))" />
+                    </div>
+                    <div class="field">
+                        <label asp-for="AppUser.LastName"></label>
+                        <input asp-for="AppUser.LastName" autofocus />
+                        <span asp-validation-for="AppUser.LastName"></span>
+                    </div>
+                    <div class="field">
+                        <label asp-for="AppUser.FirstName"></label>
+                        <input asp-for="AppUser.FirstName" />
+                        <span asp-validation-for="AppUser.FirstName"></span>
+                    </div>
+                </div>
+                <div class="field field-span-2">
+                    <label asp-for="AppUser.City"></label>
+                    <input asp-for="AppUser.City"
+                           list="ComuniList"
+                           autocomplete="off"
+                           data-comune-city />
+                </div>
+                <div class="field field-span-2">
+                    <label asp-for="AppUser.Address"></label>
+                    <input asp-for="AppUser.Address" />
+                </div>
+                <div class="field field-span-2">
+                    <label asp-for="AppUser.TaxCode"></label>
+                    <input asp-for="AppUser.TaxCode" class="text-uppercase" />
+                </div>
+                <div class="field">
+                    <label asp-for="AppUser.Gender"></label>
+                    <select asp-for="AppUser.Gender">
+                        <option value=""></option>
+                        <option value="M">Maschile</option>
+                        <option value="F">Femminile</option>
+                    </select>
+                </div>
+                <div class="field field-active field-user-active field-check">
+                    <div class="check-button-field">
+                        <input asp-for="AppUser.IsActive" />
+                        <label class="check-text" asp-for="AppUser.IsActive">
+                            Utente attivo
+                        </label>
+                        <label class="check-button-wrap"
+                               for="AppUser_IsActive"
+                               aria-label="Utente attivo"></label>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="form-frame compact-frame">
+            <legend>Accesso</legend>
+            <div class="form-grid form-grid-4 form-frame-grid">
+                <div class="field field-span-2">
+                    <label asp-for="AppUser.UserName"></label>
+                    <input asp-for="AppUser.UserName" autocomplete="off" />
+                    <span asp-validation-for="AppUser.UserName"></span>
+                </div>
+                <div class="field field-span-2 password-field">
+                    <label asp-for="AppUser.Password"></label>
+                    <div class="password-control">
+                        <input asp-for="AppUser.Password"
+                               class="password-masked"
+                               autocomplete="off"
+                               data-password-input />
+                        <button type="button"
+                                class="password-view-button"
+                                aria-label="Mostra password"
+                                data-password-view>
+                            Vedi
+                        </button>
+                    </div>
+                    <span asp-validation-for="AppUser.Password"></span>
+                </div>
+                <div class="field field-span-2">
+                    <label asp-for="AppUser.TypeCode"></label>
+                    <select asp-for="AppUser.TypeCode" asp-items="Model.Types">
+                        <option value=""></option>
+                    </select>
+                    <span asp-validation-for="AppUser.TypeCode"></span>
+                </div>
+                <div class="field field-span-2">
+                    <label asp-for="AppUser.QualificationCode"></label>
+                    <select asp-for="AppUser.QualificationCode" asp-items="Model.Qualifications">
+                        <option value=""></option>
+                    </select>
+                </div>
+                <div class="field field-user-store">
+                    <label asp-for="AppUser.StoreCode"></label>
+                    <select asp-for="AppUser.StoreCode" asp-items="Model.Stores">
+                        <option value=""></option>
+                    </select>
+                </div>
+                <div class="field field-active field-user-locked field-check">
+                    <div class="check-button-field">
+                        <input asp-for="AppUser.IsLocked" />
+                        <label class="check-text" asp-for="AppUser.IsLocked">
+                            Utente bloccato
+                        </label>
+                        <label class="check-button-wrap"
+                               for="AppUser_IsLocked"
+                               aria-label="Utente bloccato"></label>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="form-frame compact-frame">
+            <legend>Recapiti</legend>
+            <div class="form-grid form-grid-4 form-frame-grid">
+                <div class="field field-span-2">
+                    <label asp-for="AppUser.Phone"></label>
+                    <input asp-for="AppUser.Phone" inputmode="tel" />
+                </div>
+                <div class="field field-span-2">
+                    <label asp-for="AppUser.Email"></label>
+                    <input asp-for="AppUser.Email" type="email" />
+                    <span asp-validation-for="AppUser.Email"></span>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+    <datalist id="ComuniList"></datalist>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/comuni-assist.js" asp-append-version="true"></script>
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+    <script src="~/js/password-view.js" asp-append-version="true"></script>
+    <script src="~/js/user-edit.js" asp-append-version="true"></script>
+}

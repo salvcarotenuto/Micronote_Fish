@@ -1,0 +1,51 @@
+@page
+@model MicronoteFood.Web.Pages.Admin.IndexModel
+@{
+    ViewData["Title"] = "Amministrazione sistema";
+    ViewData["BodyClass"] = "system-admin-page";
+}
+
+<section class="module-page system-admin-home data-form-skin">
+    <header class="module-header system-admin-header">
+        <a class="module-logo-link" asp-page="/Index" aria-label="Torna al menu">
+            <img class="module-logo" src="~/images/micronote-bak.png" alt="Micronote" />
+        </a>
+        <div>
+            <h1>Amministrazione sistema</h1>
+            <p class="subtitle">Micronote Food - gestione piattaforma</p>
+        </div>
+        <form method="post" asp-page-handler="Logout" class="system-admin-logout-form">
+            <button class="button button-primary" type="submit">Esci</button>
+        </form>
+    </header>
+
+    <section class="system-admin-panel">
+        <div class="system-admin-menu">
+            <a class="system-admin-menu-link" asp-page="/Admin/Aziende/Index">
+                <strong>Gestione aziende</strong>
+                <span>Aggiunta, modifica e configurazione aziende accreditate</span>
+            </a>
+            <a class="system-admin-menu-link disabled" href="#" aria-disabled="true">
+                <strong>Parametri applicazione</strong>
+                <span>Parametri generali del database master</span>
+            </a>
+        </div>
+
+        <div class="system-admin-summary">
+            <span class="system-admin-label">Database master</span>
+            <strong>@Model.MasterDatabaseName</strong>
+            <span class="system-admin-label">Aziende registrate</span>
+            <strong>@Model.Companies.Count</strong>
+        </div>
+    </section>
+
+    @if (Model.LoadError is not null)
+    {
+        <div class="validation-summary system-admin-warning">
+            @Model.LoadError
+        </div>
+    }
+</section>
+
+
+

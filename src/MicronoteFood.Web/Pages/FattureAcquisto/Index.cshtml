@@ -1,0 +1,238 @@
+@page
+@model MicronoteFood.Web.Pages.FattureAcquisto.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Lista fatture di acquisto";
+    ViewData["BodyClass"] = "purchase-invoices-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string SortNumber(decimal value) => value.ToString(CultureInfo.InvariantCulture);
+    var selectedId = Model.List.SelectedId;
+}
+
+<section class="module-page purchase-invoices-page supplier-form-page data-form-skin" data-purchase-invoices>
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>Fatture di acquisto</h1>
+                <p>Lista fatture di acquisto.</p>
+            </div>
+        </div>
+        <div class="top-actions sales-history-actions purchase-invoices-actions">
+            <span class="list-records-box purchase-invoices-records">
+                <strong>@Model.List.Invoices.Count</strong>
+                <span>record</span>
+            </span>
+            <button class="button button-primary primary" type="button" data-purchase-invoice-action="new">Nuovo</button>
+            <button class="button button-primary primary" type="button" data-purchase-invoice-action="edit">Modifica</button>
+            <button class="button button-primary primary" type="button" data-purchase-invoice-action="delete">Cancella</button>
+            <button class="button button-primary primary" type="button" data-purchase-invoice-action="view">Visualizza</button>
+            <button class="button button-primary primary purchase-invoices-print-button"
+                    type="button"
+                    data-purchase-invoice-action="print">Stampa lista</button>
+        </div>
+    </header>
+
+    <form class="sales-history-filters purchase-invoices-filters" method="get" data-purchase-invoice-filters data-progress-disabled="true">
+        <fieldset class="form-frame">
+            <div class="purchase-invoices-filter-row">
+                <div class="field purchase-invoices-year-filter">
+                    <label>Anno</label>
+                    <select name="year">
+                        @foreach (var year in Model.List.Years)
+                        {
+                            <option value="@year" selected="@(Model.List.Year == year)">@year</option>
+                        }
+                    </select>
+                </div>
+                <div class="field purchase-invoices-month-filter">
+                    <label>Mese</label>
+                    <select name="month">
+                        <option value=""></option>
+                        @foreach (var month in Model.List.Months)
+                        {
+                            <option value="@month.Value" selected="@(Model.List.Month == month.Value)">
+                                @month.Description
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="field purchase-invoices-type-filter">
+                    <label>Tipo</label>
+                    <select name="causeCode">
+                        <option value=""></option>
+                        @foreach (var cause in Model.List.Causes)
+                        {
+                            <option value="@cause.Code" selected="@(Model.List.CauseCode == cause.Code)">
+                                @cause.Description
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="field purchase-invoices-supplier-filter lookup-field"
+                     data-lookup-field
+                     data-lookup-type="fornitori"
+                      data-lookup-title="Fornitori"
+                      data-code-input="supplierCode"
+                      data-code-display="supplierCodeDisplay"
+                      data-label-input="supplierNameDisplay">
+                    <label>Fornitore</label>
+                    <input id="supplierCode"
+                           name="supplierCode"
+                           type="hidden"
+                           value="@(Model.List.SupplierCode?.ToString() ?? "")" />
+                    <input id="supplierCodeDisplay"
+                           value="@(Model.List.SupplierCode is null ? "" : Model.List.SupplierCode.Value.ToString("00000"))"
+                           inputmode="numeric"
+                           maxlength="5"
+                           autocomplete="off" />
+                    <input id="supplierNameDisplay"
+                           value="@Model.List.SupplierName"
+                           readonly
+                           tabindex="-1"
+                           data-purchase-invoice-supplier-name />
+                    <button class="lookup-button"
+                            type="button"
+                            title="Seleziona fornitore"
+                            aria-label="Seleziona fornitore"
+                            data-lookup-open></button>
+                </div>
+                <div class="field purchase-invoices-store-filter">
+                    <label>Punto vend.</label>
+                    <select name="storeCode">
+                        <option value=""></option>
+                        @foreach (var store in Model.List.Stores)
+                        {
+                            <option value="@store.Code" selected="@(Model.List.StoreCode == store.Code)">
+                                @store.Description
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="field purchase-invoices-contra-filter">
+                    <label>Ct.partita</label>
+                    <select name="contraAccountCode">
+                        <option value=""></option>
+                        @foreach (var account in Model.List.ContraAccounts)
+                        {
+                            <option value="@account.Code" selected="@(Model.List.ContraAccountCode == account.Code)">
+                                @account.Description
+                            </option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+
+    <form method="post" asp-page-handler="Delete" data-purchase-invoice-delete-form>
+        <input type="hidden" name="invoiceId" data-purchase-invoice-delete-id />
+        <input type="hidden" name="year" value="@Model.List.Year" />
+        <input type="hidden" name="month" value="@(Model.List.Month?.ToString(CultureInfo.InvariantCulture) ?? "")" />
+        <input type="hidden" name="causeCode" value="@(Model.List.CauseCode?.ToString(CultureInfo.InvariantCulture) ?? "")" />
+        <input type="hidden" name="supplierCode" value="@(Model.List.SupplierCode?.ToString(CultureInfo.InvariantCulture) ?? "")" />
+        <input type="hidden" name="storeCode" value="@(Model.List.StoreCode?.ToString(CultureInfo.InvariantCulture) ?? "")" />
+        <input type="hidden" name="contraAccountCode" value="@(Model.List.ContraAccountCode?.ToString(CultureInfo.InvariantCulture) ?? "")" />
+        <input type="hidden" name="showDueDates" value="@Model.List.ShowDueDates.ToString().ToLowerInvariant()" />
+    </form>
+    <div class="list-grid-frame purchase-invoices-grid-frame">
+        <table class="list-grid purchase-invoices-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="code" data-sort-type="number">Partita</th>
+                        <th data-sort-key="documentNumber">Numero</th>
+                        <th data-sort-key="documentDate" data-sort-type="number">Data</th>
+                        <th data-sort-key="cause">Tipo</th>
+                        <th data-sort-key="supplierCode" data-sort-type="number">Fornitore</th>
+                        <th data-sort-key="supplierName">Nome</th>
+                        <th data-sort-key="contra">Contropartita</th>
+                        <th data-sort-key="net" data-sort-type="number">Imponibile</th>
+                        <th data-sort-key="vat" data-sort-type="number">Iva</th>
+                        <th data-sort-key="total" data-sort-type="number">Totale</th>
+                        <th data-sort-key="electronicInvoice">F.E.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var invoice in Model.List.Invoices)
+                    {
+                        var rowUrl = Url.Page(
+                            "./Index",
+                            new
+                            {
+                                year = Model.List.Year,
+                                month = Model.List.Month,
+                                causeCode = Model.List.CauseCode,
+                                supplierCode = Model.List.SupplierCode,
+                                storeCode = Model.List.StoreCode,
+                                contraAccountCode = Model.List.ContraAccountCode,
+                                selectedId = invoice.Id
+                            });
+                        <tr class="@(selectedId == invoice.Id ? "selected selected-row" : "")"
+                            tabindex="0"
+                            data-purchase-invoice-row
+                            data-invoice-id="@invoice.Id"
+                            data-url="@rowUrl"
+                            data-sort-year="@invoice.Year"
+                            data-sort-code="@invoice.Code"
+                            data-sort-document-number="@invoice.DocumentNumber"
+                            data-sort-document-date="@invoice.DocumentDate.ToString("yyyyMMdd")"
+                            data-sort-cause="@invoice.CauseDescription"
+                            data-sort-supplier-code="@invoice.SupplierCode"
+                            data-sort-supplier-name="@invoice.SupplierName"
+                            data-sort-contra="@invoice.ContraAccountDescription"
+                            data-sort-net="@SortNumber(invoice.Net)"
+                            data-sort-vat="@SortNumber(invoice.Vat)"
+                            data-sort-total="@SortNumber(invoice.Total)"
+                            data-sort-electronic-invoice="@invoice.ElectronicInvoiceName">
+                            <td>@invoice.Code.ToString("000000")</td>
+                            <td>@invoice.DocumentNumber</td>
+                            <td>@invoice.DocumentDate.ToString("dd-MM-yyyy", it)</td>
+                            <td>@invoice.CauseDescription</td>
+                            <td>@(invoice.SupplierCode == 0 ? "" : invoice.SupplierCode.ToString("00000"))</td>
+                            <td>@invoice.SupplierName</td>
+                            <td>@invoice.ContraAccountDescription</td>
+                            <td>@Money(invoice.Net)</td>
+                            <td>@Money(invoice.Vat)</td>
+                            <td>@Money(invoice.Total)</td>
+                            <td>@invoice.ElectronicInvoiceName</td>
+                        </tr>
+                    }
+                </tbody>
+        </table>
+        @if (Model.List.Invoices.Count == 0)
+        {
+            <div class="sales-history-empty">Nessuna fattura trovata.</div>
+        }
+    </div>
+
+    <div class="report-preview-backdrop" data-purchase-invoices-print-preview hidden>
+        <section class="report-preview-window" role="dialog" aria-modal="true" aria-labelledby="purchaseInvoicesPrintPreviewTitle">
+            <header class="report-preview-toolbar">
+                <div>
+                    <strong id="purchaseInvoicesPrintPreviewTitle">Anteprima lista fatture di acquisto</strong>
+                    <span data-purchase-invoices-print-summary></span>
+                </div>
+                <div class="report-preview-actions">
+                    <button type="button" data-purchase-invoices-preview-zoom-out aria-label="Riduci anteprima">−</button>
+                    <span data-purchase-invoices-preview-zoom-label>100%</span>
+                    <button type="button" data-purchase-invoices-preview-zoom-in aria-label="Ingrandisci anteprima">+</button>
+                    <button type="button" data-purchase-invoices-preview-print>Stampa</button>
+                    <button type="button" class="report-preview-close" data-purchase-invoices-preview-close>Chiudi</button>
+                </div>
+            </header>
+            <div class="report-preview-viewport">
+                <div class="report-preview-document" data-purchase-invoices-preview-document></div>
+            </div>
+        </section>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/lookup-fields.js" asp-append-version="true"></script>
+    <script src="~/js/purchase-invoices.js" asp-append-version="true"></script>
+}
+

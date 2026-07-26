@@ -1,0 +1,689 @@
+@page
+@model MicronoteFood.Web.Pages.Impostazioni.IndexModel
+@{
+    ViewData["Title"] = "Impostazioni";
+    ViewData["BodyClass"] = "settings-module";
+}
+
+
+@section Styles {
+    <style id="accounting-inline-style">
+        .settings-accounting-grid .field {
+            grid-template-columns: 170px 140px;
+        }
+
+        .settings-accounting-grid input {
+            max-width: 140px;
+            min-width: 140px;
+            width: 140px;
+        }
+
+        .settings-accounting-grid .settings-accounting-check-field {
+            grid-template-columns: 170px 140px;
+        }
+
+        .settings-accounting-grid .settings-accounting-check-field > span:last-child {
+            display: none;
+        }
+    </style>
+}
+<section class="module-page form-module-page supplier-form-page settings-page data-form-skin">
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>Impostazioni</h1>
+                <p>Micronote Food - Strumenti</p>
+            </div>
+        </div>
+        <div class="top-actions">
+            <a class="button button-secondary secondary" asp-page="/Index">Annulla</a>
+            <button class="button button-primary primary" type="submit" form="settings-form">Salva</button>
+        </div>
+    </header>
+
+    <form id="settings-form"
+          class="entity-form settings-form"
+          method="post"
+          novalidate
+          data-progress-disabled="true"
+          data-enter-navigation>
+        <input asp-for="ActiveTab" type="hidden" data-settings-active-tab />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <section class="settings-shell">
+            <div class="settings-tabs" role="tablist" aria-label="Impostazioni">
+                <button class="settings-tab-button active" type="button" role="tab" aria-selected="true" aria-controls="settings-panel-company" data-settings-tab="0">Dati azienda</button>
+                <button class="settings-tab-button" type="button" role="tab" aria-selected="false" aria-controls="settings-panel-owner" data-settings-tab="1">Dati titolare</button>
+                <button class="settings-tab-button" type="button" role="tab" aria-selected="false" aria-controls="settings-panel-accounting" data-settings-tab="2">Contabilita</button>
+                <button class="settings-tab-button" type="button" role="tab" aria-selected="false" aria-controls="settings-panel-billing" data-settings-tab="3">Fatturazione</button>
+                <button class="settings-tab-button" type="button" role="tab" aria-selected="false" aria-controls="settings-panel-fe" data-settings-tab="4">Fattura elettronica</button>
+                <button class="settings-tab-button" type="button" role="tab" aria-selected="false" aria-controls="settings-panel-mail" data-settings-tab="5">Posta elettronica</button>
+                <button class="settings-tab-button" type="button" role="tab" aria-selected="false" aria-controls="settings-panel-backup" data-settings-tab="6">Copie sicurezza</button>
+                <button class="settings-tab-button" type="button" role="tab" aria-selected="false" aria-controls="settings-panel-print" data-settings-tab="7">Parametri stampa</button>
+            </div>
+
+            <div class="settings-content">
+                <section class="settings-tab-panel active" id="settings-panel-company" role="tabpanel" data-settings-panel="0">
+                    <fieldset class="form-frame compact-frame settings-frame">
+                        <legend>Dati anagrafici</legend>
+                        <div class="settings-grid settings-company-grid">
+                            <div class="field field-wide">
+                                <label asp-for="Settings.RagioneSociale"></label>
+                                <input asp-for="Settings.RagioneSociale" maxlength="100" autocomplete="off" autofocus />
+                                <span asp-validation-for="Settings.RagioneSociale"></span>
+                            </div>
+                            <div class="field field-wide">
+                                <label asp-for="Settings.AttivitaEsercitata"></label>
+                                <input asp-for="Settings.AttivitaEsercitata" maxlength="250" autocomplete="off" />
+                                <span asp-validation-for="Settings.AttivitaEsercitata"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.CodiceFiscale"></label>
+                                <input asp-for="Settings.CodiceFiscale" maxlength="16" autocomplete="off" data-uppercase />
+                                <span asp-validation-for="Settings.CodiceFiscale"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.PartitaIva"></label>
+                                <input asp-for="Settings.PartitaIva" maxlength="11" inputmode="numeric" autocomplete="off" data-digits />
+                                <span asp-validation-for="Settings.PartitaIva"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.NumeroRea"></label>
+                                <input asp-for="Settings.NumeroRea" maxlength="12" autocomplete="off" data-uppercase />
+                                <span asp-validation-for="Settings.NumeroRea"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.Telefono"></label>
+                                <input asp-for="Settings.Telefono" maxlength="40" autocomplete="off" />
+                                <span asp-validation-for="Settings.Telefono"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.SitoWeb"></label>
+                                <input asp-for="Settings.SitoWeb" maxlength="50" autocomplete="off" />
+                                <span asp-validation-for="Settings.SitoWeb"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.NaturaGiuridica"></label>
+                                <input asp-for="Settings.NaturaGiuridica" maxlength="50" autocomplete="off" />
+                                <span asp-validation-for="Settings.NaturaGiuridica"></span>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="form-frame compact-frame settings-frame">
+                        <legend>Sede legale</legend>
+                        <div class="settings-grid settings-address-grid">
+                            <div class="field">
+                                <label asp-for="Settings.SedeLegaleCitta"></label>
+                                <input asp-for="Settings.SedeLegaleCitta" maxlength="50" autocomplete="off" />
+                                <span asp-validation-for="Settings.SedeLegaleCitta"></span>
+                            </div>
+                            <div class="field field-short">
+                                <label asp-for="Settings.SedeLegaleProvincia"></label>
+                                <input asp-for="Settings.SedeLegaleProvincia" maxlength="2" autocomplete="off" data-uppercase />
+                                <span asp-validation-for="Settings.SedeLegaleProvincia"></span>
+                            </div>
+                            <div class="field field-short">
+                                <label asp-for="Settings.SedeLegaleCap"></label>
+                                <input asp-for="Settings.SedeLegaleCap" maxlength="5" inputmode="numeric" autocomplete="off" data-digits />
+                                <span asp-validation-for="Settings.SedeLegaleCap"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.SedeLegaleIndirizzo"></label>
+                                <input asp-for="Settings.SedeLegaleIndirizzo" maxlength="80" autocomplete="off" />
+                                <span asp-validation-for="Settings.SedeLegaleIndirizzo"></span>
+                            </div>
+                            <div class="field settings-address-pec-field">
+                                <label asp-for="Settings.AzPec"></label>
+                                <input asp-for="Settings.AzPec" maxlength="100" autocomplete="off" />
+                                <span asp-validation-for="Settings.AzPec"></span>
+                            </div>
+                            <div class="field settings-address-country-field">
+                                <label asp-for="Settings.SedeLegaleNazione"></label>
+                                <input asp-for="Settings.SedeLegaleNazione" maxlength="50" autocomplete="off" />
+                                <span asp-validation-for="Settings.SedeLegaleNazione"></span>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="form-frame compact-frame settings-frame">
+                        <legend>Sede operativa</legend>
+                        <div class="settings-grid settings-address-grid">
+                            <div class="field">
+                                <label asp-for="Settings.SedeOperativaCitta"></label>
+                                <input asp-for="Settings.SedeOperativaCitta" maxlength="50" autocomplete="off" />
+                                <span asp-validation-for="Settings.SedeOperativaCitta"></span>
+                            </div>
+                            <div class="field field-short">
+                                <label asp-for="Settings.SedeOperativaProvincia"></label>
+                                <input asp-for="Settings.SedeOperativaProvincia" maxlength="2" autocomplete="off" data-uppercase />
+                                <span asp-validation-for="Settings.SedeOperativaProvincia"></span>
+                            </div>
+                            <div class="field field-short">
+                                <label asp-for="Settings.SedeOperativaCap"></label>
+                                <input asp-for="Settings.SedeOperativaCap" maxlength="5" inputmode="numeric" autocomplete="off" data-digits />
+                                <span asp-validation-for="Settings.SedeOperativaCap"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.SedeOperativaIndirizzo"></label>
+                                <input asp-for="Settings.SedeOperativaIndirizzo" maxlength="80" autocomplete="off" />
+                                <span asp-validation-for="Settings.SedeOperativaIndirizzo"></span>
+                            </div>
+                            <div class="field settings-address-pec-field">
+                                <label asp-for="Settings.AzEmail"></label>
+                                <input asp-for="Settings.AzEmail" maxlength="100" autocomplete="off" />
+                                <span asp-validation-for="Settings.AzEmail"></span>
+                            </div>
+                            <div class="field settings-address-country-field">
+                                <label asp-for="Settings.SedeOperativaNazione"></label>
+                                <input asp-for="Settings.SedeOperativaNazione" maxlength="50" autocomplete="off" />
+                                <span asp-validation-for="Settings.SedeOperativaNazione"></span>
+                            </div>
+                        </div>
+                    </fieldset>
+                </section>
+
+                <section class="settings-tab-panel" id="settings-panel-owner" role="tabpanel" data-settings-panel="1">
+                    <fieldset class="form-frame compact-frame settings-frame">
+                        <legend>Dati anagrafici</legend>
+                        <div class="settings-grid settings-company-grid">
+                            <div class="field">
+                                <label asp-for="Settings.TitolareCognome"></label>
+                                <input asp-for="Settings.TitolareCognome" maxlength="50" autocomplete="off" />
+                                <span asp-validation-for="Settings.TitolareCognome"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.TitolareNome"></label>
+                                <input asp-for="Settings.TitolareNome" maxlength="50" autocomplete="off" />
+                                <span asp-validation-for="Settings.TitolareNome"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.TitolareDataNascita"></label>
+                                <input asp-for="Settings.TitolareDataNascita" type="date" autocomplete="off" />
+                                <span asp-validation-for="Settings.TitolareDataNascita"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.TitolareCodiceFiscale"></label>
+                                <input asp-for="Settings.TitolareCodiceFiscale" maxlength="16" autocomplete="off" data-uppercase />
+                                <span asp-validation-for="Settings.TitolareCodiceFiscale"></span>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="form-frame compact-frame settings-frame">
+                        <legend>Dati residenza</legend>
+                        <div class="settings-grid settings-address-grid settings-owner-address-grid">
+                            <div class="field">
+                                <label asp-for="Settings.TitolareCitta"></label>
+                                <input asp-for="Settings.TitolareCitta" maxlength="50" autocomplete="off" />
+                                <span asp-validation-for="Settings.TitolareCitta"></span>
+                            </div>
+                            <div class="field field-short">
+                                <label asp-for="Settings.TitolareProvincia"></label>
+                                <input asp-for="Settings.TitolareProvincia" maxlength="2" autocomplete="off" data-uppercase />
+                                <span asp-validation-for="Settings.TitolareProvincia"></span>
+                            </div>
+                            <div class="field field-short">
+                                <label asp-for="Settings.TitolareCap"></label>
+                                <input asp-for="Settings.TitolareCap" maxlength="5" inputmode="numeric" autocomplete="off" data-digits />
+                                <span asp-validation-for="Settings.TitolareCap"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.TitolareIndirizzo"></label>
+                                <input asp-for="Settings.TitolareIndirizzo" maxlength="80" autocomplete="off" />
+                                <span asp-validation-for="Settings.TitolareIndirizzo"></span>
+                            </div>
+                            <div class="field settings-owner-phone-field">
+                                <label asp-for="Settings.TitolareTelefono"></label>
+                                <input asp-for="Settings.TitolareTelefono" maxlength="40" autocomplete="off" />
+                                <span asp-validation-for="Settings.TitolareTelefono"></span>
+                            </div>
+                            <div class="field settings-owner-email-field">
+                                <label asp-for="Settings.TitolareEmail"></label>
+                                <input asp-for="Settings.TitolareEmail" maxlength="100" autocomplete="off" />
+                                <span asp-validation-for="Settings.TitolareEmail"></span>
+                            </div>
+                            <div class="field settings-owner-pec-field">
+                                <label asp-for="Settings.TitolarePec"></label>
+                                <input asp-for="Settings.TitolarePec" maxlength="100" autocomplete="off" />
+                                <span asp-validation-for="Settings.TitolarePec"></span>
+                            </div>
+                        </div>
+                    </fieldset>
+                </section>
+
+                <section class="settings-tab-panel" id="settings-panel-accounting" role="tabpanel" data-settings-panel="2">
+                    <fieldset class="form-frame compact-frame settings-frame">
+                        <legend>Contabilita</legend>
+                        <div class="settings-grid settings-accounting-grid">
+                            <div class="field settings-accounting-check-field">
+                                <label asp-for="Settings.AttivitaEsenzioneIva">Esenzione IVA</label>
+                                <label class="standard-check-button" aria-label="Esenzione IVA">
+                                    <input asp-for="Settings.AttivitaEsenzioneIva" type="checkbox" />
+                                    <span aria-hidden="true"></span>
+                                </label>
+                                <span asp-validation-for="Settings.AttivitaEsenzioneIva"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.CodiceEsenzioneIva"></label>
+                                <input asp-for="Settings.CodiceEsenzioneIva" maxlength="10" autocomplete="off" data-uppercase />
+                                <span asp-validation-for="Settings.CodiceEsenzioneIva"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.IvaSpeseIncasso"></label>
+                                <input asp-for="Settings.IvaSpeseIncasso" maxlength="10" autocomplete="off" inputmode="decimal" data-percent-field data-percent-integer-digits="3" />
+                                <span asp-validation-for="Settings.IvaSpeseIncasso"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.AliqIvaVendite"></label>
+                                <input asp-for="Settings.AliqIvaVendite" maxlength="10" autocomplete="off" inputmode="decimal" data-percent-field data-percent-integer-digits="3" />
+                                <span asp-validation-for="Settings.AliqIvaVendite"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.AliquotaRitenutaIrpef"></label>
+                                <input asp-for="Settings.AliquotaRitenutaIrpef" maxlength="10" autocomplete="off" inputmode="decimal" data-percent-field data-percent-integer-digits="3" />
+                                <span asp-validation-for="Settings.AliquotaRitenutaIrpef"></span>
+                            </div>
+                            <div class="field">
+                                <label aria-hidden="true"></label>
+                                <input asp-for="Settings.AliquotaContributiInps" maxlength="10" autocomplete="off" inputmode="decimal" data-percent-field data-percent-integer-digits="3" />
+                                <span asp-validation-for="Settings.AliquotaContributiInps"></span>
+                            </div>
+                            <div class="field">
+                                <label aria-hidden="true"></label>
+                                <input asp-for="Settings.QuotaAperturaContratto" maxlength="20" autocomplete="off" inputmode="decimal" data-money-field />
+                                <span asp-validation-for="Settings.QuotaAperturaContratto"></span>
+                            </div>
+                            <div class="field">
+                                <label aria-hidden="true"></label>
+                                <input asp-for="Settings.QuotaStandardContratto" maxlength="20" autocomplete="off" inputmode="decimal" data-money-field />
+                                <span asp-validation-for="Settings.QuotaStandardContratto"></span>
+                            </div>
+                        </div>
+                    </fieldset>
+                </section>
+
+                <section class="settings-tab-panel" id="settings-panel-billing" role="tabpanel" data-settings-panel="3">
+                    <fieldset class="form-frame compact-frame settings-frame">
+                        <legend>Fatturazione</legend>
+                        <div class="settings-grid settings-billing-grid">
+                            <div class="field">
+                                <label asp-for="Settings.FattPagamentoStandard"></label>
+                                <select asp-for="Settings.FattPagamentoStandard" asp-items="Model.PaymentOptions">
+                                    <option value=""></option>
+                                </select>
+                                <span asp-validation-for="Settings.FattPagamentoStandard"></span>
+                            </div>
+                            <div class="field settings-billing-left-field">
+                                <label asp-for="Settings.FattSwift"></label>
+                                <input asp-for="Settings.FattSwift" maxlength="12" autocomplete="off" data-uppercase />
+                                <span asp-validation-for="Settings.FattSwift"></span>
+                            </div>
+                            <div class="field settings-billing-left-field">
+                                <label asp-for="Settings.FattIban"></label>
+                                <input asp-for="Settings.FattIban" maxlength="50" autocomplete="off" data-uppercase />
+                                <span asp-validation-for="Settings.FattIban"></span>
+                            </div>
+                            <div class="field field-full">
+                                <label asp-for="Settings.FattBanca"></label>
+                                <input asp-for="Settings.FattBanca" maxlength="50" autocomplete="off" />
+                                <span asp-validation-for="Settings.FattBanca"></span>
+                            </div>
+                            <div class="field field-full settings-textarea-field">
+                                <label asp-for="Settings.FattDescrizioneStandard"></label>
+                                <textarea asp-for="Settings.FattDescrizioneStandard" maxlength="255" rows="2"></textarea>
+                                <span asp-validation-for="Settings.FattDescrizioneStandard"></span>
+                            </div>
+                            <div class="field field-full settings-textarea-field settings-billing-wide-label-field">
+                                <label asp-for="Settings.FattNotePrivacy"></label>
+                                <textarea asp-for="Settings.FattNotePrivacy" maxlength="1000" rows="4"></textarea>
+                                <span asp-validation-for="Settings.FattNotePrivacy"></span>
+                            </div>
+                            <div class="field field-full settings-textarea-field settings-billing-wide-label-field">
+                                <label asp-for="Settings.FattMessaggioEmail"></label>
+                                <textarea asp-for="Settings.FattMessaggioEmail" maxlength="255" rows="2"></textarea>
+                                <span asp-validation-for="Settings.FattMessaggioEmail"></span>
+                            </div>
+                        </div>
+                    </fieldset>
+                </section>
+
+                <section class="settings-tab-panel" id="settings-panel-fe" role="tabpanel" data-settings-panel="4">
+                    <fieldset class="form-frame compact-frame settings-frame">
+                        <legend>Fattura elettronica</legend>
+                        <div class="settings-grid settings-fe-grid">
+                            <div class="field">
+                                <label asp-for="Settings.FeCodiceSdiAzienda"></label>
+                                <input asp-for="Settings.FeCodiceSdiAzienda" maxlength="7" autocomplete="off" data-uppercase />
+                                <span asp-validation-for="Settings.FeCodiceSdiAzienda"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.FePecDestinazioneSdi"></label>
+                                <input asp-for="Settings.FePecDestinazioneSdi" maxlength="100" autocomplete="off" />
+                                <span asp-validation-for="Settings.FePecDestinazioneSdi"></span>
+                            </div>
+                            <div class="field field-full">
+                                <label asp-for="Settings.FeMatriceNomeXml"></label>
+                                <input asp-for="Settings.FeMatriceNomeXml" maxlength="255" autocomplete="off" />
+                                <span asp-validation-for="Settings.FeMatriceNomeXml"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.FeRegimeFiscale"></label>
+                                <select asp-for="Settings.FeRegimeFiscale" asp-items="Model.FeRegimeOptions">
+                                    <option value=""></option>
+                                </select>
+                                <span asp-validation-for="Settings.FeRegimeFiscale"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.FeTipoRitenuta"></label>
+                                <select asp-for="Settings.FeTipoRitenuta" asp-items="Model.FeWithholdingTypeOptions">
+                                    <option value=""></option>
+                                </select>
+                                <span asp-validation-for="Settings.FeTipoRitenuta"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.FeCausaleRitenuta"></label>
+                                <select asp-for="Settings.FeCausaleRitenuta" asp-items="Model.FeWithholdingCauseOptions">
+                                    <option value=""></option>
+                                </select>
+                                <span asp-validation-for="Settings.FeCausaleRitenuta"></span>
+                            </div>
+                        </div>
+                    </fieldset>
+                </section>
+
+                <section class="settings-tab-panel" id="settings-panel-mail" role="tabpanel" data-settings-panel="5">
+                    <fieldset class="form-frame compact-frame settings-frame">
+                        <legend>Posta elettronica ordinaria</legend>
+                        <div class="settings-grid settings-mail-grid">
+                            <div class="field">
+                                <label asp-for="Settings.MailOrdNomeMittente"></label>
+                                <input asp-for="Settings.MailOrdNomeMittente" maxlength="100" autocomplete="off" />
+                                <span asp-validation-for="Settings.MailOrdNomeMittente"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.MailOrdEmailMittente"></label>
+                                <input asp-for="Settings.MailOrdEmailMittente" maxlength="100" autocomplete="off" />
+                                <span asp-validation-for="Settings.MailOrdEmailMittente"></span>
+                            </div>
+                            <div class="settings-mail-smtp-row">
+                                <div class="field settings-mail-server-field">
+                                    <label asp-for="Settings.MailOrdServerSmtp"></label>
+                                    <input asp-for="Settings.MailOrdServerSmtp" maxlength="100" autocomplete="off" />
+                                    <span asp-validation-for="Settings.MailOrdServerSmtp"></span>
+                                </div>
+                                <div class="field settings-mail-port-field">
+                                    <label asp-for="Settings.MailOrdPortaSmtp"></label>
+                                    <input asp-for="Settings.MailOrdPortaSmtp" maxlength="5" inputmode="numeric" autocomplete="off" data-digits />
+                                    <span asp-validation-for="Settings.MailOrdPortaSmtp"></span>
+                                </div>
+                                <div class="field settings-mail-check-field">
+                                    <label asp-for="Settings.MailOrdAutenticazione">Autenticazione</label>
+                                    <label class="standard-check-button" aria-label="Autenticazione posta ordinaria">
+                                        <input asp-for="Settings.MailOrdAutenticazione" type="checkbox" />
+                                        <span aria-hidden="true"></span>
+                                    </label>
+                                    <span asp-validation-for="Settings.MailOrdAutenticazione"></span>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.MailOrdSicurezza"></label>
+                                <select asp-for="Settings.MailOrdSicurezza">
+                                    <option value=""></option>
+                                    <option value="1">Nessuna</option>
+                                    <option value="2">STARTTLS</option>
+                                    <option value="3">SSL/TLS</option>
+                                </select>
+                                <span asp-validation-for="Settings.MailOrdSicurezza"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.MailOrdUsername"></label>
+                                <input asp-for="Settings.MailOrdUsername" maxlength="100" autocomplete="off" />
+                                <span asp-validation-for="Settings.MailOrdUsername"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.MailOrdPassword"></label>
+                                <div class="settings-password-control">
+                                    <input asp-for="Settings.MailOrdPassword" maxlength="100" autocomplete="off" type="password" />
+                                    <button class="settings-password-toggle" type="button" data-password-toggle="Settings_MailOrdPassword" tabindex="-1" aria-label="Mostra password" title="Mostra password">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                            <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <span asp-validation-for="Settings.MailOrdPassword"></span>
+                            </div>
+                            <div class="field settings-mail-test-field">
+                                <span aria-hidden="true"></span>
+                                <button class="button button-primary settings-mail-test-button" type="button" data-smtp-test="MailOrd">Test connessione</button>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="form-frame compact-frame settings-frame">
+                        <legend>Posta elettronica certificata</legend>
+                        <div class="settings-grid settings-mail-grid">
+                            <div class="field">
+                                <label asp-for="Settings.MailPecNomeMittente"></label>
+                                <input asp-for="Settings.MailPecNomeMittente" maxlength="100" autocomplete="off" />
+                                <span asp-validation-for="Settings.MailPecNomeMittente"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.MailPecEmailMittente"></label>
+                                <input asp-for="Settings.MailPecEmailMittente" maxlength="100" autocomplete="off" />
+                                <span asp-validation-for="Settings.MailPecEmailMittente"></span>
+                            </div>
+                            <div class="settings-mail-smtp-row">
+                                <div class="field settings-mail-server-field">
+                                    <label asp-for="Settings.MailPecServerSmtp"></label>
+                                    <input asp-for="Settings.MailPecServerSmtp" maxlength="100" autocomplete="off" />
+                                    <span asp-validation-for="Settings.MailPecServerSmtp"></span>
+                                </div>
+                                <div class="field settings-mail-port-field">
+                                    <label asp-for="Settings.MailPecPortaSmtp"></label>
+                                    <input asp-for="Settings.MailPecPortaSmtp" maxlength="5" inputmode="numeric" autocomplete="off" data-digits />
+                                    <span asp-validation-for="Settings.MailPecPortaSmtp"></span>
+                                </div>
+                                <div class="field settings-mail-check-field">
+                                    <label asp-for="Settings.MailPecAutenticazione">Autenticazione</label>
+                                    <label class="standard-check-button" aria-label="Autenticazione posta certificata">
+                                        <input asp-for="Settings.MailPecAutenticazione" type="checkbox" />
+                                        <span aria-hidden="true"></span>
+                                    </label>
+                                    <span asp-validation-for="Settings.MailPecAutenticazione"></span>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.MailPecSicurezza"></label>
+                                <select asp-for="Settings.MailPecSicurezza">
+                                    <option value=""></option>
+                                    <option value="1">Nessuna</option>
+                                    <option value="2">STARTTLS</option>
+                                    <option value="3">SSL/TLS</option>
+                                </select>
+                                <span asp-validation-for="Settings.MailPecSicurezza"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.MailPecUsername"></label>
+                                <input asp-for="Settings.MailPecUsername" maxlength="100" autocomplete="off" />
+                                <span asp-validation-for="Settings.MailPecUsername"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.MailPecPassword"></label>
+                                <div class="settings-password-control">
+                                    <input asp-for="Settings.MailPecPassword" maxlength="100" autocomplete="off" type="password" />
+                                    <button class="settings-password-toggle" type="button" data-password-toggle="Settings_MailPecPassword" tabindex="-1" aria-label="Mostra password" title="Mostra password">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                            <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <span asp-validation-for="Settings.MailPecPassword"></span>
+                            </div>
+                            <div class="field settings-mail-test-field">
+                                <span aria-hidden="true"></span>
+                                <button class="button button-primary settings-mail-test-button" type="button" data-smtp-test="MailPec">Test connessione</button>
+                            </div>
+                        </div>
+                    </fieldset>
+                </section>
+
+                <section class="settings-tab-panel" id="settings-panel-backup" role="tabpanel" data-settings-panel="6">
+                    <fieldset class="form-frame compact-frame settings-frame">
+                        <legend>Copie di sicurezza</legend>
+                        <div class="settings-grid settings-backup-grid">
+                            <div class="field settings-backup-check-field">
+                                <label asp-for="Settings.BackupAbilitaAutomatica">Copie automatiche</label>
+                                <label class="standard-check-button" aria-label="Copie automatiche">
+                                    <input asp-for="Settings.BackupAbilitaAutomatica" type="checkbox" />
+                                    <span aria-hidden="true"></span>
+                                </label>
+                                <span asp-validation-for="Settings.BackupAbilitaAutomatica"></span>
+                            </div>
+                            <div class="field field-full">
+                                <label asp-for="Settings.BackupPosizione"></label>
+                                <input asp-for="Settings.BackupPosizione" maxlength="260" autocomplete="off" />
+                                <span asp-validation-for="Settings.BackupPosizione"></span>
+                            </div>
+                            <div class="settings-weekdays field-full">
+                                <span class="settings-weekdays-label">Giorni copie</span>
+                                <label><input asp-for="Settings.BackupLunedi" type="checkbox" /> Lunedi</label>
+                                <label><input asp-for="Settings.BackupMartedi" type="checkbox" /> Martedi</label>
+                                <label><input asp-for="Settings.BackupMercoledi" type="checkbox" /> Mercoledi</label>
+                                <label><input asp-for="Settings.BackupGiovedi" type="checkbox" /> Giovedi</label>
+                                <label><input asp-for="Settings.BackupVenerdi" type="checkbox" /> Venerdi</label>
+                                <label><input asp-for="Settings.BackupSabato" type="checkbox" /> Sabato</label>
+                                <label><input asp-for="Settings.BackupDomenica" type="checkbox" /> Domenica</label>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.BackupOrario"></label>
+                                <input asp-for="Settings.BackupOrario" type="time" autocomplete="off" />
+                                <span asp-validation-for="Settings.BackupOrario"></span>
+                            </div>
+                            <div class="field settings-backup-check-field">
+                                <label asp-for="Settings.BackupCancellaVecchie">Cancella vecchie</label>
+                                <label class="standard-check-button" aria-label="Cancella vecchie copie">
+                                    <input asp-for="Settings.BackupCancellaVecchie" type="checkbox" />
+                                    <span aria-hidden="true"></span>
+                                </label>
+                                <span asp-validation-for="Settings.BackupCancellaVecchie"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.BackupGiorniVecchie"></label>
+                                <input asp-for="Settings.BackupGiorniVecchie" maxlength="3" inputmode="numeric" autocomplete="off" data-digits />
+                                <span asp-validation-for="Settings.BackupGiorniVecchie"></span>
+                            </div>
+                        </div>
+                    </fieldset>
+                </section>
+
+                <section class="settings-tab-panel" id="settings-panel-print" role="tabpanel" data-settings-panel="7">
+                    <fieldset class="form-frame compact-frame settings-frame">
+                        <legend>Parametri di stampa</legend>
+                        <div class="settings-grid settings-print-grid">
+                            <div class="field field-full settings-textarea-field">
+                                <label asp-for="Settings.StampaDatiAzienda"></label>
+                                <textarea asp-for="Settings.StampaDatiAzienda" maxlength="500" rows="5"></textarea>
+                                <span asp-validation-for="Settings.StampaDatiAzienda"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.StampaFontName"></label>
+                                <select asp-for="Settings.StampaFontName">
+                                    <option value=""></option>
+                                    <option value="Arial">Arial</option>
+                                    <option value="Calibri">Calibri</option>
+                                    <option value="Consolas">Consolas</option>
+                                    <option value="Courier New">Courier New</option>
+                                    <option value="Microsoft Sans Serif">Microsoft Sans Serif</option>
+                                    <option value="Segoe UI">Segoe UI</option>
+                                    <option value="Times New Roman">Times New Roman</option>
+                                </select>
+                                <span asp-validation-for="Settings.StampaFontName"></span>
+                            </div>
+                            <div class="field field-short">
+                                <label asp-for="Settings.StampaFontSize"></label>
+                                <select asp-for="Settings.StampaFontSize">
+                                    <option value=""></option>
+                                    <option value="8">8</option>
+                                    <option value="9">9</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                    <option value="14">14</option>
+                                    <option value="16">16</option>
+                                    <option value="18">18</option>
+                                    <option value="20">20</option>
+                                    <option value="22">22</option>
+                                    <option value="24">24</option>
+                                    <option value="26">26</option>
+                                    <option value="28">28</option>
+                                    <option value="36">36</option>
+                                    <option value="48">48</option>
+                                    <option value="72">72</option>
+                                </select>
+                                <span asp-validation-for="Settings.StampaFontSize"></span>
+                            </div>
+                            <div class="field">
+                                <label asp-for="Settings.StampaAlign"></label>
+                                <select asp-for="Settings.StampaAlign">
+                                    <option value=""></option>
+                                    <option value="0">Sinistra</option>
+                                    <option value="1">Centro</option>
+                                    <option value="2">Destra</option>
+                                </select>
+                                <span asp-validation-for="Settings.StampaAlign"></span>
+                            </div>
+                            <div class="field field-full settings-textarea-field">
+                                <label asp-for="Settings.TimbroTxt"></label>
+                                <textarea asp-for="Settings.TimbroTxt" maxlength="500" rows="5"></textarea>
+                                <span asp-validation-for="Settings.TimbroTxt"></span>
+                            </div>
+                        </div>
+                    </fieldset>
+                </section>
+            </div>
+        </section>
+    </form>
+</section>
+
+@if (Model.Saved)
+{
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            window.MicronoteMessageBox?.show({
+                title: "Impostazioni",
+                message: "Impostazioni salvate correttamente.",
+                variant: "success",
+                onConfirm: () => {
+                    window.location.href = "/";
+                }
+            });
+        });
+    </script>
+}
+
+@section Scripts {
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+    <script src="~/js/settings.js" asp-append-version="true"></script>
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

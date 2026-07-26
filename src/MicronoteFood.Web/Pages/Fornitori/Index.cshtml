@@ -1,0 +1,159 @@
+@page
+@model MicronoteFood.Web.Pages.Fornitori.IndexModel
+@{
+    ViewData["Title"] = "Fornitori";
+    ViewData["BodyClass"] = "list-module";
+}
+
+<section class="list-page supplier-list-page" data-list-page data-menu-url="/">
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-bak.jpeg" alt="" />
+            <span>
+                <strong>Fornitori</strong>
+                <small>Micronote Food - Gestione fornitori</small>
+            </span>
+        </a>
+        <div class="list-title-actions">
+            <a class="list-title-button" asp-page="./Edit">Aggiungi</a>
+            <button class="list-title-button" type="button" data-supplier-action="edit">
+                Modifica
+            </button>
+            <button class="list-title-button" type="button" data-supplier-action="delete">
+                Elimina
+            </button>
+            <button class="list-title-button" type="button" data-supplier-action="print">
+                Stampa lista
+            </button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <span hidden data-page-message data-message-variant="error"
+              data-message-text="@Model.ErrorMessage"></span>
+    }
+
+    <section class="list-panel">
+        <div class="list-toolbar">
+            <div class="list-filter-field list-search-field">
+                <label for="supplier-search">Cerca</label>
+                <div class="list-search-control">
+                    <input id="supplier-search"
+                           type="text"
+                           placeholder="Nome fornitore"
+                           autocomplete="off"
+                           autofocus
+                           data-supplier-search />
+                    <button class="list-search-clear"
+                            type="button"
+                            aria-label="Pulisci filtro"
+                            data-supplier-search-clear
+                            hidden>
+                        ×
+                    </button>
+                </div>
+            </div>
+            <div class="list-filter-field list-account-field">
+                <label for="supplier-account">Contropartita</label>
+                <select id="supplier-account" data-supplier-account>
+                    <option value="">Tutte</option>
+                    @foreach (var account in Model.Accounts)
+                    {
+                        <option value="@account.Code">@account.Description</option>
+                    }
+                </select>
+            </div>
+            <span class="list-records-box">
+                <strong data-supplier-count>@Model.Suppliers.Count</strong>
+                <span>record</span>
+            </span>
+        </div>
+
+        <div class="list-grid-frame" data-supplier-grid>
+            <table class="list-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="code" data-sort-type="number">Codice</th>
+                        <th data-sort-key="name">Nome</th>
+                        <th data-sort-key="city">Sede</th>
+                        <th data-sort-key="province">Prov.</th>
+                        <th data-sort-key="vat">Partita IVA</th>
+                        <th data-sort-key="phone">Telefono</th>
+                        <th data-sort-key="email">E-mail</th>
+                        <th data-sort-key="account">Contropartita</th>
+                        <th data-sort-key="store">Punto vendita</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var supplier in Model.Suppliers)
+                    {
+                        <tr tabindex="0"
+                            class="@(!supplier.IsActive ? "is-inactive" : null)"
+                            data-supplier-row
+                            data-account-code="@supplier.AccountCode"
+                            data-filter-name="@supplier.Name"
+                            data-sort-code="@supplier.Code"
+                            data-sort-name="@supplier.Name"
+                            data-sort-city="@supplier.City"
+                            data-sort-province="@supplier.Province"
+                            data-sort-vat="@supplier.VatNumber"
+                            data-sort-phone="@supplier.Phone"
+                            data-sort-email="@supplier.Email"
+                            data-sort-account="@supplier.AccountDescription"
+                            data-sort-store="@supplier.StoreName"
+                            data-edit-url="@Url.Page("./Edit", new { code = supplier.Code })"
+                            data-delete-code="@supplier.Code"
+                            data-print-code="@supplier.Code"
+                            data-record-label="@supplier.Name">
+                            <td class="code-cell">@supplier.Code.ToString("00000")</td>
+                            <td>@supplier.Name</td>
+                            <td>@supplier.City</td>
+                            <td>@supplier.Province</td>
+                            <td>@supplier.VatNumber</td>
+                            <td>@supplier.Phone</td>
+                            <td>@supplier.Email</td>
+                            <td title="@supplier.AccountDescription">
+                                @supplier.AccountDescription
+                            </td>
+                            <td>@supplier.StoreName</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="list-empty" data-supplier-empty hidden>
+                Nessun fornitore trovato.
+            </div>
+        </div>
+    </section>
+
+    <form method="post" asp-page-handler="Delete" data-supplier-delete-form hidden>
+        <input type="hidden" name="code" data-supplier-delete-code />
+    </form>
+
+    <div class="report-preview-backdrop" data-supplier-print-preview hidden>
+        <section class="report-preview-window" role="dialog" aria-modal="true" aria-labelledby="supplierPrintPreviewTitle">
+            <header class="report-preview-toolbar">
+                <div>
+                    <strong id="supplierPrintPreviewTitle">Anteprima lista fornitori</strong>
+                    <span data-supplier-print-summary></span>
+                </div>
+                <div class="report-preview-actions">
+                    <button type="button" data-supplier-preview-zoom-out aria-label="Riduci anteprima">−</button>
+                    <span data-supplier-preview-zoom-label>100%</span>
+                    <button type="button" data-supplier-preview-zoom-in aria-label="Ingrandisci anteprima">+</button>
+                    <button type="button" data-supplier-preview-print>Stampa</button>
+                    <button type="button" data-supplier-preview-pdf>File PDF</button>
+                    <button type="button" class="report-preview-close" data-supplier-preview-close>Chiudi</button>
+                </div>
+            </header>
+            <div class="report-preview-viewport">
+                <div class="report-preview-document" data-supplier-preview-document></div>
+            </div>
+        </section>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/suppliers-list.js" asp-append-version="true"></script>
+}

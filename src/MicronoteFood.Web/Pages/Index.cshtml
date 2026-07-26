@@ -1,0 +1,105 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Menu principale";
+}
+
+<section class="app-heading">
+    <div class="app-identity">
+        <img class="app-logo" src="~/images/micronote-logo.jpeg" alt="" />
+        <div class="app-heading-copy">
+            <p class="eyebrow">Gestione commerciale e contabile integrata</p>
+            <h1>Micronote Fish</h1>
+            <p class="app-subtitle">Commercio ittico, magazzino, vendite e contabilità</p>
+        </div>
+    </div>
+    <img class="food-logo" src="~/images/micronote-fish.png" alt="Micronote Fish" />
+    <div class="session-panel">
+        <p class="app-version">Versione 1.26.07.17C</p>
+        <dl class="session-summary">
+            <div>
+                <dt>Azienda</dt>
+                <dd>@Model.CompanyName</dd>
+            </div>
+            <div>
+                <dt>Esercizio</dt>
+                <dd>@Model.Esercizio</dd>
+            </div>
+            <div>
+                <dt>Utente</dt>
+                <dd>@Model.UserName</dd>
+            </div>
+        </dl>
+    </div>
+</section>
+
+<nav class="quick-links" aria-label="Accessi rapidi">
+    @foreach (var link in Model.QuickLinks)
+    {
+        if (link.Page is not null)
+        {
+            <a class="quick-link" asp-page="@link.Page">
+                <span class="quick-icon" aria-hidden="true">@link.Icon</span>
+                <span>@link.Label</span>
+            </a>
+        }
+        else
+        {
+            <button class="quick-link is-pending" type="button" disabled title="Funzione in preparazione">
+                <span class="quick-icon" aria-hidden="true">@link.Icon</span>
+                <span>@link.Label</span>
+            </button>
+        }
+    }
+</nav>
+
+<section class="menu-shell" aria-labelledby="menu-title">
+    <div class="menu-intro">
+        <div>
+            <p class="eyebrow">Area di lavoro</p>
+            <h2 id="menu-title">Menu principale</h2>
+        </div>
+        <p>Le voci marcate [Fish] sono specifiche della nuova applicazione e ancora da realizzare.</p>
+    </div>
+
+    <div class="main-menu">
+        @foreach (var menuSection in Model.Sections)
+        {
+            <details class="menu-section @menuSection.AccentClass" id="menu-@menuSection.Id">
+                <summary>
+                    <span class="section-icon" aria-hidden="true">@menuSection.Icon</span>
+                    <span class="section-title">@menuSection.Title</span>
+                    <span class="section-toggle" aria-hidden="true"></span>
+                </summary>
+                <div class="section-content">
+                    @foreach (var group in menuSection.Groups)
+                    {
+                        <section class="menu-group">
+                            <h3>@group.Title</h3>
+                            <div class="menu-items">
+                                @foreach (var item in group.Items)
+                                {
+                                    if (item.Page is not null)
+                                    {
+                                        var href = item.ReturnTo is null
+                                            ? Url.Page(item.Page)
+                                            : Url.Page(item.Page, new { returnTo = item.ReturnTo });
+                                        href = string.IsNullOrWhiteSpace(href) ? item.Page : href;
+                                        <a class="menu-link" href="@href">@item.Label</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="menu-link is-pending" title="Funzione in preparazione">@item.Label</span>
+                                    }
+                                }
+                            </div>
+                        </section>
+                    }
+                </div>
+            </details>
+        }
+    </div>
+</section>
+
+
+

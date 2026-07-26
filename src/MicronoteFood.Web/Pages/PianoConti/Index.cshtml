@@ -1,0 +1,136 @@
+@page
+@model MicronoteFood.Web.Pages.PianoConti.IndexModel
+@{
+    ViewData["Title"] = "Piano dei conti";
+    ViewData["BodyClass"] = "list-module";
+}
+
+<section class="list-page chart-account-list-page" data-list-page data-menu-url="/">
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Piano dei conti</strong>
+                <small>Micronote Food - Tabelle contabili</small>
+            </span>
+        </a>
+        <div class="list-title-actions">
+            <a class="list-title-button" asp-page="./Edit">Aggiungi</a>
+            <button class="list-title-button" type="button" data-chart-account-action="edit">
+                Modifica
+            </button>
+            <button class="list-title-button" type="button" data-chart-account-action="delete">
+                Elimina
+            </button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <span hidden data-page-message data-message-variant="error"
+              data-message-text="@Model.ErrorMessage"></span>
+    }
+
+    <section class="list-panel">
+        <div class="list-toolbar chart-account-toolbar">
+            <div class="list-filter-field list-search-field">
+                <label for="chart-account-search">Cerca</label>
+                <div class="list-search-control">
+                    <input id="chart-account-search"
+                           type="text"
+                           placeholder="Descrizione conto"
+                           value="@Model.Search"
+                           autocomplete="off"
+                           autofocus
+                           data-chart-account-search />
+                    <button class="list-search-clear"
+                            type="button"
+                            aria-label="Pulisci filtro"
+                            data-chart-account-search-clear
+                            hidden>
+                        ×
+                    </button>
+                </div>
+            </div>
+            <div class="list-filter-field chart-account-master-filter">
+                <label for="chart-account-master">Mastro</label>
+                <select id="chart-account-master" asp-for="MasterCode" asp-items="Model.Masters"
+                        data-chart-account-master>
+                    <option value="">Tutti</option>
+                </select>
+            </div>
+            <div class="list-filter-field chart-account-type-filter">
+                <label for="chart-account-type">Tipo</label>
+                <select id="chart-account-type" asp-for="Type" data-chart-account-type>
+                    <option value="">Tutti</option>
+                    @foreach (var option in Model.TypeOptions)
+                    {
+                        <option value="@option.Code">@option.Code - @option.Description</option>
+                    }
+                </select>
+            </div>
+            <span class="list-records-box">
+                <strong data-chart-account-count>@Model.Accounts.Count</strong>
+                <span>record</span>
+            </span>
+        </div>
+
+        <div class="list-grid-frame chart-account-grid-frame" data-chart-account-grid>
+            <table class="list-grid chart-account-grid">
+                <thead>
+                    <tr>
+                        <th data-sort-key="masterCode" data-sort-type="number">Mastro</th>
+                        <th data-sort-key="masterDescription">Descrizione mastro</th>
+                        <th data-sort-key="code" data-sort-type="number">Conto</th>
+                        <th data-sort-key="description">Descrizione</th>
+                        <th data-sort-key="type">Tipo</th>
+                        <th data-sort-key="companyType">Tipo ditta</th>
+                        <th data-sort-key="stockLoad">Carico</th>
+                        <th data-sort-key="locked">Bloccato</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var account in Model.Accounts)
+                    {
+                        <tr tabindex="0"
+                            data-chart-account-row
+                            data-master-code="@account.MasterCode"
+                            data-type="@account.Type"
+                            data-filter-description="@account.Description"
+                            data-sort-master-code="@account.MasterCode"
+                            data-sort-master-description="@account.MasterDescription"
+                            data-sort-code="@account.Code"
+                            data-sort-description="@account.Description"
+                            data-sort-type="@account.Type"
+                            data-sort-company-type="@account.CompanyType"
+                            data-sort-stock-load="@(account.StockLoad ? "1" : "0")"
+                            data-sort-locked="@(account.Locked ? "1" : "0")"
+                            data-edit-url="@Url.Page("./Edit", new { code = account.Code })"
+                            data-delete-code="@account.Code"
+                            data-record-label="@account.Description">
+                            <td class="code-cell">@account.MasterCode.ToString("000")</td>
+                            <td>@account.MasterDescription</td>
+                            <td class="code-cell">@account.Code.ToString("000")</td>
+                            <td>@account.Description</td>
+                            <td>@account.Type</td>
+                            <td>@account.CompanyType</td>
+                            <td>@(account.StockLoad ? "Sì" : "")</td>
+                            <td>@(account.Locked ? "Sì" : "")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="list-empty" data-chart-account-empty hidden>
+                Nessun conto trovato.
+            </div>
+        </div>
+    </section>
+
+    <form method="post" asp-page-handler="Delete" data-chart-account-delete-form hidden>
+        <input type="hidden" name="code" data-chart-account-delete-code />
+    </form>
+</section>
+
+@section Scripts {
+    <script src="~/js/chart-accounts-list.js" asp-append-version="true"></script>
+}

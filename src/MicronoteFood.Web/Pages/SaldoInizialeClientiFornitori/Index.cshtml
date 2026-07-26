@@ -1,0 +1,165 @@
+@page
+@model MicronoteFood.Web.Pages.SaldoInizialeClientiFornitori.IndexModel
+@using System.Globalization
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Saldo iniziale clienti e fornitori";
+    ViewData["BodyClass"] = "initial-customer-supplier-balance-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Total(decimal value) => value.ToString("N2", it);
+}
+
+<section class="list-page article-list-page initial-cf-balance-page" data-initial-cf-balance>
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Saldo iniziale clienti e fornitori</strong>
+                <small>Registrazione / modifica saldo iniziale clienti e fornitori</small>
+            </span>
+        </a>
+        <div class="list-title-actions initial-cf-balance-actions">
+            <span class="list-records-box article-records-box initial-cf-balance-records">
+                <strong>@(Model.List.Customers.Count + Model.List.Suppliers.Count)</strong>
+                <span>record</span>
+            </span>
+            <button class="list-title-button" type="submit" form="initial-cf-balance-form">Salva</button>
+            <a class="list-title-button" asp-page="/Index" data-initial-cf-exit>Esci</a>
+        </div>
+    </header>
+
+    <form id="initial-cf-balance-form"
+          method="post"
+          data-progress-disabled="true"
+          data-initial-cf-form
+          data-enter-navigation>
+        <input asp-for="Payload" type="hidden" data-initial-cf-payload />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <fieldset class="form-frame initial-cf-filter-frame">
+            <div class="initial-cf-filter-grid">
+                <div class="initial-cf-filter-left">
+                    <div class="field initial-cf-year-field">
+                        <label>Esercizio contabile</label>
+                        <select name="year" data-initial-cf-year>
+                            @foreach (var year in Model.List.Years)
+                            {
+                                <option value="@year" selected="@(year == Model.List.Year)">@year</option>
+                            }
+                        </select>
+                    </div>
+                    <button class="button button-primary primary initial-cf-clear-button" type="button" data-initial-cf-clear>Azzera tutto</button>
+                </div>
+                <div class="initial-cf-note">
+                    <strong>NOTE:</strong>
+                    <span>per i CLIENTI usare valori positivi (+) per gli importi a CREDITO, valori negativi (-) per gli importi a DEBITO<br />
+                    per i FORNITORI usare valori positivi (+) per gli importi a DEBITO, valori negativi (-) per gli importi a CREDITO</span>
+                </div>
+            </div>
+        </fieldset>
+
+        <div class="initial-cf-grid-layout">
+            <section class="initial-cf-panel">
+                <h2>Saldi iniziali clienti</h2>
+                <div class="list-grid-frame initial-cf-grid-frame">
+                    <table class="list-grid initial-cf-grid" data-initial-cf-table data-cf-type="C">
+                        <thead>
+                            <tr>
+                                <th data-sort-key="code" data-sort-type="number">Codice</th>
+                                <th data-sort-key="name">Nome</th>
+                                <th data-sort-key="city">Sede</th>
+                                <th data-sort-key="vatNumber">Partita iva</th>
+                                <th data-sort-key="balance" data-sort-type="number">Saldo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.List.Customers)
+                            {
+                                <tr data-initial-cf-row
+                                    data-cf-type="C"
+                                    data-code="@row.Code"
+                                    data-sort-code="@row.Code"
+                                    data-sort-name="@row.Name"
+                                    data-sort-city="@row.City"
+                                    data-sort-vat-number="@row.VatNumber"
+                                    data-sort-balance="@row.Balance.ToString(CultureInfo.InvariantCulture)">
+                                    <td>@row.Code.ToString("00000")</td>
+                                    <td>@row.Name</td>
+                                    <td>@row.City</td>
+                                    <td>@row.VatNumber</td>
+                                    <td>
+                                        <input type="text" inputmode="decimal" autocomplete="off" value="@Money(row.Balance)" data-initial-cf-balance-input />
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="stock-total-box initial-cf-total-box">
+                    <span class="stock-total-title">Totale clienti</span>
+                    <input type="text" value="@Total(Model.List.CustomerTotal)" readonly tabindex="-1" data-initial-cf-total="C" />
+                </div>
+            </section>
+
+            <section class="initial-cf-panel">
+                <h2>Saldi iniziali fornitori</h2>
+                <div class="list-grid-frame initial-cf-grid-frame">
+                    <table class="list-grid initial-cf-grid" data-initial-cf-table data-cf-type="F">
+                        <thead>
+                            <tr>
+                                <th data-sort-key="code" data-sort-type="number">Codice</th>
+                                <th data-sort-key="name">Nome</th>
+                                <th data-sort-key="city">Sede</th>
+                                <th data-sort-key="vatNumber">Partita iva</th>
+                                <th data-sort-key="balance" data-sort-type="number">Saldo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.List.Suppliers)
+                            {
+                                <tr data-initial-cf-row
+                                    data-cf-type="F"
+                                    data-code="@row.Code"
+                                    data-sort-code="@row.Code"
+                                    data-sort-name="@row.Name"
+                                    data-sort-city="@row.City"
+                                    data-sort-vat-number="@row.VatNumber"
+                                    data-sort-balance="@row.Balance.ToString(CultureInfo.InvariantCulture)">
+                                    <td>@row.Code.ToString("00000")</td>
+                                    <td>@row.Name</td>
+                                    <td>@row.City</td>
+                                    <td>@row.VatNumber</td>
+                                    <td>
+                                        <input type="text" inputmode="decimal" autocomplete="off" value="@Money(row.Balance)" data-initial-cf-balance-input />
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="stock-total-box initial-cf-total-box">
+                    <span class="stock-total-title">Totale fornitori</span>
+                    <input type="text" value="@Total(Model.List.SupplierTotal)" readonly tabindex="-1" data-initial-cf-total="F" />
+                </div>
+            </section>
+        </div>
+    </form>
+</section>
+
+@if (!string.IsNullOrWhiteSpace(Model.SavedMessage))
+{
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            window.MicronoteMessageBox?.show({
+                title: "Saldo iniziale clienti e fornitori",
+                message: @Html.Raw(JsonSerializer.Serialize(Model.SavedMessage)),
+                variant: "success"
+            });
+        });
+    </script>
+}
+
+@section Scripts {
+    <script src="~/js/initial-customer-supplier-balance.js" asp-append-version="true"></script>
+}
