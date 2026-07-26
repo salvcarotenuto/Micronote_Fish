@@ -172,10 +172,10 @@ app.MapGet(
             {
                 code = article.Code,
                 description = article.Description,
-                unitMeasure = article.UnitMeasureCode ?? "",
+                unitMeasure = article.SalesUnitCode ?? "",
                 price = article.StandardCost ?? 0,
                 lastPrice = article.LastCost ?? 0,
-                stock = article.InitialStock ?? 0,
+                stock = article.InitialWeight ?? 0,
                 vatRate = article.VatRate ?? 0
             });
     });
@@ -200,16 +200,18 @@ app.MapGet(
             {
                 code = article.Code,
                 description = article.Description,
-                unitMeasure = article.UnitMeasureCode,
+                unitMeasure = article.SalesUnitCode,
                 categoryCode = article.CategoryCode,
                 category = article.CategoryDescription,
                 group = article.GroupDescription,
-                subgroup = article.SubgroupDescription,
+                subgroup = article.SpeciesDescription,
+                species = article.SpeciesDescription,
+                origin = article.OriginDescription,
                 supplierCode = article.SupplierCode,
                 supplier = article.SupplierName,
                 price = article.StandardCost,
                 lastPrice = article.StandardCost,
-                stock = 0,
+                stock = article.InitialWeight,
                 vatRate = article.VatRate
             })
             .ToArray();

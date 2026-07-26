@@ -67,26 +67,22 @@
                     <span asp-validation-for="Article.Description"></span>
                 </div>
 
-                <div class="field article-unit-field">
-                    <label asp-for="Article.UnitMeasureCode"></label>
-                    <select asp-for="Article.UnitMeasureCode" asp-items="Model.UnitMeasureItems" tabindex="6">
+                <div class="field article-unit-field article-sales-unit-field">
+                    <label asp-for="Article.SalesUnitCode"></label>
+                    <select asp-for="Article.SalesUnitCode" asp-items="Model.UnitMeasureItems" tabindex="7">
+                        <option value=""></option>
+                    </select>
+                </div>
+                <div class="field article-unit-field article-purchase-unit-field">
+                    <label asp-for="Article.PurchaseUnitCode"></label>
+                    <select asp-for="Article.PurchaseUnitCode" asp-items="Model.UnitMeasureItems" tabindex="8">
                         <option value=""></option>
                     </select>
                 </div>
                 <div class="field article-standard-cost-field">
                     <label asp-for="Article.StandardCost"></label>
                     <input asp-for="Article.StandardCost"
-                           value="@Money(Model.Article.StandardCost)"
-                           class="currency-display"
-                           inputmode="decimal"
-                           tabindex="9"
-                           data-money-field
-                           data-money-integer-digits="9" />
-                </div>
-                <div class="field article-initial-stock-field">
-                    <label asp-for="Article.InitialStock"></label>
-                    <input asp-for="Article.InitialStock"
-                           value="@Quantity(Model.Article.InitialStock)"
+                           value="@Quantity(Model.Article.StandardCost)"
                            class="numeric-display"
                            inputmode="decimal"
                            tabindex="12"
@@ -94,31 +90,42 @@
                            data-decimal-integer-digits="7"
                            data-decimal-digits="3" />
                 </div>
+                <div class="field article-initial-stock-field">
+                    <label asp-for="Article.InitialWeight"></label>
+                    <input asp-for="Article.InitialWeight"
+                           value="@Quantity(Model.Article.InitialWeight)"
+                           class="numeric-display"
+                           inputmode="decimal"
+                           tabindex="11"
+                           data-decimal-field
+                           data-decimal-integer-digits="7"
+                           data-decimal-digits="3" />
+                </div>
                 <div class="field article-subgroup-field">
-                    <label asp-for="Article.SubgroupCode"></label>
-                    <select asp-for="Article.SubgroupCode" asp-items="Model.SubgroupItems" tabindex="5">
+                    <label asp-for="Article.SpeciesCode"></label>
+                    <select asp-for="Article.SpeciesCode" asp-items="Model.SpeciesItems" tabindex="5">
                         <option value=""></option>
                     </select>
                 </div>
 
                 <div class="field article-net-weight-field">
-                    <label asp-for="Article.NetWeight"></label>
-                    <input asp-for="Article.NetWeight"
-                           value="@Quantity(Model.Article.NetWeight)"
+                    <label asp-for="Article.Tare"></label>
+                    <input asp-for="Article.Tare"
+                           value="@Quantity(Model.Article.Tare)"
                            class="numeric-display"
                            inputmode="decimal"
-                           tabindex="7"
+                           tabindex="9"
                            data-decimal-field
                            data-decimal-integer-digits="7"
                            data-decimal-digits="3" />
                 </div>
                 <div class="field article-pieces-field">
-                    <label asp-for="Article.Pieces"></label>
-                    <input asp-for="Article.Pieces"
+                    <label asp-for="Article.InitialPackages"></label>
+                    <input asp-for="Article.InitialPackages"
                            type="text"
                            inputmode="numeric"
                            autocomplete="off"
-                           tabindex="8"
+                           tabindex="10"
                            data-integer-field />
                 </div>
                 <div class="field article-category-field">
@@ -130,18 +137,19 @@
                 <div class="field article-standard-price-field">
                     <label asp-for="Article.StandardPrice"></label>
                     <input asp-for="Article.StandardPrice"
-                           value="@Money(Model.Article.StandardPrice)"
+                           value="@Quantity(Model.Article.StandardPrice)"
                            class="currency-display"
                            inputmode="decimal"
-                           tabindex="10"
-                           data-money-field
-                           data-money-integer-digits="9" />
+                           tabindex="13"
+                           data-decimal-field
+                           data-decimal-integer-digits="7"
+                           data-decimal-digits="3" />
                 </div>
                 <div class="field article-vat-rate-field">
                     <label asp-for="Article.VatRate"></label>
                     <input asp-for="Article.VatRate"
                            inputmode="decimal"
-                           tabindex="11"
+                           tabindex="15"
                            data-percent-field
                            data-percent-integer-digits="3" />
                 </div>
@@ -153,23 +161,20 @@
                     </select>
                 </div>
                 <div class="field article-daily-consumption-field">
-                    <label asp-for="Article.DailyConsumption"></label>
-                    <input asp-for="Article.DailyConsumption"
-                           value="@Quantity(Model.Article.DailyConsumption)"
-                           class="numeric-display"
-                           inputmode="decimal"
-                           tabindex="13"
-                           data-decimal-field
-                           data-decimal-integer-digits="7"
-                           data-decimal-digits="3" />
+                    <label asp-for="Article.OriginCode"></label>
+                    <select asp-for="Article.OriginCode" asp-items="Model.OriginItems" tabindex="6">
+                        <option value=""></option>
+                    </select>
                 </div>
                 <div class="field article-average-cost-field">
-                    <label>Costo medio</label>
-                    <input class="readonly-field currency-display" readonly tabindex="-1" value="@Money(Model.Article.AverageCost)" />
-                </div>
-                <div class="field article-last-cost-field">
-                    <label>Ultimo costo</label>
-                    <input class="readonly-field currency-display" readonly tabindex="-1" value="@Money(Model.Article.LastCost)" />
+                    <label asp-for="Article.VatIncludedPrice"></label>
+                    <input asp-for="Article.VatIncludedPrice"
+                           value="@Money(Model.Article.VatIncludedPrice)"
+                           class="currency-display"
+                           inputmode="decimal"
+                           tabindex="14"
+                           data-money-field
+                           data-money-integer-digits="7" />
                 </div>
 
                 <div class="field article-supplier-field lookup-field"
@@ -187,7 +192,7 @@
                            inputmode="numeric"
                            maxlength="5"
                            autocomplete="off"
-                           tabindex="14"
+                           tabindex="16"
                            value="@(Model.Article.SupplierCode?.ToString("00000") ?? "")" />
                     <input id="articleSupplierNameDisplay"
                            class="article-supplier-name-display"
@@ -199,18 +204,18 @@
                             type="button"
                             title="Seleziona fornitore"
                             aria-label="Seleziona fornitore"
-                            tabindex="15"
+                            tabindex="17"
                             data-lookup-open></button>
                     <button class="article-supplier-clear-button"
                             type="button"
                             title="Azzera fornitore"
                             aria-label="Azzera fornitore"
-                            tabindex="16"
+                            tabindex="18"
                             data-article-supplier-clear>x</button>
                 </div>
                 <div class="field article-supplier-code-field">
                     <label asp-for="Article.SupplierArticleCode"></label>
-                    <input asp-for="Article.SupplierArticleCode" tabindex="17" />
+                    <input asp-for="Article.SupplierArticleCode" tabindex="19" />
                 </div>
             </div>
         </fieldset>

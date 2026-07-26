@@ -9,7 +9,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchClear = page?.querySelector("[data-article-search-clear]");
   const category = page?.querySelector("[data-article-category]");
   const group = page?.querySelector("[data-article-group]");
-  const subgroup = page?.querySelector("[data-article-subgroup]");
+  const species = page?.querySelector("[data-article-species]");
+  const origin = page?.querySelector("[data-article-origin]");
   const supplier = page?.querySelector("[data-article-supplier]");
   const count = page?.querySelector("[data-article-count]");
   const empty = page?.querySelector("[data-article-empty]");
@@ -27,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  if (!page || !grid || !table || !search || !category || !group || !subgroup || !supplier) {
+  if (!page || !grid || !table || !search || !category || !group || !species || !origin || !supplier) {
     return;
   }
 
@@ -183,9 +184,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const textMatches = needle === "" || normalize(row.dataset.filterText).includes(needle);
       const categoryMatches = category.value === "" || row.dataset.categoryCode === category.value;
       const groupMatches = group.value === "" || row.dataset.groupCode === group.value;
-      const subgroupMatches = subgroup.value === "" || row.dataset.subgroupCode === subgroup.value;
+      const speciesMatches = species.value === "" || row.dataset.speciesCode === species.value;
+      const originMatches = origin.value === "" || row.dataset.originCode === origin.value;
       const supplierMatches = supplier.value === "" || row.dataset.supplierCode === supplier.value;
-      row.hidden = !(textMatches && categoryMatches && groupMatches && subgroupMatches && supplierMatches);
+      row.hidden = !(textMatches && categoryMatches && groupMatches && speciesMatches && originMatches && supplierMatches);
       if (!row.hidden) {
         visibleCount += 1;
       }
@@ -476,7 +478,7 @@ document.addEventListener("DOMContentLoaded", () => {
     search.focus();
     applyFilters();
   });
-  [category, group, subgroup, supplier].forEach((field) => {
+  [category, group, species, origin, supplier].forEach((field) => {
     field.addEventListener("change", applyFilters);
   });
 

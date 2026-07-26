@@ -27,7 +27,7 @@ public class EditModel(ArticleRepository repository) : PageModel
     public bool IsReadonly => FormAzione.IsReadonly(Azione);
 
     public ArticleLookups Lookups { get; private set; } =
-        new([], [], [], [], []);
+        new([], [], [], [], [], []);
 
     public async Task<IActionResult> OnGetAsync(
         string? code,
@@ -55,7 +55,7 @@ public class EditModel(ArticleRepository repository) : PageModel
             {
                 Code = prefillCode?.Trim() ?? "",
                 Description = description?.Trim() ?? "",
-                UnitMeasureCode = unitMeasure?.Trim(),
+                SalesUnitCode = unitMeasure?.Trim(),
                 StandardCost = ParseDecimal(standardCost),
                 VatRate = ParseDecimal(vatRate),
                 SupplierCode = supplierCode is > 0 ? supplierCode : null,
@@ -161,8 +161,11 @@ public class EditModel(ArticleRepository repository) : PageModel
     public IEnumerable<SelectListItem> GroupItems =>
         Lookups.Groups.Select(item => new SelectListItem(item.Description, item.Code.ToString()));
 
-    public IEnumerable<SelectListItem> SubgroupItems =>
-        Lookups.Subgroups.Select(item => new SelectListItem(item.Description, item.Code.ToString()));
+    public IEnumerable<SelectListItem> SpeciesItems =>
+        Lookups.Species.Select(item => new SelectListItem(item.Description, item.Code.ToString()));
+
+    public IEnumerable<SelectListItem> OriginItems =>
+        Lookups.Origins.Select(item => new SelectListItem(item.Description, item.Code.ToString()));
 
     public IEnumerable<SelectListItem> SupplierItems =>
         Lookups.Suppliers.Select(item => new SelectListItem(item.Description, item.Code.ToString()));

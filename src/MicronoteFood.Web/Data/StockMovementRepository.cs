@@ -96,7 +96,7 @@ public sealed class StockMovementRepository(MicronoteDb database)
                    COALESCE(M.Articolo, '') AS Articolo,
                    COALESCE(Articoli.Descrizione, '') AS ArticoloDescrizione,
                    COALESCE(M.TipoMov, '') AS TipoMov,
-                   COALESCE(Articoli.Ums, '') AS Ums,
+                   COALESCE(Articoli.Uma, '') AS Ums,
                    COALESCE(M.Quantita, 0) AS Quantita,
                    COALESCE(M.Prezzo, 0) AS Prezzo,
                    COALESCE(M.Importo, 0) AS Importo,

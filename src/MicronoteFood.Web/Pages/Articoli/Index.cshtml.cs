@@ -14,7 +14,7 @@ public class IndexModel(
     public IReadOnlyList<ArticleListItem> Articles { get; private set; } = [];
 
     public ArticleLookups Lookups { get; private set; } =
-        new([], [], [], [], []);
+        new([], [], [], [], [], []);
 
     public string? ErrorMessage { get; private set; }
 
@@ -63,8 +63,11 @@ public class IndexModel(
     public IEnumerable<SelectListItem> GroupItems =>
         Lookups.Groups.Select(item => new SelectListItem(item.Description, item.Code.ToString()));
 
-    public IEnumerable<SelectListItem> SubgroupItems =>
-        Lookups.Subgroups.Select(item => new SelectListItem(item.Description, item.Code.ToString()));
+    public IEnumerable<SelectListItem> SpeciesItems =>
+        Lookups.Species.Select(item => new SelectListItem(item.Description, item.Code.ToString()));
+
+    public IEnumerable<SelectListItem> OriginItems =>
+        Lookups.Origins.Select(item => new SelectListItem(item.Description, item.Code.ToString()));
 
     public IEnumerable<SelectListItem> SupplierItems =>
         Lookups.Suppliers.Select(item => new SelectListItem(item.Description, item.Code.ToString()));

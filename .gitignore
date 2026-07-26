@@ -17,3 +17,7 @@ config/config.php
 *.temp
 *.log
 *.pid
+
+# Output temporanei degli strumenti di confronto/migrazione.
+tools/CompareLegacyArticles/*.exe
+tools/CompareLegacyArticles/*.tsv

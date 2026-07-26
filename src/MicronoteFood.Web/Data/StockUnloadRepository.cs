@@ -65,7 +65,7 @@ public sealed class StockUnloadRepository(
     {
         await using var connection = await database.OpenConnectionAsync(ct);
         const string sql = """
-            SELECT m.*, COALESCE(a.Descrizione,'') Descrizione, COALESCE(a.Ums,'') Ums,
+            SELECT m.*, COALESCE(a.Descrizione,'') Descrizione, COALESCE(a.Uma,'') Ums,
                    COALESCE(f.Nome,'') FornitoreNome
             FROM Movimenti m LEFT JOIN Articoli a ON a.Codice=m.Articolo
             LEFT JOIN Fornitori f ON f.Codice=m.Ditta
@@ -212,7 +212,7 @@ public sealed class StockUnloadRepository(
     private static async Task<IReadOnlyList<StockUnloadArticle>> ReadArticlesAsync(MySqlConnection c, CancellationToken ct)
     {
         var result = new List<StockUnloadArticle>();
-        await using var command = new MySqlCommand("SELECT Codice,COALESCE(Descrizione,''),COALESCE(Ums,'') FROM Articoli ORDER BY Descrizione;", c);
+        await using var command = new MySqlCommand("SELECT Codice,COALESCE(Descrizione,''),COALESCE(Uma,'') FROM Articoli ORDER BY Descrizione;", c);
         await using var r = await command.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct)) result.Add(new(Convert.ToString(r[0]) ?? "", Convert.ToString(r[1]) ?? "", Convert.ToString(r[2]) ?? ""));
         return result;

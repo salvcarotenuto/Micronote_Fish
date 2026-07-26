@@ -9141,7 +9141,7 @@ body.purchase-invoice-edit-module {
 .article-list-toolbar {
   display: grid;
   gap: 10px;
-  grid-template-columns: minmax(290px, 1.3fr) repeat(3, minmax(240px, 1fr)) minmax(320px, 1.2fr);
+  grid-template-columns: minmax(290px, 1.3fr) repeat(4, minmax(210px, 1fr)) minmax(280px, 1.2fr);
 }
 
 .list-title-actions .article-records-box {
@@ -9157,7 +9157,7 @@ body.purchase-invoice-edit-module {
 }
 
 .article-grid {
-  min-width: 1380px;
+  min-width: 1900px;
 }
 
 .article-grid th:nth-child(1),
@@ -9174,29 +9174,41 @@ body.purchase-invoice-edit-module {
 .article-grid th:nth-child(3),
 .article-grid td:nth-child(3) {
   text-align: center;
-  width: 95px;
+  width: 90px;
 }
 
 .article-grid th:nth-child(4),
-.article-grid td:nth-child(4),
+.article-grid td:nth-child(4) {
+  text-align: center;
+  width: 90px;
+}
+
 .article-grid th:nth-child(5),
 .article-grid td:nth-child(5),
 .article-grid th:nth-child(6),
-.article-grid td:nth-child(6) {
-  width: 150px;
-}
-
+.article-grid td:nth-child(6),
 .article-grid th:nth-child(7),
 .article-grid td:nth-child(7),
 .article-grid th:nth-child(8),
 .article-grid td:nth-child(8) {
+  width: 140px;
+}
+
+.article-grid th:nth-child(9),
+.article-grid td:nth-child(9),
+.article-grid th:nth-child(10),
+.article-grid td:nth-child(10),
+.article-grid th:nth-child(11),
+.article-grid td:nth-child(11),
+.article-grid th:nth-child(12),
+.article-grid td:nth-child(12) {
   text-align: right;
   width: 100px;
 }
 
-.article-grid th:nth-child(9),
-.article-grid td:nth-child(9) {
-  width: 260px;
+.article-grid th:nth-child(13),
+.article-grid td:nth-child(13) {
+  width: 220px;
 }
 
 .article-form-page {
@@ -9432,6 +9444,76 @@ body.purchase-invoice-edit-module {
 .article-average-cost-field {
   grid-column: 3;
   grid-row: 4;
+}
+
+/* Disposizione Fish della scheda Articoli. */
+.article-form-page .article-category-field {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.article-form-page .article-group-field {
+  grid-column: 1;
+  grid-row: 4;
+}
+
+.article-form-page .article-subgroup-field {
+  grid-column: 1;
+  grid-row: 5;
+}
+
+.article-form-page .article-daily-consumption-field {
+  grid-column: 1;
+  grid-row: 6;
+}
+
+.article-form-page .article-sales-unit-field {
+  grid-column: 2;
+  grid-row: 3;
+  margin-top: 20px;
+}
+
+.article-form-page .article-purchase-unit-field {
+  grid-column: 2;
+  grid-row: 4;
+}
+
+.article-form-page .article-net-weight-field {
+  grid-column: 2;
+  grid-row: 5;
+  margin-top: 0;
+}
+
+.article-form-page .article-pieces-field {
+  grid-column: 2;
+  grid-row: 6;
+}
+
+.article-form-page .article-initial-stock-field {
+  grid-column: 2;
+  grid-row: 7;
+  margin-top: 0;
+}
+
+.article-form-page .article-standard-cost-field {
+  grid-column: 3;
+  grid-row: 3;
+  margin-top: 20px;
+}
+
+.article-form-page .article-standard-price-field {
+  grid-column: 3;
+  grid-row: 4;
+}
+
+.article-form-page .article-average-cost-field {
+  grid-column: 3;
+  grid-row: 5;
+}
+
+.article-form-page .article-vat-rate-field {
+  grid-column: 3;
+  grid-row: 6;
 }
 
 .article-form-page .currency-display {

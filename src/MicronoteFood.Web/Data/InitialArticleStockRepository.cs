@@ -12,7 +12,7 @@ public sealed class InitialArticleStockRepository(MicronoteDb database)
             SELECT
                 a.Codice,
                 COALESCE(a.Descrizione, '') AS Descrizione,
-                COALESCE(a.Ums, '') AS Ums,
+                COALESCE(a.Uma, '') AS Ums,
                 COALESCE(c.Descrizione, '') AS Categoria,
                 COALESCE(g.Descrizione, '') AS Gruppo,
                 COALESCE(a.GiacIn, 0) AS GiacIn
