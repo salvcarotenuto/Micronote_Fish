@@ -47,6 +47,7 @@ builder.Services.AddScoped<DailySalesRepository>();
 builder.Services.AddScoped<ChartAccountRepository>();
 builder.Services.AddScoped<ComuniRepository>();
 builder.Services.AddScoped<CustomerRepository>();
+builder.Services.AddScoped<CounterSaleRepository>();
 builder.Services.AddScoped<CustomerSupplierBalanceSummaryRepository>();
 builder.Services.AddScoped<FishClassificationRepository>();
 builder.Services.AddScoped<GroupRepository>();
