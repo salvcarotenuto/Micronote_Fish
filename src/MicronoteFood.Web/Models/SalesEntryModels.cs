@@ -107,9 +107,9 @@ public sealed class SalesHistoryPageModel
 
     public int Month { get; set; }
 
-    public DateOnly DateFrom { get; set; }
+    public int CustomerCode { get; set; }
 
-    public DateOnly DateTo { get; set; }
+    public string CustomerName { get; set; } = "";
 
     public IReadOnlyList<int> Years { get; set; } = [];
 
@@ -120,49 +120,36 @@ public sealed class SalesHistoryPageModel
 
 public sealed record SalesHistoryListItem(
     int Id,
-    int? AccountingMovementId,
     int Year,
     int Code,
-    DateOnly MovementDate,
-    decimal Net,
-    decimal NonTaxable,
+    int DocumentNumber,
+    DateOnly? DocumentDate,
+    int CustomerCode,
+    string CustomerName,
+    decimal Merchandise,
     decimal Vat,
     decimal Total,
-    decimal Cash,
-    decimal Card,
-    decimal Tickets,
-    decimal Checks,
-    decimal Other,
-    decimal Suspended,
-    decimal Losses);
+    decimal Discount,
+    int StoreCode);
 
 public sealed record SalesHistoryDetailItem(
-    int StoreCode,
-    string StoreName,
-    decimal Net,
-    decimal NonTaxable,
-    decimal Vat,
-    decimal Total,
-    decimal Cash,
-    decimal Card,
-    decimal Tickets,
-    decimal Checks,
-    decimal Other,
-    decimal Suspended,
-    decimal Losses);
+    int RowNumber,
+    string ArticleCode,
+    string Description,
+    string Unit,
+    int Packages,
+    decimal Tare,
+    decimal Quantity,
+    decimal Price,
+    decimal VatRate,
+    decimal VatPrice,
+    decimal Amount);
 
 public sealed record SalesHistoryTotals(
-    decimal Net,
-    decimal NonTaxable,
+    decimal Merchandise,
     decimal Vat,
     decimal Total,
-    decimal Cash,
-    decimal Card,
-    decimal Tickets,
-    decimal Checks,
-    decimal Other,
-    decimal Suspended,
-    decimal Losses)
+    decimal Discount)
 {
-    public static SalesHistoryTotals Empty { get; } = new(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    public static SalesHistoryTotals Empty { get; } = new(0, 0, 0, 0);
 }

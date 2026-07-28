@@ -57,7 +57,10 @@ public sealed record StockLoadDetailItem(
     decimal Price,
     decimal Discount,
     decimal Amount,
-    decimal VatRate);
+    decimal VatRate,
+    decimal Tare,
+    decimal NetPrice,
+    decimal VatIncludedPrice);
 
 public sealed class StockLoadEditDocument
 {
@@ -120,7 +123,10 @@ public sealed record StockLoadSaveRow(
     decimal Price,
     decimal Discount,
     decimal Amount,
-    decimal VatRate);
+    decimal VatRate,
+    decimal Tare,
+    decimal NetPrice,
+    decimal VatIncludedPrice);
 
 public sealed record StockLoadSaveResult(
     bool Success,

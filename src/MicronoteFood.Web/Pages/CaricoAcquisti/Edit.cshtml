@@ -171,12 +171,14 @@
                         @for (var i = 0; i < rowCount; i++)
                         {
                             var row = i < details.Length ? details[i] : null;
-                            <tr>
+                            <tr data-tare="@(row?.Tare.ToString(CultureInfo.InvariantCulture) ?? "0")"
+                                data-net-price="@(row?.NetPrice.ToString(CultureInfo.InvariantCulture) ?? "0")"
+                                data-vat-included-price="@(row?.VatIncludedPrice.ToString(CultureInfo.InvariantCulture) ?? "0")">
                                 <td><input type="text" readonly tabindex="-1" value="@(row?.ArticleCode ?? "")" /></td>
                                 <td><input type="text" readonly tabindex="-1" value="@(row?.Description ?? "")" /></td>
                                 <td><input type="text" readonly tabindex="-1" value="@(row?.UnitMeasure ?? "")" /></td>
-                                <td><input type="text" readonly tabindex="-1" inputmode="decimal" data-money-field value="@(row is null ? "" : Quantity(row.Quantity))" /></td>
-                                <td><input type="text" readonly tabindex="-1" inputmode="decimal" data-money-field value="@(row is null ? "" : Money(row.Price))" /></td>
+                                <td><input type="text" readonly tabindex="-1" inputmode="decimal" value="@(row is null ? "" : Quantity(row.Quantity))" /></td>
+                                <td><input type="text" readonly tabindex="-1" inputmode="decimal" value="@(row is null ? "" : Quantity(row.Price))" /></td>
                                 <td><input type="text" readonly tabindex="-1" inputmode="decimal" value="@(row is null ? "" : Percent(row.Discount))" /></td>
                                 <td><input type="text" readonly tabindex="-1" inputmode="decimal" data-money-field value="@(row is null ? "" : Money(row.Amount))" /></td>
                                 <td><input type="text" readonly tabindex="-1" inputmode="decimal" data-percent-field value="@(row is null ? "" : Percent(row.VatRate))" /></td>
@@ -238,7 +240,7 @@
                     </div>
                     <div class="field">
                         <label>Prezzo</label>
-                        <input class="currency-display" type="text" inputmode="decimal" autocomplete="off" data-money-field data-line-price />
+                        <input class="currency-display" type="text" inputmode="decimal" autocomplete="off" data-line-price />
                     </div>
                     <div class="field">
                         <label>Sconto</label>

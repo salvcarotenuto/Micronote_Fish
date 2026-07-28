@@ -12,6 +12,18 @@
     window.parent.postMessage({ type: "micronote:article-cancel" }, window.location.origin);
   });
 
+  if (modalCancel) {
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      window.parent.postMessage({ type: "micronote:article-cancel" }, window.location.origin);
+    }, true);
+  }
+
   form.querySelectorAll("[data-integer-field]").forEach((input) => {
     const clean = () => {
       input.value = input.value.replace(/\D/g, "");

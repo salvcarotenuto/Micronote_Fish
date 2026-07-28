@@ -323,11 +323,14 @@ public sealed class StockLoadRepository(MicronoteDb database)
                 ArticleCode = row.ArticleCode.Trim(),
                 Description = row.Description.Trim(),
                 UnitMeasure = row.UnitMeasure.Trim(),
-                Quantity = Decimal(row.Quantity),
-                Price = Decimal(row.Price),
-                Discount = Decimal(row.Discount),
-                Amount = Decimal(row.Amount),
-                VatRate = Decimal(row.VatRate)
+                Quantity = Decimal3(row.Quantity),
+                Price = Decimal3(row.Price),
+                Discount = Decimal2(row.Discount),
+                Amount = Decimal2(row.Amount),
+                VatRate = Decimal2(row.VatRate),
+                Tare = Decimal3(row.Tare),
+                NetPrice = NormalizeNetPrice(row),
+                VatIncludedPrice = NormalizeVatIncludedPrice(row)
             })
             .ToArray();
     }
@@ -529,10 +532,10 @@ public sealed class StockLoadRepository(MicronoteDb database)
                 """
                 INSERT INTO caricorg
                     (ID, Anno, Codice, Riga, DataDoc, Articolo, Fornitore, Ums,
-                     Quantita, Prezzo, Sconto, AliqIva, Importo)
+                     Quantita, Prezzo, Sconto, AliqIva, Importo, Tara, PrNetto, PrIvato)
                 VALUES
                     (@id, @year, @code, @rowNumber, @documentDate, @articleCode, @supplierCode, @unitMeasure,
-                     @quantity, @price, @discount, @vatRate, @amount);
+                     @quantity, @price, @discount, @vatRate, @amount, @tare, @netPrice, @vatIncludedPrice);
                 """,
                 connection,
                 transaction);
@@ -599,7 +602,7 @@ public sealed class StockLoadRepository(MicronoteDb database)
             sql.Parameters.AddWithValue("@movementType", "C");
             sql.Parameters.AddWithValue("@articleCode", row.ArticleCode);
             sql.Parameters.AddWithValue("@quantity", row.Quantity);
-            sql.Parameters.AddWithValue("@netPrice", row.Price - (row.Price * row.Discount / 100m));
+            sql.Parameters.AddWithValue("@netPrice", row.NetPrice);
             sql.Parameters.AddWithValue("@amount", row.Amount);
             sql.Parameters.AddWithValue("@storeCode", command.StoreCode);
             await sql.ExecuteNonQueryAsync(cancellationToken);
@@ -626,10 +629,32 @@ public sealed class StockLoadRepository(MicronoteDb database)
         command.Parameters.AddWithValue("@discount", row.Discount);
         command.Parameters.AddWithValue("@vatRate", row.VatRate);
         command.Parameters.AddWithValue("@amount", row.Amount);
+        command.Parameters.AddWithValue("@tare", row.Tare);
+        command.Parameters.AddWithValue("@netPrice", row.NetPrice);
+        command.Parameters.AddWithValue("@vatIncludedPrice", row.VatIncludedPrice);
     }
 
-    private static decimal Decimal(decimal value) =>
-        Math.Round(value, 4, MidpointRounding.AwayFromZero);
+    private static decimal Decimal3(decimal value) =>
+        Math.Round(value, 3, MidpointRounding.AwayFromZero);
+
+    private static decimal Decimal2(decimal value) =>
+        Math.Round(value, 2, MidpointRounding.AwayFromZero);
+
+    private static decimal NormalizeNetPrice(StockLoadSaveRow row) =>
+        Decimal3(row.NetPrice == 0m && row.Price != 0m
+            ? row.Price * (1m - row.Discount / 100m)
+            : row.NetPrice);
+
+    private static decimal NormalizeVatIncludedPrice(StockLoadSaveRow row)
+    {
+        if (row.VatIncludedPrice != 0m || row.Price == 0m)
+        {
+            return Decimal3(row.VatIncludedPrice);
+        }
+
+        var netPrice = NormalizeNetPrice(row);
+        return Decimal3(netPrice * (1m + row.VatRate / 100m));
+    }
 
     private static string SubjectTypeForCause(int causeCode) =>
         causeCode == StockLoadReturnCause ? "C" : "F";
@@ -720,7 +745,10 @@ public sealed class StockLoadRepository(MicronoteDb database)
                    COALESCE(rg.Prezzo, 0) AS Prezzo,
                    COALESCE(rg.Sconto, 0) AS Sconto,
                    COALESCE(rg.Importo, 0) AS Importo,
-                   COALESCE(rg.AliqIva, 0) AS AliqIva
+                   COALESCE(rg.AliqIva, 0) AS AliqIva,
+                   COALESCE(rg.Tara, 0) AS Tara,
+                   COALESCE(rg.PrNetto, 0) AS PrNetto,
+                   COALESCE(rg.PrIvato, 0) AS PrIvato
             FROM caricorg rg
             LEFT JOIN articoli a ON a.Codice = rg.Articolo
             WHERE rg.ID = @id
@@ -735,7 +763,10 @@ public sealed class StockLoadRepository(MicronoteDb database)
                    COALESCE(rg.Prezzo, 0) AS Prezzo,
                    COALESCE(rg.Sconto, 0) AS Sconto,
                    COALESCE(rg.Importo, 0) AS Importo,
-                   COALESCE(rg.AliqIva, 0) AS AliqIva
+                   COALESCE(rg.AliqIva, 0) AS AliqIva,
+                   COALESCE(rg.Tara, 0) AS Tara,
+                   COALESCE(rg.PrNetto, 0) AS PrNetto,
+                   COALESCE(rg.PrIvato, 0) AS PrIvato
             FROM caricorg rg
             LEFT JOIN articoli a ON a.Codice = rg.Articolo
             WHERE rg.Anno = @year
@@ -761,7 +792,10 @@ public sealed class StockLoadRepository(MicronoteDb database)
                 Money(reader["Prezzo"]),
                 Money(reader["Sconto"]),
                 Money(reader["Importo"]),
-                Money(reader["AliqIva"])));
+                Money(reader["AliqIva"]),
+                Money(reader["Tara"]),
+                Money(reader["PrNetto"]),
+                Money(reader["PrIvato"])));
         }
 
         return rows;
@@ -781,7 +815,10 @@ public sealed class StockLoadRepository(MicronoteDb database)
                    COALESCE(rg.Prezzo, 0) AS Prezzo,
                    COALESCE(rg.Sconto, 0) AS Sconto,
                    COALESCE(rg.Importo, 0) AS Importo,
-                   COALESCE(rg.AliqIva, 0) AS AliqIva
+                   COALESCE(rg.AliqIva, 0) AS AliqIva,
+                   COALESCE(rg.Tara, 0) AS Tara,
+                   COALESCE(rg.PrNetto, 0) AS PrNetto,
+                   COALESCE(rg.PrIvato, 0) AS PrIvato
             FROM caricorg rg
             LEFT JOIN articoli a ON a.Codice = rg.Articolo
             WHERE rg.ID = @id
@@ -809,7 +846,10 @@ public sealed class StockLoadRepository(MicronoteDb database)
                    COALESCE(rg.Prezzo, 0) AS Prezzo,
                    COALESCE(rg.Sconto, 0) AS Sconto,
                    COALESCE(rg.Importo, 0) AS Importo,
-                   COALESCE(rg.AliqIva, 0) AS AliqIva
+                   COALESCE(rg.AliqIva, 0) AS AliqIva,
+                   COALESCE(rg.Tara, 0) AS Tara,
+                   COALESCE(rg.PrNetto, 0) AS PrNetto,
+                   COALESCE(rg.PrIvato, 0) AS PrIvato
             FROM caricorg rg
             LEFT JOIN articoli a ON a.Codice = rg.Articolo
             WHERE (COALESCE(rg.ID, 0) = @id AND @id > 0)
@@ -822,7 +862,10 @@ public sealed class StockLoadRepository(MicronoteDb database)
                      COALESCE(rg.Prezzo, 0),
                      COALESCE(rg.Sconto, 0),
                      COALESCE(rg.Importo, 0),
-                     COALESCE(rg.AliqIva, 0)
+                     COALESCE(rg.AliqIva, 0),
+                     COALESCE(rg.Tara, 0),
+                     COALESCE(rg.PrNetto, 0),
+                     COALESCE(rg.PrIvato, 0)
             ORDER BY Riga;
             """;
 
@@ -850,7 +893,10 @@ public sealed class StockLoadRepository(MicronoteDb database)
                 Money(reader["Prezzo"]),
                 Money(reader["Sconto"]),
                 Money(reader["Importo"]),
-                Money(reader["AliqIva"])));
+                Money(reader["AliqIva"]),
+                Money(reader["Tara"]),
+                Money(reader["PrNetto"]),
+                Money(reader["PrIvato"])));
         }
 
         return rows;

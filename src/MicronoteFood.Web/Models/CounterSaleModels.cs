@@ -30,12 +30,16 @@ public sealed record CounterSaleArticle(
 public sealed record CounterSaleCustomer(
     int Code,
     string Name,
+    string City,
     int StoreCode);
 
 public sealed class CounterSaleSaveModel
 {
+    public long DraftId { get; set; }
     public int CustomerCode { get; set; }
     public decimal Discount { get; set; }
+    public decimal PaidAmount { get; set; }
+    public bool PrintAfterSave { get; set; }
     public List<CounterSaleSaveRow> Rows { get; set; } = [];
 }
 

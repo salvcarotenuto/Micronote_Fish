@@ -711,7 +711,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const values = rows
       .map((row) => ({
         cells: gridLineInputs(row).map((input) => input.value),
-        state: getGridRowState(row)
+        state: getGridRowState(row),
+        tare: row.dataset.tare || "0",
+        netPrice: row.dataset.netPrice || "0",
+        vatIncludedPrice: row.dataset.vatIncludedPrice || "0"
       }))
       .filter((source) => String(source.cells[0] ?? "").trim());
 
@@ -721,6 +724,9 @@ document.addEventListener("DOMContentLoaded", () => {
       inputs.forEach((input, cellIndex) => {
         input.value = source.cells[cellIndex] ?? "";
       });
+      row.dataset.tare = source.tare ?? "0";
+      row.dataset.netPrice = source.netPrice ?? "0";
+      row.dataset.vatIncludedPrice = source.vatIncludedPrice ?? "0";
       setGridRowState(row, source.state);
       refreshGridRowState(row);
       row.classList.remove("selected", "selected-row");
@@ -758,10 +764,13 @@ document.addEventListener("DOMContentLoaded", () => {
         description: String(values[1] ?? "").trim(),
         unitMeasure: String(values[2] ?? "").trim(),
         quantity: parseDecimal(values[3]),
-        price: parseMoney(values[4]),
+        price: parseDecimal(values[4]),
         discount: parsePercent(values[5]),
         amount: parseMoney(values[6]),
         vatRate: parsePercent(values[7]),
+        tare: parseDecimal(row.dataset.tare),
+        netPrice: parseDecimal(row.dataset.netPrice),
+        vatIncludedPrice: parseDecimal(row.dataset.vatIncludedPrice),
         hasValues: hasLineRowValues(values)
       };
     });
@@ -1149,6 +1158,14 @@ document.addEventListener("DOMContentLoaded", () => {
       inputs[5].value = line.discount ?? "";
       inputs[6].value = line.amount ?? "";
       inputs[7].value = line.vatRate ?? "";
+      const importedPrice = parseDecimal(line.price);
+      const importedDiscount = parsePercent(line.discount);
+      const importedVatRate = parsePercent(line.vatRate);
+      const importedNetPrice = importedPrice * (1 - importedDiscount / 100);
+      gridRows[index].dataset.tare = "0";
+      gridRows[index].dataset.netPrice = importedNetPrice.toFixed(3);
+      gridRows[index].dataset.vatIncludedPrice =
+        (importedNetPrice * (1 + importedVatRate / 100)).toFixed(3);
     });
 
     updateInvoiceTotal();
@@ -2386,10 +2403,17 @@ document.addEventListener("DOMContentLoaded", () => {
     cells[1].value = lineFields.description.value.trim();
     cells[2].value = lineFields.unit.value.trim();
     cells[3].value = formatNumber(parseDecimal(lineFields.quantity.value), 3);
-    cells[4].value = formatMoney(parseMoney(lineFields.price.value));
+    const price = parseDecimal(lineFields.price.value);
+    const discount = parsePercent(lineFields.discount.value);
+    const vatRate = parsePercent(lineFields.vat.value);
+    const netPrice = price * (1 - discount / 100);
+    cells[4].value = formatNumber(price, 3);
     cells[5].value = formatPercent(parsePercent(lineFields.discount.value));
     cells[6].value = formatMoney(parseMoney(lineFields.amount.value));
     cells[7].value = formatPercent(parsePercent(lineFields.vat.value));
+    targetLineRow.dataset.netPrice = netPrice.toFixed(3);
+    targetLineRow.dataset.vatIncludedPrice = (netPrice * (1 + vatRate / 100)).toFixed(3);
+    targetLineRow.dataset.tare ||= "0";
     targetLineRow.dataset.articleFound = "true";
     setGridRowState(targetLineRow, stockLoadRowState.ok);
     updateInvoiceTotal();
@@ -2422,6 +2446,25 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     lineFields.quantity?.addEventListener("blur", () => {
       lineFields.quantity.value = formatNumber(parseDecimal(lineFields.quantity.value), 3);
+      calculateLineAmount();
+    });
+    lineFields.price?.addEventListener("input", () => {
+      const text = lineFields.price.value.replace(/[^\d.,]/g, "");
+      const separatorMatches = Array.from(text.matchAll(/[.,]/g));
+      const decimalIndex = separatorMatches.length > 1
+        ? separatorMatches[separatorMatches.length - 1].index
+        : (separatorMatches[0]?.index ?? -1);
+      lineFields.price.value = decimalIndex >= 0
+        ? `${text.slice(0, decimalIndex).replace(/[.,]/g, "").slice(0, 7)}.${text.slice(decimalIndex + 1).replace(/[.,]/g, "").slice(0, 3)}`
+        : text.replace(/[.,]/g, "").slice(0, 7);
+      calculateLineAmount();
+    });
+    lineFields.price?.addEventListener("focus", () => {
+      lineFields.price.value = parseDecimal(lineFields.price.value) || "";
+      lineFields.price.select?.();
+    });
+    lineFields.price?.addEventListener("blur", () => {
+      lineFields.price.value = formatNumber(parseDecimal(lineFields.price.value), 3);
       calculateLineAmount();
     });
 

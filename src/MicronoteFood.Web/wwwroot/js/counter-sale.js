@@ -4,22 +4,58 @@
   const data = JSON.parse(root.querySelector("[data-counter-sale-data]").textContent);
   const articles = data.articles || [];
   const customers = data.customers || [];
-  const euro = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" });
   const number = new Intl.NumberFormat("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 3 });
   const totalNumber = new Intl.NumberFormat("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const validDimensions = new Set(["category", "group", "species", "origin"]);
   const initialDimension = validDimensions.has(data.initialGrouping) ? data.initialGrouping : "category";
-  const state = { dimension: initialDimension, group: null, remainder: new Set(), selectedArticle: null, selectedRow: -1, customer: null, rows: [] };
+  const state = { dimension: initialDimension, group: null, remainder: new Set(), selectedArticle: null, selectedRow: -1, customer: null, rows: [], draftId: 0 };
+  let articleSort = { key: "description", direction: "asc" };
   const $ = selector => root.querySelector(selector);
-  const parse = value => Number(String(value || "").replace(/\./g, "").replace(",", ".")) || 0;
+  const parse = value => Number(String(value || "")
+    .replace(/\s/g, "")
+    .replace(/%/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".")) || 0;
   const isNumeric = value => {
-    const text = String(value ?? "").trim();
+    const text = String(value ?? "").replace(/\s/g, "").replace(/%/g, "");
     if (!text) return true;
     return Number.isFinite(Number(text.replace(/\./g, "").replace(",", ".")));
   };
   const round = (value, digits = 2) => Math.round((value + Number.EPSILON) * 10 ** digits) / 10 ** digits;
+  const formatDecimal = (value, digits, suffix = "") =>
+    `${new Intl.NumberFormat("it-IT", {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+      useGrouping: true
+    }).format(round(value, digits))}${suffix}`;
+  const editableDecimal = (value, digits) =>
+    round(value, digits).toFixed(digits).replace(".", ",");
+  const sanitizeDecimal = (value, integerDigits, decimals, signed, maxAbs = null) => {
+    let text = String(value ?? "").replace(/\s/g, "").replace(/%/g, "");
+    const negative = signed && text.startsWith("-");
+    text = text.replace(/[+-]/g, "");
+    const separator = text.search(/[.,]/);
+    let integer = (separator >= 0 ? text.slice(0, separator) : text).replace(/\D/g, "").slice(0, integerDigits);
+    let fraction = separator >= 0
+      ? text.slice(separator + 1).replace(/\D/g, "").slice(0, decimals)
+      : "";
+    integer ||= "0";
+    let normalized = `${negative ? "-" : ""}${integer}${separator >= 0 && decimals ? `,${fraction}` : ""}`;
+    const numeric = parse(normalized);
+    if (maxAbs != null && Math.abs(numeric) > maxAbs)
+      normalized = editableDecimal(negative ? -maxAbs : maxAbs, decimals);
+    return normalized;
+  };
+  const sanitizeInteger = (value, maxAbs) => {
+    const text = String(value ?? "").replace(/\s/g, "");
+    const negative = text.startsWith("-");
+    const digits = text.replace(/\D/g, "").slice(0, 5);
+    if (!digits) return negative ? "-" : "";
+    const numeric = Math.min(Number(digits), maxAbs);
+    return `${negative ? "-" : ""}${numeric}`;
+  };
   const key = suffix => `${state.dimension}${suffix}`;
-
+  const antiforgeryToken = $("[data-sale-form] input[name='__RequestVerificationToken']")?.value || "";
   const tick = () => { $("[data-clock]").textContent = new Date().toLocaleTimeString("it-IT"); };
   tick(); setInterval(tick, 1000);
 
@@ -63,11 +99,27 @@
 
   function filteredArticles() {
     const query = $("[data-article-search]").value.trim().toLocaleUpperCase("it-IT");
-    return articles.filter(article => {
-      const code = Number(article[key("Code")]) || 0;
-      const inGroup = state.group === "other" ? state.remainder.has(code) : code === state.group;
-      return inGroup && (!query || `${article.code} ${article.description}`.toLocaleUpperCase("it-IT").includes(query));
-    });
+    return articles
+      .filter(article => {
+        const code = Number(article[key("Code")]) || 0;
+        const inGroup = state.group === "other" ? state.remainder.has(code) : code === state.group;
+        return inGroup && (!query || `${article.code} ${article.description}`.toLocaleUpperCase("it-IT").includes(query));
+      })
+      .sort((left, right) => {
+        let comparison;
+        if (articleSort.key === "price") {
+          comparison = Number(left.price) - Number(right.price);
+        } else {
+          comparison = String(left[articleSort.key] ?? "").localeCompare(
+            String(right[articleSort.key] ?? ""),
+            "it",
+            { sensitivity: "base", numeric: true }
+          );
+        }
+        if (comparison === 0)
+          comparison = String(left.code).localeCompare(String(right.code), "it", { numeric: true });
+        return articleSort.direction === "asc" ? comparison : -comparison;
+      });
   }
 
   function renderArticles() {
@@ -151,7 +203,7 @@
       const button = document.createElement("button"); button.type = "button";
       button.className = "counter-sale-cart-row" + (state.selectedRow === index ? " is-selected" : "");
       const amount = rowAmounts(row).amount;
-      button.innerHTML = `<span>${row.articleCode}</span><strong>${row.description}</strong><span>${number.format(row.quantity || row.packages)}</span><span>${number.format(row.vatRate)}%</span><span>${number.format(row.price)}</span><b>${euro.format(amount)}</b>`;
+      button.innerHTML = `<span>${row.articleCode}</span><strong>${row.description}</strong><span>${number.format(row.quantity || row.packages)}</span><span>${number.format(row.vatRate)}%</span><span>${number.format(row.price)}</span><b>${totalNumber.format(amount)}</b>`;
       button.addEventListener("click", () => { state.selectedRow = index; renderCart(); updateButtons(); });
       button.addEventListener("dblclick", () => openRow(row.article, index));
       host.append(button);
@@ -160,7 +212,7 @@
     $("[data-total-net]").textContent = totalNumber.format(sum.net);
     $("[data-total-vat]").textContent = totalNumber.format(sum.vat);
     $("[data-total]").textContent = totalNumber.format(sum.total);
-    updateButtons(); saveDraft();
+    updateButtons();
   }
 
   function updateButtons() {
@@ -170,8 +222,9 @@
     $("[data-edit]").disabled = !selectedSaleRow?.article;
     $("[data-remove]").disabled = state.selectedRow < 0;
     $("[data-balance]").disabled = !state.customer;
-    $("[data-close]").disabled = !state.customer || !state.rows.length;
-    $("[data-cancel]").disabled = !state.customer && !state.rows.length;
+    $("[data-close]").disabled = !state.customer || state.rows.length < 1;
+    const hasSaleData = Boolean(state.customer) || state.rows.length > 0;
+    $("[data-cancel]").disabled = !hasSaleData;
   }
 
   function openRow(article, editIndex = -1) {
@@ -185,14 +238,14 @@
     $("[data-row-last-price]").value = "";
     $("[data-row-last-vat]").value = "";
     $("[data-row-tare]").value = number.format(article.tare);
-    $("[data-row-quantity]").value = existing ? number.format(existing.quantity) : "";
+    $("[data-row-quantity]").value = existing ? formatDecimal(existing.quantity, 3) : "";
     $("[data-row-packages]").value = existing ? existing.packages : "";
-    $("[data-row-price]").value = number.format(existing?.price ?? article.price);
-    $("[data-row-vat]").value = number.format(existing?.vatRate ?? article.vatRate);
+    $("[data-row-price]").value = formatDecimal(existing?.price ?? article.price, 2);
+    $("[data-row-vat]").value = formatDecimal(existing?.vatRate ?? article.vatRate, 2, " %");
     $("[data-row-amount]").readOnly = !data.enableAmountEditing;
     modal.article = article; updateRowPreview();
     if (existing?.amount != null)
-      $("[data-row-amount]").value = totalNumber.format(existing.amount);
+      $("[data-row-amount]").value = formatDecimal(existing.amount, 2);
     if (state.customer) {
       const requestedArticle = article.code;
       fetch(`${location.pathname}?handler=LastPrice&customerCode=${encodeURIComponent(state.customer.code)}&articleCode=${encodeURIComponent(article.code)}`)
@@ -215,8 +268,8 @@
     const price = parse($("[data-row-price]").value), vat = parse($("[data-row-vat]").value);
     const quantity = parse($("[data-row-quantity]").value), packages = Math.trunc(parse($("[data-row-packages]").value));
     const effective = quantity || packages;
-    $("[data-row-vat-price]").value = number.format(round(price * (1 + vat / 100), 3));
-    $("[data-row-amount]").value = totalNumber.format(round(effective * price * (1 + vat / 100)));
+    $("[data-row-vat-price]").value = formatDecimal(price * (1 + vat / 100), 2);
+    $("[data-row-amount]").value = formatDecimal(effective * price * (1 + vat / 100), 2);
   }
 
   function updateRowFromAmount() {
@@ -228,19 +281,51 @@
     const effective = quantity || packages;
     if (!effective) return;
     const net = amount / (1 + vat / 100);
-    const price = round(net / effective, 3);
-    $("[data-row-price]").value = number.format(price);
-    $("[data-row-vat-price]").value = number.format(round(price * (1 + vat / 100), 3));
-    $("[data-row-amount]").value = totalNumber.format(amount);
+    const price = round(net / effective, 2);
+    $("[data-row-price]").value = formatDecimal(price, 2);
+    $("[data-row-vat-price]").value = formatDecimal(price * (1 + vat / 100), 2);
+    $("[data-row-amount]").value = formatDecimal(amount, 2);
   }
 
   function closeRow() { $("[data-row-modal]").hidden = true; }
   root.querySelectorAll("[data-row-cancel]").forEach(button => button.addEventListener("click", closeRow));
-  root.querySelectorAll("[data-row-quantity],[data-row-packages],[data-row-price],[data-row-vat]").forEach(input => input.addEventListener("input", updateRowPreview));
+  const controlledInputs = [
+    { selector: "[data-row-packages]", sanitize: value => sanitizeInteger(value, 32000), digits: 0, suffix: "" },
+    { selector: "[data-row-quantity]", sanitize: value => sanitizeDecimal(value, 6, 3, true, 999999.999), digits: 3, suffix: "" },
+    { selector: "[data-row-price]", sanitize: value => sanitizeDecimal(value, 6, 2, false, 999999.99), digits: 2, suffix: "" },
+    { selector: "[data-row-vat]", sanitize: value => sanitizeDecimal(value, 3, 2, false, 100), digits: 2, suffix: " %" },
+    { selector: "[data-row-amount]", sanitize: value => sanitizeDecimal(value, 10, 2, true), digits: 2, suffix: "" }
+  ];
+  controlledInputs.forEach(rule => {
+    const input = $(rule.selector);
+    input.addEventListener("focus", () => {
+      if (!input.value) return;
+      input.value = rule.digits === 0
+        ? String(Math.trunc(parse(input.value)))
+        : editableDecimal(parse(input.value), rule.digits);
+      input.select();
+    });
+    input.addEventListener("input", () => {
+      input.value = rule.sanitize(input.value);
+      if (rule.selector !== "[data-row-amount]") updateRowPreview();
+    });
+    input.addEventListener("blur", () => {
+      if (!input.value || input.value === "-") {
+        input.value = "";
+        return;
+      }
+      const value = parse(input.value);
+      input.value = rule.digits === 0
+        ? String(Math.trunc(value))
+        : formatDecimal(value, rule.digits, rule.suffix);
+      if (rule.selector === "[data-row-amount]") updateRowFromAmount();
+    });
+  });
   $("[data-row-amount]").addEventListener("change", updateRowFromAmount);
   $("[data-row-modal]").addEventListener("keydown", event => {
     if (event.key === "Escape") {
       event.preventDefault();
+      event.stopPropagation();
       closeRow();
       return;
     }
@@ -270,87 +355,541 @@
     }
     const row = {
       article, articleCode: article.code, description: article.description, unit: article.unit || "",
-      packages: Math.max(0, Math.trunc(parse($("[data-row-packages]").value))),
+      packages: Math.trunc(parse($("[data-row-packages]").value)),
       tare: round(article.tare, 3), quantity: round(parse($("[data-row-quantity]").value), 3),
-      price: round(parse($("[data-row-price]").value), 3), vatRate: round(parse($("[data-row-vat]").value), 2),
+      price: round(parse($("[data-row-price]").value), 2), vatRate: round(parse($("[data-row-vat]").value), 2),
       amount: round(parse($("[data-row-amount]").value), 2)
     };
+    if (Math.abs(row.packages) > 32000) { $("[data-row-packages]").focus(); return; }
+    if (Math.abs(row.quantity) > 999999.999) { $("[data-row-quantity]").focus(); return; }
+    if (row.price < 0 || row.price > 999999.99) { $("[data-row-price]").focus(); return; }
+    if (row.vatRate < 0 || row.vatRate > 100) { $("[data-row-vat]").focus(); return; }
     if (row.quantity === 0 && row.packages === 0) { $("[data-row-quantity]").focus(); return; }
+    const rowTotal = rowAmounts(row).amount;
+    if (Math.abs(rowTotal) > 9999999999.99) {
+      window.MicronoteMessageBox?.show({
+        title: "Importo riga non valido",
+        message: "L'importo totale della riga supera la dimensione consentita.",
+        detail: "Il valore massimo registrabile è 9.999.999.999,99.",
+        variant: "error",
+        onConfirm: () => window.setTimeout(() => $("[data-row-quantity]").focus(), 0)
+      });
+      return;
+    }
+    const editIndex = Number(modal.dataset.editIndex);
     if (row.price === 0 && !confirm("Il prezzo è zero. Confermare comunque?")) {
       $("[data-row-price]").focus();
       return;
     }
-    if (rowAmounts(row).amount < 0 && !confirm("L'importo è negativo. Confermare comunque?")) {
+    if (rowTotal < 0 && !confirm("L'importo è negativo. Confermare comunque?")) {
       $("[data-row-price]").focus();
       return;
     }
-    const index = Number(modal.dataset.editIndex);
-    if (index >= 0) state.rows[index] = row; else { state.rows.push(row); state.selectedRow = state.rows.length - 1; }
+    if (editIndex >= 0) state.rows[editIndex] = row; else { state.rows.push(row); state.selectedRow = state.rows.length - 1; }
     closeRow(); renderCart();
   });
 
+  let customerBeforeLookup = null;
+  let customerSort = { key: "name", direction: "asc" };
+  const cancelCustomerLookup = () => {
+    state.customer = customerBeforeLookup;
+    $("[data-customer-code]").textContent = state.customer
+      ? String(state.customer.code).padStart(5, "0")
+      : "";
+    $("[data-customer-name]").textContent = state.customer?.name || "";
+    customerBeforeLookup = null;
+    $("[data-customer-modal]").hidden = true;
+    updateButtons();
+  };
+
   function renderCustomers(query = "") {
     const text = query.trim().toLocaleUpperCase("it-IT"), host = $("[data-customer-list]"); host.replaceChildren();
-    customers.filter(c => !text || `${c.code} ${c.name}`.toLocaleUpperCase("it-IT").includes(text)).forEach(customer => {
+    const selectCustomer = customer => {
+      state.customer = customer;
+      $("[data-customer-code]").textContent = String(customer.code).padStart(5, "0");
+      $("[data-customer-name]").textContent = customer.name;
+      customerBeforeLookup = null;
+      $("[data-customer-modal]").hidden = true;
+      updateButtons();
+    };
+    const selectButton = button => {
+      host.querySelectorAll("button").forEach(candidate => {
+        const selected = candidate === button;
+        candidate.classList.toggle("is-selected", selected);
+        candidate.setAttribute("aria-selected", selected ? "true" : "false");
+      });
+    };
+    const navigate = (event, button) => {
+      const rows = [...host.querySelectorAll("button")];
+      const current = rows.indexOf(button);
+      let next = current;
+      if (event.key === "ArrowDown") next = Math.min(current + 1, rows.length - 1);
+      else if (event.key === "ArrowUp") next = Math.max(current - 1, 0);
+      else if (event.key === "Home") next = 0;
+      else if (event.key === "End") next = rows.length - 1;
+      else if (event.key === "Enter") {
+        event.preventDefault();
+        selectCustomer(button.customer);
+        return;
+      } else return;
+      event.preventDefault();
+      const nextButton = rows[next];
+      selectButton(nextButton);
+      nextButton.focus({ preventScroll: true });
+      nextButton.scrollIntoView({ block: "nearest" });
+    };
+    const sortedCustomers = customers
+      .filter(c => !text || `${c.code} ${c.name} ${c.city || ""}`.toLocaleUpperCase("it-IT").includes(text))
+      .sort((left, right) => {
+        let comparison;
+        if (customerSort.key === "code") {
+          comparison = Number(left.code) - Number(right.code);
+        } else {
+          comparison = String(left[customerSort.key] || "").localeCompare(
+            String(right[customerSort.key] || ""),
+            "it",
+            { sensitivity: "base", numeric: true }
+          );
+        }
+        if (comparison === 0) comparison = Number(left.code) - Number(right.code);
+        return customerSort.direction === "asc" ? comparison : -comparison;
+      });
+
+    sortedCustomers.forEach((customer, index) => {
       const button = document.createElement("button"); button.type = "button";
-      button.innerHTML = `<strong>${String(customer.code).padStart(5, "0")}</strong><span>${customer.name}</span>`;
-      button.addEventListener("click", () => {
-        state.customer = customer; $("[data-customer-code]").textContent = String(customer.code).padStart(5, "0");
-        $("[data-customer-name]").textContent = customer.name; $("[data-customer-modal]").hidden = true;
-        updateButtons(); saveDraft();
-      }); host.append(button);
+      button.customer = customer;
+      button.setAttribute("role", "option");
+      button.setAttribute("aria-selected", index === 0 ? "true" : "false");
+      if (index === 0) button.classList.add("is-selected");
+      button.innerHTML = `<strong>${String(customer.code).padStart(5, "0")}</strong><span>${customer.name}</span><span>${customer.city || ""}</span>`;
+      button.addEventListener("click", () => selectCustomer(customer));
+      button.addEventListener("focus", () => selectButton(button));
+      button.addEventListener("keydown", event => navigate(event, button));
+      host.append(button);
+    });
+    requestAnimationFrame(() => {
+      const header = $(".counter-sale-customer-list-header");
+      const scrollbarWidth = Math.max(0, host.offsetWidth - host.clientWidth);
+      header?.style.setProperty("--customer-scrollbar-width", `${scrollbarWidth}px`);
     });
   }
-  $("[data-customer-open]").addEventListener("click", () => { renderCustomers(); $("[data-customer-modal]").hidden = false; setTimeout(() => $("[data-customer-search]").focus(), 0); });
-  $("[data-customer-close]").addEventListener("click", () => $("[data-customer-modal]").hidden = true);
+  $("[data-customer-open]").addEventListener("click", () => {
+    const search = $("[data-customer-search]");
+    customerBeforeLookup = state.customer;
+    search.value = "";
+    renderCustomers();
+    $("[data-customer-list]").scrollTop = 0;
+    $("[data-customer-modal]").hidden = false;
+    setTimeout(() => search.focus(), 0);
+  });
+  $("[data-customer-close]").addEventListener("click", cancelCustomerLookup);
   $("[data-customer-search]").addEventListener("input", event => renderCustomers(event.target.value));
-  $("[data-customer-clear]").addEventListener("click", () => { state.customer = null; $("[data-customer-code]").textContent = ""; $("[data-customer-name]").textContent = ""; updateButtons(); saveDraft(); });
+  root.querySelectorAll("[data-customer-sort]").forEach(header => {
+    header.addEventListener("pointerdown", event => {
+      event.preventDefault();
+    });
+    header.addEventListener("click", () => {
+      const search = $("[data-customer-search]");
+      const key = header.dataset.customerSort;
+      customerSort = {
+        key,
+        direction: customerSort.key === key && customerSort.direction === "asc" ? "desc" : "asc"
+      };
+      root.querySelectorAll("[data-customer-sort]").forEach(candidate => {
+        const active = candidate === header;
+        candidate.classList.toggle("is-sorted", active);
+        candidate.classList.toggle("is-ascending", active && customerSort.direction === "asc");
+        candidate.setAttribute("aria-sort", active
+          ? (customerSort.direction === "asc" ? "ascending" : "descending")
+          : "none");
+      });
+      renderCustomers(search.value);
+      $("[data-customer-list]").scrollTop = 0;
+      search.focus({ preventScroll: true });
+    });
+  });
+  $("[data-customer-search]").addEventListener("keydown", event => {
+    if (!["ArrowDown", "ArrowUp", "Home", "End", "Enter"].includes(event.key)) return;
+    const list = $("[data-customer-list]");
+    const rows = [...list.querySelectorAll("button")];
+    if (!rows.length) return;
+    const selected = list.querySelector("button.is-selected") || rows[0];
+    event.preventDefault();
+    if (event.key === "Enter") {
+      selected.click();
+      return;
+    }
+
+    const current = Math.max(0, rows.indexOf(selected));
+    let nextIndex = current;
+    if (event.key === "ArrowDown") nextIndex = Math.min(current + 1, rows.length - 1);
+    else if (event.key === "ArrowUp") nextIndex = Math.max(current - 1, 0);
+    else if (event.key === "Home") nextIndex = 0;
+    else if (event.key === "End") nextIndex = rows.length - 1;
+
+    const next = rows[nextIndex];
+    rows.forEach(row => {
+      const isSelected = row === next;
+      row.classList.toggle("is-selected", isSelected);
+      row.setAttribute("aria-selected", isSelected ? "true" : "false");
+    });
+    next.scrollIntoView({ block: "nearest" });
+  });
+  {
+    const customerList = $("[data-customer-list]");
+    let previousScrollTop = customerList.scrollTop;
+    let customerScrollFrame = 0;
+    let customerWheelFrame = 0;
+
+    const selectCustomerFromScroll = delta => {
+      if (delta === 0) return;
+
+      const buttons = [...customerList.querySelectorAll("button")];
+      const selected = customerList.querySelector("button.is-selected");
+      if (!buttons.length || !selected) return;
+
+      const frame = customerList.getBoundingClientRect();
+      const selectedBounds = selected.getBoundingClientRect();
+      if (selectedBounds.bottom > frame.top + 1 && selectedBounds.top < frame.bottom - 1) return;
+
+      const visible = buttons.filter(button => {
+        const bounds = button.getBoundingClientRect();
+        return bounds.top >= frame.top + 1 && bounds.bottom <= frame.bottom - 1;
+      });
+      if (!visible.length) return;
+
+      const next = delta > 0 ? visible[0] : visible[visible.length - 1];
+      buttons.forEach(button => {
+        const isSelected = button === next;
+        button.classList.toggle("is-selected", isSelected);
+        button.setAttribute("aria-selected", isSelected ? "true" : "false");
+      });
+    };
+
+    customerList.addEventListener("scroll", () => {
+      if (customerScrollFrame) cancelAnimationFrame(customerScrollFrame);
+      customerScrollFrame = requestAnimationFrame(() => {
+        customerScrollFrame = 0;
+        const currentScrollTop = customerList.scrollTop;
+        const delta = currentScrollTop - previousScrollTop;
+        previousScrollTop = currentScrollTop;
+        selectCustomerFromScroll(delta);
+      });
+    }, { passive: true });
+
+    customerList.addEventListener("wheel", event => {
+      if (customerWheelFrame) cancelAnimationFrame(customerWheelFrame);
+      const delta = event.deltaY;
+      customerWheelFrame = requestAnimationFrame(() => {
+        customerWheelFrame = requestAnimationFrame(() => {
+          customerWheelFrame = 0;
+          selectCustomerFromScroll(delta);
+        });
+      });
+    }, { passive: true });
+  }
+  $("[data-customer-clear]").addEventListener("click", () => { state.customer = null; $("[data-customer-code]").textContent = ""; $("[data-customer-name]").textContent = ""; updateButtons(); });
 
   root.querySelectorAll("[data-dimension]").forEach(button => button.addEventListener("click", () => {
     root.querySelectorAll("[data-dimension]").forEach(item => item.classList.toggle("is-active", item === button));
     state.dimension = button.dataset.dimension; state.group = null; renderGroups(); renderArticles();
   }));
   $("[data-article-search]").addEventListener("input", renderArticles);
+  root.querySelectorAll("[data-article-sort]").forEach(header => {
+    header.addEventListener("pointerdown", event => event.preventDefault());
+    header.addEventListener("click", () => {
+      const key = header.dataset.articleSort;
+      articleSort = {
+        key,
+        direction: articleSort.key === key && articleSort.direction === "asc" ? "desc" : "asc"
+      };
+      root.querySelectorAll("[data-article-sort]").forEach(candidate => {
+        const active = candidate === header;
+        candidate.classList.toggle("is-sorted", active);
+        candidate.classList.toggle("is-ascending", active && articleSort.direction === "asc");
+        candidate.setAttribute("aria-sort", active
+          ? (articleSort.direction === "asc" ? "ascending" : "descending")
+          : "none");
+      });
+      renderArticles();
+      $("[data-article-scroll]").scrollTop = 0;
+      $("[data-article-search]").focus({ preventScroll: true });
+    });
+  });
   $("[data-add]").addEventListener("click", () => state.selectedArticle && openRow(state.selectedArticle));
   $("[data-edit]").addEventListener("click", () => {
     if (state.selectedRow < 0) return;
     const row = state.rows[state.selectedRow];
     if (row?.article) openRow(row.article, state.selectedRow);
   });
-  $("[data-remove]").addEventListener("click", () => { if (state.selectedRow < 0) return; state.rows.splice(state.selectedRow, 1); state.selectedRow = -1; renderCart(); });
-  $("[data-card]").addEventListener("click", () => state.selectedArticle && window.open(`/Articoli/Edit?code=${encodeURIComponent(state.selectedArticle.code)}&azione=visualizza`, "_blank"));
+  $("[data-remove]").addEventListener("click", () => {
+    if (state.selectedRow < 0) return;
+    const rowIndex = state.selectedRow;
+    const row = state.rows[rowIndex];
+    window.MicronoteMessageBox?.show({
+      title: "Rimuovi articolo",
+      message: `Rimuovere dalla vendita l'articolo ${row?.articleCode || ""}?`,
+      detail: row?.description || "",
+      mode: "confirm",
+      variant: "confirm",
+      okText: "Rimuovi",
+      cancelText: "Annulla",
+      onConfirm: () => {
+        state.rows.splice(rowIndex, 1);
+        state.selectedRow = -1;
+        renderCart();
+      }
+    });
+  });
+  const articleCardModal = $("[data-article-card-modal]");
+  const articleCardFrame = $("[data-article-card-frame]");
+  const articleCardButton = $("[data-card]");
+  const closeArticleCard = () => {
+    if (articleCardModal.hidden) return;
+    articleCardModal.hidden = true;
+    articleCardFrame.removeAttribute("src");
+    articleCardButton.focus({ preventScroll: true });
+  };
+  articleCardButton.addEventListener("click", () => {
+    if (!state.selectedArticle) return;
+    articleCardFrame.src = `/Articoli/Edit/${encodeURIComponent(state.selectedArticle.code)}?azione=101`;
+    articleCardModal.hidden = false;
+    articleCardFrame.focus();
+  });
+  window.addEventListener("message", event => {
+    if (event.origin !== window.location.origin) return;
+    if (event.data?.type === "micronote:article-cancel" ||
+        event.data?.type === "micronote:article-saved")
+      closeArticleCard();
+  });
   $("[data-balance]").addEventListener("click", () => state.customer && window.open(`/EstrattoContoClientiFornitori/Index?type=C&code=${state.customer.code}`, "_blank"));
-  $("[data-cancel]").addEventListener("click", () => { if (!confirm("Annullare la vendita corrente?")) return; state.rows=[]; state.customer=null; state.selectedRow=-1; localStorage.removeItem("microfish.counterSaleDraft"); location.reload(); });
+  function resetSale() {
+    state.rows = [];
+    state.customer = null;
+    state.selectedRow = -1;
+    state.selectedArticle = null;
+    state.dimension = initialDimension;
+    state.group = null;
+    state.remainder = new Set();
+    $("[data-customer-code]").textContent = "";
+    $("[data-customer-name]").textContent = "";
+    $("[data-article-search]").value = "";
+    $("[data-customer-search]").value = "";
+    $("[data-article-scroll]").scrollTop = 0;
+    root.querySelectorAll("[data-dimension]").forEach(button =>
+      button.classList.toggle("is-active", button.dataset.dimension === initialDimension));
+    root.querySelectorAll(".counter-sale-overlay").forEach(overlay => {
+      overlay.hidden = true;
+    });
+    postDraft("DeleteDraft", draftPayload());
+    state.draftId = 0;
+    renderGroups();
+    renderArticles();
+    renderCart();
+    $("[data-customer-open]").focus({ preventScroll: true });
+  }
+  $("[data-cancel]").addEventListener("click", () => {
+    window.MicronoteMessageBox?.show({
+      title: "Annulla vendita",
+      message: "Annullare la vendita corrente?",
+      detail: "Il cliente e tutte le righe inserite saranno eliminati.",
+      mode: "confirm",
+      variant: "confirm",
+      okText: "Conferma",
+      cancelText: "Continua vendita",
+      onConfirm: resetSale
+    });
+  });
+  let escapeConsumedUntilKeyup = false;
+  document.addEventListener("keyup", event => {
+    if (event.key === "Escape") escapeConsumedUntilKeyup = false;
+  }, true);
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
+    if (document.querySelector("[data-micronote-messagebox].active")) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (escapeConsumedUntilKeyup || event.repeat) return;
+    if (!articleCardModal.hidden) {
+      escapeConsumedUntilKeyup = true;
+      closeArticleCard();
+      return;
+    }
+    const closeModal = $("[data-close-modal]");
+    if (!closeModal.hidden) {
+      escapeConsumedUntilKeyup = true;
+      closeModal.hidden = true;
+      return;
+    }
+    const rowModal = $("[data-row-modal]");
+    if (!rowModal.hidden) {
+      escapeConsumedUntilKeyup = true;
+      closeRow();
+      return;
+    }
+    const customerModal = $("[data-customer-modal]");
+    if (!customerModal.hidden) {
+      escapeConsumedUntilKeyup = true;
+      cancelCustomerLookup();
+      return;
+    }
+    $("[data-exit]").click();
+  }, true);
 
   $("[data-close]").addEventListener("click", () => {
-    const sum = totals(); $("[data-close-gross]").textContent = euro.format(sum.total);
-    $("[data-close-discount]").value = "0,00"; $("[data-close-total]").textContent = euro.format(sum.total);
+    const sum = totals();
+    if (Math.abs(sum.total) > 9999999999.99) {
+      window.MicronoteMessageBox?.show({
+        title: "Totale vendita non valido",
+        message: "La somma delle righe supera la dimensione consentita per il totale vendita.",
+        detail: "Il valore massimo registrabile in Vendite.Totale è 9.999.999.999,99.",
+        variant: "error",
+        onConfirm: () => window.setTimeout(() => $("[data-close]").focus(), 0)
+      });
+      return;
+    }
+    $("[data-close-gross]").textContent = totalNumber.format(sum.total);
+    $("[data-close-discount]").value = "0,00";
+    $("[data-close-paid]").value = "0,00";
+    $("[data-close-paid]").disabled = false;
+    updateCloseTotals();
     $("[data-close-modal]").hidden = false;
+    setTimeout(() => $("[data-close-discount]").focus(), 0);
   });
-  $("[data-close-discount]").addEventListener("input", () => $("[data-close-total]").textContent = euro.format(Math.max(0, totals().total - parse($("[data-close-discount]").value))));
+  function updateCloseTotals() {
+    const gross = totals().total;
+    const discount = Math.min(gross, Math.max(0, parse($("[data-close-discount]").value)));
+    const net = round(gross - discount);
+    const paid = Math.max(0, parse($("[data-close-paid]").value));
+    $("[data-close-total]").textContent = totalNumber.format(net);
+    $("[data-close-balance]").textContent = totalNumber.format(round(net - paid));
+  }
+  ["[data-close-discount]", "[data-close-paid]"].forEach(selector => {
+    const input = $(selector);
+    input.addEventListener("focus", () => {
+      input.value = editableDecimal(parse(input.value), 2);
+      input.select();
+    });
+    input.addEventListener("input", () => {
+      input.value = sanitizeDecimal(input.value, 10, 2, false, 9999999999.99);
+      updateCloseTotals();
+    });
+    input.addEventListener("blur", () => {
+      input.value = formatDecimal(Math.max(0, parse(input.value)), 2);
+      updateCloseTotals();
+    });
+  });
   root.querySelectorAll("[data-close-cancel]").forEach(button => button.addEventListener("click", () => $("[data-close-modal]").hidden = true));
-  $("[data-close-confirm]").addEventListener("click", () => {
+  $("[data-close-modal]").addEventListener("keydown", event => {
+    if (event.key !== "Tab") return;
+    const controls = [...$("[data-close-modal]").querySelectorAll(
+      "input:not(:disabled), button:not(:disabled), [href], [tabindex]:not([tabindex='-1'])"
+    )].filter(control => control.offsetParent !== null);
+    if (!controls.length) return;
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    } else if (!controls.includes(document.activeElement)) {
+      event.preventDefault();
+      (event.shiftKey ? last : first).focus();
+    }
+  });
+  function submitSale(printAfterSave = false) {
+    const gross = totals().total;
+    const discount = round(parse($("[data-close-discount]").value), 2);
+    const paidAmount = round(parse($("[data-close-paid]").value), 2);
+    if (discount < 0 || discount > gross) {
+      $("[data-close-discount]").focus();
+      return;
+    }
     const payload = {
-      customerCode: state.customer.code, discount: parse($("[data-close-discount]").value),
+      draftId: state.draftId,
+      customerCode: state.customer?.code || 0, discount, paidAmount, printAfterSave,
       rows: state.rows.map(row => ({ articleCode: row.articleCode, unit: row.unit, packages: row.packages, tare: row.tare, quantity: row.quantity, price: row.price, vatRate: row.vatRate, amount: rowAmounts(row).amount }))
     };
     $("[data-sale-payload]").value = JSON.stringify(payload);
-    localStorage.removeItem("microfish.counterSaleDraft");
-    $("[data-close-confirm]").disabled = true; $("[data-sale-form]").submit();
-  });
-
-  function saveDraft() {
-    localStorage.setItem("microfish.counterSaleDraft", JSON.stringify({ customerCode: state.customer?.code || 0, rows: state.rows.map(row => ({ ...row, article: undefined })) }));
+    $("[data-close-confirm]").disabled = true;
+    $("[data-close-confirm-print]").disabled = true;
+    $("[data-sale-form]").submit();
   }
+  $("[data-close-confirm]").addEventListener("click", () => submitSale(false));
+  $("[data-close-confirm-print]").addEventListener("click", () => submitSale(true));
+  function draftPayload() {
+    return {
+      draftId: state.draftId,
+      customerCode: state.customer?.code || 0,
+      rows: state.rows.map(row => ({
+        articleCode: row.articleCode,
+        unit: row.unit,
+        packages: row.packages,
+        tare: row.tare,
+        quantity: row.quantity,
+        price: row.price,
+        vatRate: row.vatRate,
+        amount: rowAmounts(row).amount
+      }))
+    };
+  }
+  function postDraft(handler, payload = null) {
+    const body = new URLSearchParams();
+    body.set("__RequestVerificationToken", antiforgeryToken);
+    if (payload) body.set("SalePayload", JSON.stringify(payload));
+    return fetch(`${location.pathname}?handler=${handler}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: body.toString()
+    }).catch(() => null);
+  }
+  let exitInProgress = false;
+  $("[data-exit]").addEventListener("click", async event => {
+    event.preventDefault();
+    if (exitInProgress) return;
+    exitInProgress = true;
+    const destination = event.currentTarget.href;
+    const response = await postDraft("SaveDraft", draftPayload());
+    if (!response?.ok) {
+      exitInProgress = false;
+      window.MicronoteMessageBox?.show({
+        title: "Vendita sospesa",
+        message: "Non è stato possibile salvare la vendita sospesa.",
+        detail: "La vendita resta aperta. Riprovare prima di uscire.",
+        variant: "error",
+        onConfirm: () => window.setTimeout(() => $("[data-exit]").focus(), 0)
+      });
+      return;
+    }
+    window.location.href = destination;
+  });
   function restoreDraft() {
-    try {
-      const draft = JSON.parse(localStorage.getItem("microfish.counterSaleDraft") || "null");
-      if (!draft) return;
-      state.customer = null;
-      state.rows = (draft.rows || []).map(row => ({ ...row, article: articles.find(a => a.code === row.articleCode) })).filter(row => row.article);
-      $("[data-customer-code]").textContent = "";
-      $("[data-customer-name]").textContent = "";
-    } catch { localStorage.removeItem("microfish.counterSaleDraft"); }
+    const draft = data.draft;
+    if (!draft) return;
+    state.draftId = Number(draft.draftId) || 0;
+    state.customer = customers.find(customer =>
+      Number(customer.code) === Number(draft.customerCode)) || null;
+    state.rows = (draft.rows || [])
+      .map(row => {
+        const article = articles.find(candidate =>
+          String(candidate.code) === String(row.articleCode));
+        if (!article) return null;
+        return {
+          ...row,
+          article,
+          articleCode: article.code,
+          description: article.description,
+          unit: row.unit || article.unit || "",
+          vatRate: Number(row.vatRate ?? article.vatRate ?? 0)
+        };
+      })
+      .filter(Boolean);
+    $("[data-customer-code]").textContent = state.customer
+      ? String(state.customer.code).padStart(5, "0")
+      : "";
+    $("[data-customer-name]").textContent = state.customer?.name || "";
   }
 
   const scroll = $("[data-article-scroll]");

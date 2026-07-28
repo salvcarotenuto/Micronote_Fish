@@ -73,7 +73,7 @@ try
           `Riga` SMALLINT NOT NULL DEFAULT 0,
           `Articolo` VARCHAR(30) NOT NULL DEFAULT '',
           `Ums` VARCHAR(10) NOT NULL DEFAULT '',
-          `Colli` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+          `Colli` SMALLINT NOT NULL DEFAULT 0,
           `Tara` DECIMAL(10,3) NOT NULL DEFAULT 0,
           `Quantita` DECIMAL(10,3) NOT NULL DEFAULT 0,
           `Prezzo` DECIMAL(10,3) NOT NULL DEFAULT 0,

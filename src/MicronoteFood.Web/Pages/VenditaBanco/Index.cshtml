@@ -7,6 +7,15 @@
     var payload = JsonSerializer.Serialize(new {
         enableAmountEditing = Model.Data.EnableAmountEditing,
         initialGrouping = Model.Data.InitialGrouping,
+        draft = Model.Draft is null ? null : new {
+            draftId = Model.Draft.DraftId,
+            customerCode = Model.Draft.CustomerCode,
+            rows = Model.Draft.Rows.Select(r => new {
+                articleCode=r.ArticleCode, unit=r.Unit, packages=r.Packages,
+                tare=r.Tare, quantity=r.Quantity, price=r.Price,
+                vatRate=r.VatRate, amount=r.Amount
+            })
+        },
         articles = Model.Data.Articles.Select(a => new {
             code=a.Code, description=a.Description, unit=a.Unit,
             categoryCode=a.CategoryCode, category=a.Category,
@@ -16,14 +25,14 @@
             tare=a.Tare, stock=a.Stock, price=a.Price, vatRate=a.VatRate
         }),
         customers = Model.Data.Customers.Select(c => new {
-            code=c.Code, name=c.Name, storeCode=c.StoreCode
+            code=c.Code, name=c.Name, city=c.City, storeCode=c.StoreCode
         })
     });
 }
 
 <section class="counter-sale" data-counter-sale>
     <header class="counter-sale-header">
-        <a class="counter-sale-brand" href="/Menu?section=vendite" aria-label="Torna al menu Vendite">
+        <a class="counter-sale-brand" href="/?section=vendite" aria-label="Torna al menu Vendite">
             <img src="~/images/micronote-logo.jpeg" alt="" />
             <strong>Vendita al banco</strong>
         </a>
@@ -76,7 +85,9 @@
         <section class="counter-sale-catalog" aria-label="Lista articoli">
             <div class="counter-sale-article-scroll" data-article-scroll>
                 <div class="counter-sale-article-head">
-                    <span>Codice</span><span>Descrizione</span><span>Prezzo</span>
+                    <button type="button" data-article-sort="code">Codice</button>
+                    <button type="button" data-article-sort="description" class="is-sorted is-ascending">Descrizione</button>
+                    <button type="button" data-article-sort="price">Prezzo</button>
                 </div>
                 <div role="listbox" aria-label="Articoli" data-article-list></div>
             </div>
@@ -90,14 +101,14 @@
             <div><span>Totale vendita</span><strong data-total>0,00</strong></div>
         </div>
         <div class="counter-sale-actions">
-            <button type="button" data-balance disabled>Saldo cliente</button>
+            <button type="button" data-balance disabled>Saldo<br />cliente</button>
             <button type="button" data-add disabled>Aggiungi articolo</button>
             <button type="button" data-edit disabled>Modifica articolo</button>
             <button type="button" data-remove disabled>Rimuovi articolo</button>
             <button type="button" data-card disabled>Scheda articolo</button>
             <button type="button" class="primary" data-close disabled>Chiudi vendita</button>
             <button type="button" class="danger" data-cancel disabled>Annulla vendita</button>
-            <a href="/Menu?section=vendite">Esci</a>
+            <a href="/?section=vendite" data-exit>Esci</a>
         </div>
     </footer>
 
@@ -109,6 +120,11 @@
         <section class="counter-sale-dialog customer-dialog" role="dialog" aria-modal="true">
             <header><h2>Seleziona cliente</h2><button type="button" data-customer-close>×</button></header>
             <input type="search" placeholder="Codice o ragione sociale" autocomplete="off" data-customer-search />
+            <div class="counter-sale-customer-list-header">
+                <button type="button" data-customer-sort="code">Codice</button>
+                <button type="button" data-customer-sort="name" class="is-sorted is-ascending">Cliente</button>
+                <button type="button" data-customer-sort="city">Città</button>
+            </div>
             <div class="counter-sale-customer-list" data-customer-list></div>
         </section>
     </div>
@@ -118,27 +134,29 @@
             <header><h2 data-row-title>Inserimento articolo</h2><button type="button" data-row-cancel>×</button></header>
             <div class="counter-sale-row-panel">
                 <div class="counter-sale-row-article">
-                    <span>Articolo</span><strong data-row-code></strong><b data-row-description></b>
+                    <span>Articolo</span>
+                    <strong data-row-code></strong>
+                    <b data-row-description></b>
                 </div>
                 <div class="counter-sale-row-fields">
                     <div class="counter-sale-row-column counter-sale-row-info">
+                        <label><span>Unità di misura</span><input readonly data-row-unit /></label>
                         <label><span>Giacenza</span><input readonly data-row-stock /></label>
+                        <label><span>Tara</span><input readonly data-row-tare /></label>
                         <div class="counter-sale-last-price">
                             <span>Ultimo prezzo</span><input readonly data-row-last-price />
                             <em>iva</em><input readonly data-row-last-vat />
                         </div>
-                        <label><span>Tara</span><input readonly data-row-tare /></label>
                     </div>
                     <div class="counter-sale-row-column counter-sale-row-measures">
-                        <label><span>Un. di misura</span><input readonly data-row-unit /></label>
-                        <label><span>Colli</span><input inputmode="numeric" data-row-packages /></label>
+                        <label><span>Colli</span><input inputmode="numeric" maxlength="6" data-row-packages /></label>
                     </div>
                     <div class="counter-sale-row-column counter-sale-row-values">
-                        <label><span>Peso</span><input inputmode="decimal" data-row-quantity /></label>
-                        <label><span>Prezzo</span><input inputmode="decimal" data-row-price /></label>
-                        <label><span>I.v.a.</span><input inputmode="decimal" data-row-vat /></label>
+                        <label><span>Peso</span><input inputmode="decimal" maxlength="11" data-row-quantity /></label>
+                        <label><span>Prezzo</span><input inputmode="decimal" maxlength="9" data-row-price /></label>
+                        <label><span>I.v.a.</span><input inputmode="decimal" maxlength="8" data-row-vat /></label>
                         <label><span>Prezzo ivato</span><input readonly data-row-vat-price /></label>
-                        <label><span>Importo</span><input readonly data-row-amount /></label>
+                        <label><span>Importo</span><input inputmode="decimal" readonly data-row-amount /></label>
                     </div>
                 </div>
             </div>
@@ -151,14 +169,27 @@
 
     <div class="counter-sale-overlay" hidden data-close-modal>
         <section class="counter-sale-dialog close-dialog" role="dialog" aria-modal="true">
-            <header><h2>Chiusura vendita</h2><button type="button" data-close-cancel>×</button></header>
-            <div><span>Totale articoli</span><strong data-close-gross></strong></div>
-            <label>Abbuono<input inputmode="decimal" value="0,00" data-close-discount /></label>
-            <div><span>Totale documento</span><strong data-close-total></strong></div>
-            <footer>
-                <button type="button" class="primary" data-close-confirm>Registra vendita</button>
-                <button type="button" data-close-cancel>Annulla</button>
-            </footer>
+            <header><h2>Chiusura vendita</h2></header>
+            <div class="counter-sale-close-content">
+                <div class="counter-sale-close-fields">
+                    <div><span>Totale vendita</span><strong data-close-gross></strong></div>
+                    <label><span>Abbuono</span><input inputmode="decimal" maxlength="13" value="0,00" data-close-discount /></label>
+                    <div><span>Netto a pagare</span><strong data-close-total></strong></div>
+                    <label><span>Importo pagato</span><input inputmode="decimal" maxlength="13" value="0,00" data-close-paid /></label>
+                    <div><span>Saldo su vendita</span><strong data-close-balance></strong></div>
+                </div>
+                <footer>
+                    <button type="button" class="primary" data-close-confirm>Salva</button>
+                    <button type="button" data-close-confirm-print>Salva e<br />stampa</button>
+                    <button type="button" data-close-cancel>Annulla</button>
+                </footer>
+            </div>
+        </section>
+    </div>
+
+    <div class="counter-sale-article-card-overlay" hidden data-article-card-modal>
+        <section class="counter-sale-article-card-dialog" role="dialog" aria-modal="true" aria-label="Scheda articolo">
+            <iframe title="Scheda articolo" data-article-card-frame></iframe>
         </section>
     </div>
 
