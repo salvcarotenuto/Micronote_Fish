@@ -4,6 +4,8 @@ public sealed class CounterSalePageData
 {
     public int Year { get; init; }
     public DateOnly Date { get; init; }
+    public bool EnableAmountEditing { get; init; }
+    public string InitialGrouping { get; init; } = "category";
     public IReadOnlyList<CounterSaleArticle> Articles { get; init; } = [];
     public IReadOnlyList<CounterSaleCustomer> Customers { get; init; } = [];
 }

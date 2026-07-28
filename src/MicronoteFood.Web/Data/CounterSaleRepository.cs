@@ -5,16 +5,45 @@ namespace MicronoteFood.Web.Data;
 
 public sealed class CounterSaleRepository(MicronoteDb database)
 {
+    public async Task<(decimal Price, decimal VatRate)?> LoadLastPriceAsync(
+        int customerCode,
+        string articleCode,
+        CancellationToken cancellationToken = default)
+    {
+        if (customerCode <= 0 || string.IsNullOrWhiteSpace(articleCode))
+            return null;
+
+        await using var connection = await database.OpenConnectionAsync(cancellationToken);
+        await using var command = new MySqlCommand(
+            """
+            SELECT vr.Prezzo, vr.Iva
+            FROM VenditeRg vr
+            INNER JOIN Vendite v ON v.ID=vr.ID
+            WHERE v.Cliente=@customer AND vr.Articolo=@article
+            ORDER BY v.DataDoc DESC, v.ID DESC, vr.Riga DESC
+            LIMIT 1;
+            """, connection);
+        command.Parameters.AddWithValue("@customer", customerCode);
+        command.Parameters.AddWithValue("@article", articleCode.Trim());
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken))
+            return null;
+        return (Convert.ToDecimal(reader["Prezzo"]), Convert.ToDecimal(reader["Iva"]));
+    }
+
     public async Task<CounterSalePageData> LoadAsync(
         int year,
         CancellationToken cancellationToken = default)
     {
         await using var connection = await database.OpenConnectionAsync(cancellationToken);
+        var inventoryYear = await LoadInventoryYearAsync(connection, cancellationToken);
         return new CounterSalePageData
         {
             Year = year,
             Date = DateOnly.FromDateTime(DateTime.Today),
-            Articles = await LoadArticlesAsync(connection, cancellationToken),
+            EnableAmountEditing = await LoadAmountEditingOptionAsync(connection, cancellationToken),
+            InitialGrouping = await LoadInitialGroupingOptionAsync(connection, cancellationToken),
+            Articles = await LoadArticlesAsync(connection, inventoryYear, cancellationToken),
             Customers = await LoadCustomersAsync(connection, cancellationToken)
         };
     }
@@ -106,6 +135,7 @@ public sealed class CounterSaleRepository(MicronoteDb database)
 
     private static async Task<IReadOnlyList<CounterSaleArticle>> LoadArticlesAsync(
         MySqlConnection connection,
+        int inventoryYear,
         CancellationToken cancellationToken)
     {
         const string sql = """
@@ -115,16 +145,27 @@ public sealed class CounterSaleRepository(MicronoteDb database)
                    COALESCE(a.Gruppo,0) Gruppo, COALESCE(g.Descrizione,'') GruppoNome,
                    COALESCE(a.Specie,0) Specie, COALESCE(s.Descrizione,'') SpecieNome,
                    COALESCE(a.Provenienza,0) Provenienza, COALESCE(p.Descrizione,'') ProvenienzaNome,
-                   COALESCE(a.Tara,0) Tara, COALESCE(a.GiacinP,0) Giacenza,
+                   COALESCE(a.Tara,0) Tara,
+                   (CASE WHEN @inventoryYear>0 THEN COALESCE(a.GiacinP,0) ELSE 0 END
+                    + COALESCE(m.Movimento,0)) Giacenza,
                    COALESCE(a.PrezzoStd,0) Prezzo, COALESCE(a.AliqIva,0) Iva
             FROM Articoli a
             LEFT JOIN Categorie c ON c.Codice=a.Categoria
             LEFT JOIN Gruppi g ON g.Codice=a.Gruppo
             LEFT JOIN Specie s ON s.Codice=a.Specie
             LEFT JOIN Provenienza p ON p.Codice=a.Provenienza
+            LEFT JOIN (
+                SELECT Articolo,
+                       SUM(CASE WHEN TipoMov='C' THEN COALESCE(Quantita,0) ELSE 0 END)
+                       - SUM(CASE WHEN TipoMov='S' THEN COALESCE(Quantita,0) ELSE 0 END) Movimento
+                FROM Movimenti
+                WHERE Anno>=@inventoryYear
+                GROUP BY Articolo
+            ) m ON m.Articolo=a.Codice
             ORDER BY a.Descrizione, a.Codice;
             """;
         await using var command = new MySqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@inventoryYear", inventoryYear);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         var rows = new List<CounterSaleArticle>();
         while (await reader.ReadAsync(cancellationToken))
@@ -147,6 +188,49 @@ public sealed class CounterSaleRepository(MicronoteDb database)
                 Convert.ToDecimal(reader["Iva"])));
         }
         return rows;
+    }
+
+    private static async Task<int> LoadInventoryYearAsync(
+        MySqlConnection connection,
+        CancellationToken cancellationToken)
+    {
+        await using var command = new MySqlCommand(
+            """
+            SELECT COALESCE(MAX(CAST(Valore AS UNSIGNED)),0)
+            FROM Params
+            WHERE Nome='AnnoInventario';
+            """, connection);
+        return Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
+    }
+
+    private static async Task<bool> LoadAmountEditingOptionAsync(
+        MySqlConnection connection,
+        CancellationToken cancellationToken)
+    {
+        await using var command = new MySqlCommand(
+            """
+            SELECT COALESCE(MAX(Valore),'0')
+            FROM Opzioni
+            WHERE Chiave='AttivaImporto';
+            """, connection);
+        var value = Convert.ToString(await command.ExecuteScalarAsync(cancellationToken))?.Trim();
+        return value == "1";
+    }
+
+    private static async Task<string> LoadInitialGroupingOptionAsync(
+        MySqlConnection connection,
+        CancellationToken cancellationToken)
+    {
+        await using var command = new MySqlCommand(
+            """
+            SELECT COALESCE(MAX(Valore),'category')
+            FROM Opzioni
+            WHERE Chiave='RaggruppamentoVenditaBanco';
+            """, connection);
+        var value = Convert.ToString(await command.ExecuteScalarAsync(cancellationToken))?.Trim();
+        return value is "category" or "group" or "species" or "origin"
+            ? value
+            : "category";
     }
 
     private static async Task<IReadOnlyList<CounterSaleCustomer>> LoadCustomersAsync(

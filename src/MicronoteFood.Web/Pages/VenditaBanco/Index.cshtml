@@ -5,6 +5,8 @@
     ViewData["Title"] = "Vendita al banco";
     ViewData["BodyClass"] = "counter-sale-body";
     var payload = JsonSerializer.Serialize(new {
+        enableAmountEditing = Model.Data.EnableAmountEditing,
+        initialGrouping = Model.Data.InitialGrouping,
         articles = Model.Data.Articles.Select(a => new {
             code=a.Code, description=a.Description, unit=a.Unit,
             categoryCode=a.CategoryCode, category=a.Category,
@@ -90,6 +92,7 @@
         <div class="counter-sale-actions">
             <button type="button" data-balance disabled>Saldo cliente</button>
             <button type="button" data-add disabled>Aggiungi articolo</button>
+            <button type="button" data-edit disabled>Modifica articolo</button>
             <button type="button" data-remove disabled>Rimuovi articolo</button>
             <button type="button" data-card disabled>Scheda articolo</button>
             <button type="button" class="primary" data-close disabled>Chiudi vendita</button>
@@ -120,6 +123,10 @@
                 <div class="counter-sale-row-fields">
                     <div class="counter-sale-row-column counter-sale-row-info">
                         <label><span>Giacenza</span><input readonly data-row-stock /></label>
+                        <div class="counter-sale-last-price">
+                            <span>Ultimo prezzo</span><input readonly data-row-last-price />
+                            <em>iva</em><input readonly data-row-last-vat />
+                        </div>
                         <label><span>Tara</span><input readonly data-row-tare /></label>
                     </div>
                     <div class="counter-sale-row-column counter-sale-row-measures">

@@ -7,9 +7,16 @@
   const euro = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" });
   const number = new Intl.NumberFormat("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 3 });
   const totalNumber = new Intl.NumberFormat("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const state = { dimension: "category", group: null, remainder: new Set(), selectedArticle: null, selectedRow: -1, customer: null, rows: [] };
+  const validDimensions = new Set(["category", "group", "species", "origin"]);
+  const initialDimension = validDimensions.has(data.initialGrouping) ? data.initialGrouping : "category";
+  const state = { dimension: initialDimension, group: null, remainder: new Set(), selectedArticle: null, selectedRow: -1, customer: null, rows: [] };
   const $ = selector => root.querySelector(selector);
   const parse = value => Number(String(value || "").replace(/\./g, "").replace(",", ".")) || 0;
+  const isNumeric = value => {
+    const text = String(value ?? "").trim();
+    if (!text) return true;
+    return Number.isFinite(Number(text.replace(/\./g, "").replace(",", ".")));
+  };
   const round = (value, digits = 2) => Math.round((value + Number.EPSILON) * 10 ** digits) / 10 ** digits;
   const key = suffix => `${state.dimension}${suffix}`;
 
@@ -123,7 +130,9 @@
   function rowAmounts(row) {
     const quantity = row.quantity !== 0 ? row.quantity : row.packages;
     const net = round(quantity * row.price);
-    const amount = round(net * (1 + row.vatRate / 100));
+    const amount = row.amount == null
+      ? round(net * (1 + row.vatRate / 100))
+      : round(row.amount);
     return { net, amount, vat: round(amount - net) };
   }
 
@@ -155,8 +164,10 @@
   }
 
   function updateButtons() {
+    const selectedSaleRow = state.selectedRow >= 0 ? state.rows[state.selectedRow] : null;
     $("[data-add]").disabled = !state.selectedArticle;
     $("[data-card]").disabled = !state.selectedArticle;
+    $("[data-edit]").disabled = !selectedSaleRow?.article;
     $("[data-remove]").disabled = state.selectedRow < 0;
     $("[data-balance]").disabled = !state.customer;
     $("[data-close]").disabled = !state.customer || !state.rows.length;
@@ -171,12 +182,32 @@
     $("[data-row-description]").textContent = article.description;
     $("[data-row-unit]").value = article.unit || "";
     $("[data-row-stock]").value = number.format(article.stock);
+    $("[data-row-last-price]").value = "";
+    $("[data-row-last-vat]").value = "";
     $("[data-row-tare]").value = number.format(article.tare);
     $("[data-row-quantity]").value = existing ? number.format(existing.quantity) : "";
     $("[data-row-packages]").value = existing ? existing.packages : "";
     $("[data-row-price]").value = number.format(existing?.price ?? article.price);
     $("[data-row-vat]").value = number.format(existing?.vatRate ?? article.vatRate);
+    $("[data-row-amount]").readOnly = !data.enableAmountEditing;
     modal.article = article; updateRowPreview();
+    if (existing?.amount != null)
+      $("[data-row-amount]").value = totalNumber.format(existing.amount);
+    if (state.customer) {
+      const requestedArticle = article.code;
+      fetch(`${location.pathname}?handler=LastPrice&customerCode=${encodeURIComponent(state.customer.code)}&articleCode=${encodeURIComponent(article.code)}`)
+        .then(response => response.ok ? response.json() : null)
+        .then(result => {
+          if (modal.article?.code !== requestedArticle) return;
+          $("[data-row-last-price]").value = result?.price == null ? "" : number.format(result.price);
+          $("[data-row-last-vat]").value = result?.vatRate == null ? "" : number.format(result.vatRate);
+        })
+        .catch(() => {
+          if (modal.article?.code !== requestedArticle) return;
+          $("[data-row-last-price]").value = "";
+          $("[data-row-last-vat]").value = "";
+        });
+    }
     setTimeout(() => $("[data-row-quantity]").focus(), 0);
   }
 
@@ -185,19 +216,64 @@
     const quantity = parse($("[data-row-quantity]").value), packages = Math.trunc(parse($("[data-row-packages]").value));
     const effective = quantity || packages;
     $("[data-row-vat-price]").value = number.format(round(price * (1 + vat / 100), 3));
-    $("[data-row-amount]").value = euro.format(round(effective * price * (1 + vat / 100)));
+    $("[data-row-amount]").value = totalNumber.format(round(effective * price * (1 + vat / 100)));
+  }
+
+  function updateRowFromAmount() {
+    if (!data.enableAmountEditing) return;
+    const amount = parse($("[data-row-amount]").value);
+    const vat = parse($("[data-row-vat]").value);
+    const quantity = parse($("[data-row-quantity]").value);
+    const packages = Math.trunc(parse($("[data-row-packages]").value));
+    const effective = quantity || packages;
+    if (!effective) return;
+    const net = amount / (1 + vat / 100);
+    const price = round(net / effective, 3);
+    $("[data-row-price]").value = number.format(price);
+    $("[data-row-vat-price]").value = number.format(round(price * (1 + vat / 100), 3));
+    $("[data-row-amount]").value = totalNumber.format(amount);
   }
 
   function closeRow() { $("[data-row-modal]").hidden = true; }
   root.querySelectorAll("[data-row-cancel]").forEach(button => button.addEventListener("click", closeRow));
   root.querySelectorAll("[data-row-quantity],[data-row-packages],[data-row-price],[data-row-vat]").forEach(input => input.addEventListener("input", updateRowPreview));
+  $("[data-row-amount]").addEventListener("change", updateRowFromAmount);
+  $("[data-row-modal]").addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeRow();
+      return;
+    }
+    if (event.key !== "Enter" || event.target.tagName !== "INPUT") return;
+    event.preventDefault();
+    const inputs = [...$("[data-row-modal]").querySelectorAll("input:not([readonly])")];
+    const index = inputs.indexOf(event.target);
+    if (index >= 0 && index < inputs.length - 1) inputs[index + 1].focus();
+    else $("[data-row-confirm]").focus();
+  });
+  $("[data-row-confirm]").addEventListener("keydown", event => {
+    if (event.key !== "ArrowUp") return;
+    event.preventDefault();
+    (data.enableAmountEditing ? $("[data-row-amount]") : $("[data-row-vat]")).focus();
+  });
   $("[data-row-confirm]").addEventListener("click", () => {
     const modal = $("[data-row-modal]"), article = modal.article;
+    const numericInputs = [
+      $("[data-row-quantity]"), $("[data-row-packages]"),
+      $("[data-row-price]"), $("[data-row-vat]")
+    ];
+    if (data.enableAmountEditing) numericInputs.push($("[data-row-amount]"));
+    const invalidInput = numericInputs.find(input => !isNumeric(input.value));
+    if (invalidInput) {
+      invalidInput.focus();
+      return;
+    }
     const row = {
       article, articleCode: article.code, description: article.description, unit: article.unit || "",
       packages: Math.max(0, Math.trunc(parse($("[data-row-packages]").value))),
       tare: round(article.tare, 3), quantity: round(parse($("[data-row-quantity]").value), 3),
-      price: round(parse($("[data-row-price]").value), 3), vatRate: round(parse($("[data-row-vat]").value), 2)
+      price: round(parse($("[data-row-price]").value), 3), vatRate: round(parse($("[data-row-vat]").value), 2),
+      amount: round(parse($("[data-row-amount]").value), 2)
     };
     if (row.quantity === 0 && row.packages === 0) { $("[data-row-quantity]").focus(); return; }
     if (row.price === 0 && !confirm("Il prezzo è zero. Confermare comunque?")) {
@@ -236,6 +312,11 @@
   }));
   $("[data-article-search]").addEventListener("input", renderArticles);
   $("[data-add]").addEventListener("click", () => state.selectedArticle && openRow(state.selectedArticle));
+  $("[data-edit]").addEventListener("click", () => {
+    if (state.selectedRow < 0) return;
+    const row = state.rows[state.selectedRow];
+    if (row?.article) openRow(row.article, state.selectedRow);
+  });
   $("[data-remove]").addEventListener("click", () => { if (state.selectedRow < 0) return; state.rows.splice(state.selectedRow, 1); state.selectedRow = -1; renderCart(); });
   $("[data-card]").addEventListener("click", () => state.selectedArticle && window.open(`/Articoli/Edit?code=${encodeURIComponent(state.selectedArticle.code)}&azione=visualizza`, "_blank"));
   $("[data-balance]").addEventListener("click", () => state.customer && window.open(`/EstrattoContoClientiFornitori/Index?type=C&code=${state.customer.code}`, "_blank"));
@@ -324,5 +405,7 @@
     suppressClick = false;
   }, true);
 
+  root.querySelectorAll("[data-dimension]").forEach(button =>
+    button.classList.toggle("is-active", button.dataset.dimension === state.dimension));
   restoreDraft(); renderGroups(); renderArticles(); renderCart();
 })();

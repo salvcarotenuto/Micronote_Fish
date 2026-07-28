@@ -19,6 +19,20 @@ public sealed class IndexModel(
     public async Task OnGetAsync(CancellationToken cancellationToken) =>
         Data = await repository.LoadAsync(applicationState.Esercizio, cancellationToken);
 
+    public async Task<IActionResult> OnGetLastPriceAsync(
+        int customerCode,
+        string articleCode,
+        CancellationToken cancellationToken)
+    {
+        var lastPrice = await repository.LoadLastPriceAsync(
+            customerCode, articleCode, cancellationToken);
+        return new JsonResult(new
+        {
+            price = lastPrice?.Price,
+            vatRate = lastPrice?.VatRate
+        });
+    }
+
     public async Task<IActionResult> OnPostCloseAsync(CancellationToken cancellationToken)
     {
         CounterSaleSaveModel? sale;
