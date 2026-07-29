@@ -92,10 +92,10 @@ public sealed class CounterSaleRepository(MicronoteDb database)
                 """
                 INSERT INTO Vendite
                     (Anno, Codice, Stato, NumDoc, DataDoc, Cliente, Merce,
-                     Agente, Provvigione, Iva, Totale, Abbuono, PuntoV)
+                     Agente, Provvigione, Iva, Totale, Abbuono, Pagato, PuntoV)
                 VALUES
                     (@year, @code, 0, @code, @date, @customer, @merchandise,
-                     0, 0, @vat, @total, @discount, @store);
+                     0, 0, @vat, @total, @discount, @paidAmount, @store);
                 """, connection, transaction);
             header.Parameters.AddWithValue("@year", year);
             header.Parameters.AddWithValue("@code", code);
@@ -105,6 +105,7 @@ public sealed class CounterSaleRepository(MicronoteDb database)
             header.Parameters.AddWithValue("@vat", vat);
             header.Parameters.AddWithValue("@total", total);
             header.Parameters.AddWithValue("@discount", discount);
+            header.Parameters.AddWithValue("@paidAmount", paidAmount);
             header.Parameters.AddWithValue("@store", storeCode);
             await header.ExecuteNonQueryAsync(cancellationToken);
             var id = checked((int)header.LastInsertedId);

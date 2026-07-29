@@ -21,6 +21,7 @@ public sealed record ArticleListItem(
     decimal StandardPrice,
     decimal VatIncludedPrice,
     decimal InitialWeight,
+    decimal Tare,
     decimal VatRate,
     int? SupplierCode,
     string SupplierName);

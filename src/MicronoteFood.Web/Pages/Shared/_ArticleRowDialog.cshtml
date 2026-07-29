@@ -1,0 +1,118 @@
+@model string
+@{
+    var mode = string.IsNullOrWhiteSpace(Model) ? "carico" : Model.ToLowerInvariant();
+    var isLoad = mode == "carico";
+    var isCounterSale = mode == "vendita-banco";
+}
+<div class="stock-load-line-overlay"
+     hidden
+     data-article-row-dialog
+     data-row-mode="@mode"
+     data-stock-load-line-overlay
+     data-row-modal
+     data-sales-line-modal>
+    <div class="stock-load-line-dialog" role="dialog" aria-modal="true" aria-labelledby="article-row-dialog-title">
+        <div class="stock-load-line-title"
+             id="article-row-dialog-title"
+             data-line-title
+             data-row-title
+             data-sales-line-title>Inserimento articolo</div>
+        <div class="stock-load-line-body">
+            <div class="stock-load-line-article">
+                <label>Articolo</label>
+                <input class="stock-load-line-code"
+                       type="text"
+                       autocomplete="off"
+                       readonly="@isCounterSale"
+                       data-line-code
+                       data-row-code />
+                <button class="lookup-button stock-load-line-lookup-button"
+                        type="button"
+                        title="Seleziona articolo"
+                        aria-label="Seleziona articolo"
+                        data-article-lookup-open
+                        data-sales-line-article-lookup></button>
+                <input class="stock-load-line-description"
+                       type="text"
+                       readonly
+                       tabindex="-1"
+                       data-line-description
+                       data-row-description />
+            </div>
+
+            <div class="stock-load-line-middle stock-load-line-info">
+                <div class="field stock-load-line-unit">
+                    <label>Unità di misura</label>
+                    <input type="text" readonly tabindex="-1" data-line-unit data-row-unit />
+                </div>
+                <div class="field">
+                    <label>Giacenza</label>
+                    <input class="numeric-display" type="text" readonly tabindex="-1" data-line-stock data-row-stock />
+                </div>
+                <div class="field">
+                    <label>Tara</label>
+                    <input class="numeric-display" type="text" disabled="@isLoad" readonly tabindex="-1" data-line-tare data-row-tare />
+                </div>
+                <div class="field">
+                    <label>Ultimo prezzo</label>
+                    <input class="currency-display" type="text" readonly tabindex="-1" data-line-last-price data-row-last-price />
+                </div>
+                <div class="field">
+                    <label>Iva ultimo prezzo</label>
+                    <input class="numeric-display" type="text" disabled="@isLoad" readonly tabindex="-1" data-line-last-vat data-row-last-vat />
+                </div>
+            </div>
+
+            <div class="stock-load-line-measures">
+                <div class="field">
+                    <label>Colli</label>
+                    <input class="numeric-display"
+                           type="text"
+                           inputmode="numeric"
+                           maxlength="6"
+                           disabled="@isLoad"
+                           data-line-packages
+                           data-row-packages />
+                </div>
+            </div>
+
+            <div class="stock-load-line-right">
+                <div class="field">
+                    <label data-line-quantity-label>@(isLoad ? "Quantità" : "Peso")</label>
+                    <input class="numeric-display" type="text" inputmode="decimal" autocomplete="off" maxlength="11" data-line-quantity data-row-quantity />
+                </div>
+                <div class="field">
+                    <label>Prezzo</label>
+                    <input class="currency-display" type="text" inputmode="decimal" autocomplete="off" maxlength="9" data-line-price data-row-price />
+                </div>
+                <div class="field">
+                    <label>Sconto</label>
+                    <input class="numeric-display"
+                           type="text"
+                           inputmode="decimal"
+                           autocomplete="off"
+                           disabled="@(!isLoad)"
+                           data-percent-field
+                           data-percent-integer-digits="3"
+                           data-line-discount />
+                </div>
+                <div class="field">
+                    <label>Aliquota iva</label>
+                    <input class="numeric-display" type="text" inputmode="decimal" autocomplete="off" maxlength="8" data-percent-field data-percent-integer-digits="3" data-line-vat data-row-vat />
+                </div>
+                <div class="field">
+                    <label>Prezzo ivato</label>
+                    <input class="currency-display" type="text" disabled="@isLoad" readonly tabindex="-1" data-line-vat-price data-row-vat-price />
+                </div>
+                <div class="field">
+                    <label>Importo</label>
+                    <input class="currency-display" type="text" inputmode="decimal" readonly tabindex="-1" data-line-amount data-row-amount />
+                </div>
+            </div>
+        </div>
+        <div class="stock-load-line-actions">
+            <button class="button button-primary primary" type="button" data-line-confirm data-row-confirm>Conferma</button>
+            <button class="button button-secondary secondary" type="button" data-line-cancel data-row-cancel>Annulla</button>
+        </div>
+    </div>
+</div>

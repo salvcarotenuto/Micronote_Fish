@@ -17,7 +17,7 @@ public sealed class LookupRepository(MicronoteDb database)
 
         var source = LookupSource(type);
         var sql = $"""
-            SELECT Codice, Nome, Contropartita, PuntoV, Dettaglio
+            SELECT Codice, Nome, Contropartita, PuntoV, Dettaglio, Citta, CategoriaDescrizione
             FROM ({source}) AS anagrafica
             WHERE Codice = @code
             LIMIT 1;
@@ -48,12 +48,13 @@ public sealed class LookupRepository(MicronoteDb database)
 
         var source = LookupSource(type);
         var sql = $"""
-            SELECT Codice, Nome, Contropartita, PuntoV, Dettaglio
+            SELECT Codice, Nome, Contropartita, PuntoV, Dettaglio, Citta, CategoriaDescrizione
             FROM ({source}) AS anagrafica
             WHERE @search = ''
                OR Nome LIKE CONCAT('%', @search, '%')
                OR CAST(Codice AS CHAR) LIKE CONCAT('%', @search, '%')
                OR Dettaglio LIKE CONCAT('%', @search, '%')
+               OR CategoriaDescrizione LIKE CONCAT('%', @search, '%')
             ORDER BY Nome, Codice
             LIMIT 500;
             """;
@@ -80,14 +81,26 @@ public sealed class LookupRepository(MicronoteDb database)
 
     private static string LookupSource(string? type) => type?.Trim().ToLowerInvariant() switch
     {
-        "clienti" => AnagraficaSource("clienti"),
+        "clienti" => """
+            SELECT c.Codice,
+                   COALESCE(c.Nome, '') AS Nome,
+                   c.Contropartita,
+                   c.PuntoV,
+                   TRIM(CONCAT_WS(' ', NULLIF(COALESCE(c.Citta, ''), ''), NULLIF(COALESCE(c.Prov, ''), ''))) AS Dettaglio,
+                   COALESCE(c.Citta, '') AS Citta,
+                   COALESCE(cf.Descrizione, '') AS CategoriaDescrizione
+            FROM clienti c
+            LEFT JOIN CategoriaCF cf ON cf.Codice = c.Categoria
+            """,
         "fornitori" => AnagraficaSource("fornitori"),
         "dipendenti" => """
             SELECT Codice,
                    TRIM(CONCAT_WS(' ', NULLIF(COALESCE(Cognome, ''), ''), NULLIF(COALESCE(Nome, ''), ''))) AS Nome,
                    NULL AS Contropartita,
                    PuntoV,
-                   TRIM(CONCAT_WS(' ', NULLIF(COALESCE(Citta, ''), ''), NULLIF(COALESCE(Indirizzo, ''), ''))) AS Dettaglio
+                   TRIM(CONCAT_WS(' ', NULLIF(COALESCE(Citta, ''), ''), NULLIF(COALESCE(Indirizzo, ''), ''))) AS Dettaglio,
+                   COALESCE(Citta, '') AS Citta,
+                   '' AS CategoriaDescrizione
             FROM dipendenti
             """,
         "banche" => """
@@ -95,7 +108,9 @@ public sealed class LookupRepository(MicronoteDb database)
                    COALESCE(Nome, '') AS Nome,
                    NULL AS Contropartita,
                    NULL AS PuntoV,
-                   TRIM(CONCAT_WS(' ', NULLIF(COALESCE(Agenzia, ''), ''), NULLIF(COALESCE(Iban, ''), ''))) AS Dettaglio
+                   TRIM(CONCAT_WS(' ', NULLIF(COALESCE(Agenzia, ''), ''), NULLIF(COALESCE(Iban, ''), ''))) AS Dettaglio,
+                   '' AS Citta,
+                   '' AS CategoriaDescrizione
             FROM banche
             """,
         _ => throw new ArgumentOutOfRangeException(nameof(type))
@@ -106,7 +121,9 @@ public sealed class LookupRepository(MicronoteDb database)
                COALESCE(Nome, '') AS Nome,
                Contropartita,
                PuntoV,
-               TRIM(CONCAT_WS(' ', NULLIF(COALESCE(Citta, ''), ''), NULLIF(COALESCE(Prov, ''), ''))) AS Dettaglio
+               TRIM(CONCAT_WS(' ', NULLIF(COALESCE(Citta, ''), ''), NULLIF(COALESCE(Prov, ''), ''))) AS Dettaglio,
+               COALESCE(Citta, '') AS Citta,
+               '' AS CategoriaDescrizione
         FROM {table}
         """;
 
@@ -119,6 +136,8 @@ public sealed class LookupRepository(MicronoteDb database)
             reader.GetString("Nome"),
             reader.GetString("Dettaglio"),
             reader["Contropartita"] == DBNull.Value ? null : Convert.ToInt32(reader["Contropartita"]),
-            reader["PuntoV"] == DBNull.Value ? null : Convert.ToInt32(reader["PuntoV"]));
+            reader["PuntoV"] == DBNull.Value ? null : Convert.ToInt32(reader["PuntoV"]),
+            reader.GetString("Citta"),
+            reader.GetString("CategoriaDescrizione"));
     }
 }

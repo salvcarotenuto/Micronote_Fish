@@ -9,15 +9,18 @@ public sealed class SalesHistoryRepository(MicronoteDb database)
         int year,
         int month,
         int customerCode,
+        int storeCode,
         CancellationToken cancellationToken = default)
     {
         await using var connection = await database.OpenConnectionAsync(cancellationToken);
         var years = await ListYearsAsync(connection, year, cancellationToken);
+        var stores = await ListStoresAsync(connection, cancellationToken);
         var sales = await ListSalesAsync(
             connection,
             year,
             Math.Clamp(month, 0, 12),
             Math.Max(customerCode, 0),
+            Math.Max(storeCode, 0),
             cancellationToken);
         var customerName = customerCode > 0
             ? await LoadCustomerNameAsync(connection, customerCode, cancellationToken)
@@ -29,10 +32,31 @@ public sealed class SalesHistoryRepository(MicronoteDb database)
             Month = Math.Clamp(month, 0, 12),
             CustomerCode = Math.Max(customerCode, 0),
             CustomerName = customerName,
+            StoreCode = Math.Max(storeCode, 0),
             Years = years,
+            Stores = stores,
             Sales = sales,
             Totals = TotalsFrom(sales)
         };
+    }
+
+    private static async Task<IReadOnlyList<SalesEntryStoreRow>> ListStoresAsync(
+        MySqlConnection connection,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT Codice, COALESCE(Nome, '') AS Nome
+            FROM PuntiVendita
+            ORDER BY Nome, Codice;
+            """;
+        var stores = new List<SalesEntryStoreRow>();
+        await using var command = new MySqlCommand(sql, connection);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            stores.Add(new(
+                Convert.ToInt32(reader["Codice"]),
+                Convert.ToString(reader["Nome"]) ?? ""));
+        return stores;
     }
 
     private static async Task<string> LoadCustomerNameAsync(
@@ -72,6 +96,7 @@ public sealed class SalesHistoryRepository(MicronoteDb database)
         int year,
         int month,
         int customerCode,
+        int storeCode,
         CancellationToken cancellationToken)
     {
         const string sql = """
@@ -87,6 +112,7 @@ public sealed class SalesHistoryRepository(MicronoteDb database)
             WHERE v.Anno = @year
               AND (@month = 0 OR MONTH(v.DataDoc) = @month)
               AND (@customer = 0 OR v.Cliente = @customer)
+              AND (@store = 0 OR v.PuntoV = @store)
             ORDER BY v.DataDoc DESC, v.NumDoc DESC, v.Codice DESC;
             """;
         var rows = new List<SalesHistoryListItem>();
@@ -94,6 +120,7 @@ public sealed class SalesHistoryRepository(MicronoteDb database)
         command.Parameters.AddWithValue("@year", year);
         command.Parameters.AddWithValue("@month", month);
         command.Parameters.AddWithValue("@customer", customerCode);
+        command.Parameters.AddWithValue("@store", storeCode);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {

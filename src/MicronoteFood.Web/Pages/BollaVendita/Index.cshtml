@@ -1,0 +1,158 @@
+@page
+@model MicronoteFood.Web.Pages.BollaVendita.IndexModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Bolla di vendita";
+    ViewData["BodyClass"] = "stock-load-edit-module sales-document-module";
+    var payload = JsonSerializer.Serialize(new
+    {
+        document = Model.Document,
+        articles = Model.Catalogue.Articles
+    }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+}
+
+<section class="module-page form-module-page supplier-form-page stock-load-form-page sales-document-page data-form-skin" data-sales-document>
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>Bolla di vendita</h1>
+                <p>@(Model.Document.Id is null ? "Nuovo documento di vendita." : $"Partita {Model.Document.Code:000000}")</p>
+            </div>
+        </div>
+        <div class="top-actions sales-document-toolbar-actions">
+            <button class="button button-primary primary"
+                    type="submit"
+                    form="sales-document-form"
+                    data-sales-document-save>
+                Salva
+            </button>
+            <a class="button button-secondary secondary" asp-page="/Vendite/Storico">Annulla</a>
+        </div>
+    </header>
+
+    <form id="sales-document-form" class="entity-form" method="post" data-sales-document-form>
+        <input asp-for="SavePayload" type="hidden" data-sales-document-payload />
+        <fieldset class="form-frame compact-frame stock-load-frame stock-load-frame-no-legend">
+          <div class="stock-load-general-grid sales-document-general-grid">
+            <div class="field stock-load-code-field">
+                <label>Partita</label>
+                <input value="@Model.Document.Code.ToString("000000")" readonly tabindex="-1" />
+                <span>/</span>
+                <input value="@Model.Document.Year" readonly tabindex="-1" />
+            </div>
+            <div class="field stock-load-date-field">
+                <label>Data documento</label>
+                <span class="micronote-date-control" data-date-control>
+                    <input class="micronote-date-input"
+                           type="text"
+                           inputmode="numeric"
+                           maxlength="10"
+                           autocomplete="off"
+                           value="@Model.Document.DocumentDate.ToString("dd/MM/yyyy")"
+                           data-filter-date-display />
+                    <input type="hidden"
+                           value="@Model.Document.DocumentDate.ToString("yyyy-MM-dd")"
+                           data-filter-date-hidden
+                           data-sales-document-date />
+                    <button class="micronote-date-button"
+                            type="button"
+                            tabindex="-1"
+                            aria-label="Seleziona data"
+                            data-date-picker-button></button>
+                </span>
+            </div>
+            <div class="field stock-load-supplier-field sales-document-customer lookup-field"
+                 data-lookup-field
+                 data-lookup-type="clienti"
+                 data-lookup-title="Seleziona cliente"
+                 data-code-input="salesDocumentCustomer"
+                 data-code-display="salesDocumentCustomerDisplay"
+                 data-label-input="salesDocumentCustomerName">
+                <label>Cliente</label>
+                <input id="salesDocumentCustomer"
+                       type="hidden"
+                       value="@(Model.Document.CustomerCode == 0 ? "" : Model.Document.CustomerCode)" />
+                <input id="salesDocumentCustomerDisplay"
+                       value="@(Model.Document.CustomerCode == 0 ? "" : Model.Document.CustomerCode.ToString("00000"))"
+                       inputmode="numeric" />
+                <input id="salesDocumentCustomerName"
+                       value="@Model.Document.CustomerName"
+                       readonly
+                       tabindex="-1" />
+                <button class="lookup-button stock-load-square-button" type="button" title="Seleziona cliente" data-lookup-open></button>
+            </div>
+            <div class="field stock-load-store-field sales-document-store">
+                <label>Punto vendita</label>
+                <select data-sales-document-store>
+                    <option value="0"></option>
+                    @foreach (var store in Model.Stores)
+                    {
+                        <option value="@store.Code" selected="@(Model.Document.StoreCode == store.Code)">
+                            @store.Name
+                        </option>
+                    }
+                </select>
+            </div>
+          </div>
+        </fieldset>
+
+        <section class="stock-load-lines-section sales-document-lines">
+            <div class="stock-load-side-actions sales-document-line-actions">
+                <button type="button" data-sales-line-add>Aggiungi</button>
+                <button type="button" data-sales-line-edit disabled>Modifica</button>
+                <button type="button" data-sales-line-remove disabled>Cancella</button>
+            </div>
+            <div class="stock-load-lines-wrap sales-document-grid-frame">
+                <table class="stock-load-lines-grid sales-document-grid">
+                    <thead>
+                        <tr>
+                            <th>Articolo</th><th>Descrizione</th><th>U.m.</th><th>Colli</th>
+                            <th>Tara</th><th>Quantità</th><th>Prezzo</th><th>Iva</th>
+                            <th>Prz. ivato</th><th>Importo</th>
+                        </tr>
+                    </thead>
+                    <tbody data-sales-document-rows></tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer class="stock-load-footer-actions sales-document-footer">
+            <div class="sales-document-totals">
+                <div><span>Merce</span><strong data-sales-total-goods>0,00</strong></div>
+                <div><span>I.v.a.</span><strong data-sales-total-vat>0,00</strong></div>
+                <div><span>Tot. vendita</span><strong data-sales-total-gross>0,00</strong></div>
+                <label><span>Abbuono</span><input value="@Model.Document.Discount.ToString("0.00").Replace(".", ",")" data-sales-discount /></label>
+                <div><span>Totale netto</span><strong data-sales-total-net>0,00</strong></div>
+                <label><span>Pagato</span><input value="@Model.Document.Paid.ToString("0.00").Replace(".", ",")" data-sales-paid /></label>
+            </div>
+        </footer>
+    </form>
+
+    <div class="lookup-field sales-document-article-lookup"
+         data-lookup-field
+         data-lookup-type="articoli"
+         data-lookup-title="Seleziona articolo"
+         data-lookup-article-unit="vendita"
+         data-lookup-article-price="vendita"
+         data-code-input="salesDocumentArticle"
+         data-code-display="salesDocumentArticleDisplay"
+         data-label-input="salesDocumentArticleName">
+        <input id="salesDocumentArticle" type="hidden" />
+        <input id="salesDocumentArticleDisplay" type="hidden" />
+        <input id="salesDocumentArticleName" type="hidden" />
+        <button type="button" data-lookup-open data-sales-article-lookup-open></button>
+    </div>
+
+    <partial name="_ArticleRowDialog" model="@("bolla-vendita")" />
+
+    <script type="application/json" data-sales-document-data>@Html.Raw(payload)</script>
+</section>
+
+@section Scripts {
+    <script src="~/js/filter-date-picker.js" asp-append-version="true"></script>
+    <script src="~/js/sales-document.js" asp-append-version="true"></script>
+    <script src="~/js/lookup-fields.js" asp-append-version="true"></script>
+}

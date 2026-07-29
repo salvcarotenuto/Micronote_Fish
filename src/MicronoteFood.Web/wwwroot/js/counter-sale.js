@@ -231,8 +231,8 @@
     const existing = editIndex >= 0 ? state.rows[editIndex] : null;
     const modal = $("[data-row-modal]"); modal.hidden = false; modal.dataset.editIndex = editIndex;
     $("[data-row-title]").textContent = existing ? "Modifica articolo" : "Inserimento articolo";
-    $("[data-row-code]").textContent = article.code;
-    $("[data-row-description]").textContent = article.description;
+    $("[data-row-code]").value = article.code;
+    $("[data-row-description]").value = article.description;
     $("[data-row-unit]").value = article.unit || "";
     $("[data-row-stock]").value = number.format(article.stock);
     $("[data-row-last-price]").value = "";
@@ -289,6 +289,32 @@
 
   function closeRow() { $("[data-row-modal]").hidden = true; }
   root.querySelectorAll("[data-row-cancel]").forEach(button => button.addEventListener("click", closeRow));
+  $("[data-sales-line-article-lookup]")?.addEventListener("click", () =>
+    $("[data-counter-row-article-lookup-open]")?.click());
+  root.addEventListener("micronote:lookup-selected", event => {
+    if (!event.target.matches(".counter-sale-row-article-lookup")) return;
+    const code = String(event.detail.row.code || "");
+    const source = event.detail.row;
+    const catalogueArticle = data.articles.find(item => String(item.code) === code);
+    const article = catalogueArticle
+      ? {
+          ...catalogueArticle,
+          unit: catalogueArticle.unit || source.unitMeasure || "",
+          tare: catalogueArticle.tare ?? source.tare ?? 0
+        }
+      : {
+          code,
+          description: source.description || source.label || "",
+          unit: source.unitMeasure || "",
+          tare: Number(source.tare) || 0,
+          stock: Number(source.stock) || 0,
+          price: Number(source.price) || 0,
+          vatRate: Number(source.vatRate) || 0
+        };
+    if (!article) return;
+    const modal = $("[data-row-modal]");
+    openRow(article, Number(modal.dataset.editIndex ?? -1));
+  });
   const controlledInputs = [
     { selector: "[data-row-packages]", sanitize: value => sanitizeInteger(value, 32000), digits: 0, suffix: "" },
     { selector: "[data-row-quantity]", sanitize: value => sanitizeDecimal(value, 6, 3, true, 999999.999), digits: 3, suffix: "" },
@@ -389,205 +415,25 @@
     closeRow(); renderCart();
   });
 
-  let customerBeforeLookup = null;
-  let customerSort = { key: "name", direction: "asc" };
-  const cancelCustomerLookup = () => {
-    state.customer = customerBeforeLookup;
-    $("[data-customer-code]").textContent = state.customer
-      ? String(state.customer.code).padStart(5, "0")
+  const customerLookup = $("[data-lookup-type='clienti']");
+  const showCustomer = customer => {
+    state.customer = customer;
+    $("[data-customer-code]").textContent = customer
+      ? String(customer.code).padStart(5, "0")
       : "";
-    $("[data-customer-name]").textContent = state.customer?.name || "";
-    customerBeforeLookup = null;
-    $("[data-customer-modal]").hidden = true;
+    $("[data-customer-name]").textContent = customer?.name || "";
     updateButtons();
   };
-
-  function renderCustomers(query = "") {
-    const text = query.trim().toLocaleUpperCase("it-IT"), host = $("[data-customer-list]"); host.replaceChildren();
-    const selectCustomer = customer => {
-      state.customer = customer;
-      $("[data-customer-code]").textContent = String(customer.code).padStart(5, "0");
-      $("[data-customer-name]").textContent = customer.name;
-      customerBeforeLookup = null;
-      $("[data-customer-modal]").hidden = true;
-      updateButtons();
-    };
-    const selectButton = button => {
-      host.querySelectorAll("button").forEach(candidate => {
-        const selected = candidate === button;
-        candidate.classList.toggle("is-selected", selected);
-        candidate.setAttribute("aria-selected", selected ? "true" : "false");
-      });
-    };
-    const navigate = (event, button) => {
-      const rows = [...host.querySelectorAll("button")];
-      const current = rows.indexOf(button);
-      let next = current;
-      if (event.key === "ArrowDown") next = Math.min(current + 1, rows.length - 1);
-      else if (event.key === "ArrowUp") next = Math.max(current - 1, 0);
-      else if (event.key === "Home") next = 0;
-      else if (event.key === "End") next = rows.length - 1;
-      else if (event.key === "Enter") {
-        event.preventDefault();
-        selectCustomer(button.customer);
-        return;
-      } else return;
-      event.preventDefault();
-      const nextButton = rows[next];
-      selectButton(nextButton);
-      nextButton.focus({ preventScroll: true });
-      nextButton.scrollIntoView({ block: "nearest" });
-    };
-    const sortedCustomers = customers
-      .filter(c => !text || `${c.code} ${c.name} ${c.city || ""}`.toLocaleUpperCase("it-IT").includes(text))
-      .sort((left, right) => {
-        let comparison;
-        if (customerSort.key === "code") {
-          comparison = Number(left.code) - Number(right.code);
-        } else {
-          comparison = String(left[customerSort.key] || "").localeCompare(
-            String(right[customerSort.key] || ""),
-            "it",
-            { sensitivity: "base", numeric: true }
-          );
-        }
-        if (comparison === 0) comparison = Number(left.code) - Number(right.code);
-        return customerSort.direction === "asc" ? comparison : -comparison;
-      });
-
-    sortedCustomers.forEach((customer, index) => {
-      const button = document.createElement("button"); button.type = "button";
-      button.customer = customer;
-      button.setAttribute("role", "option");
-      button.setAttribute("aria-selected", index === 0 ? "true" : "false");
-      if (index === 0) button.classList.add("is-selected");
-      button.innerHTML = `<strong>${String(customer.code).padStart(5, "0")}</strong><span>${customer.name}</span><span>${customer.city || ""}</span>`;
-      button.addEventListener("click", () => selectCustomer(customer));
-      button.addEventListener("focus", () => selectButton(button));
-      button.addEventListener("keydown", event => navigate(event, button));
-      host.append(button);
-    });
-    requestAnimationFrame(() => {
-      const header = $(".counter-sale-customer-list-header");
-      const scrollbarWidth = Math.max(0, host.offsetWidth - host.clientWidth);
-      header?.style.setProperty("--customer-scrollbar-width", `${scrollbarWidth}px`);
-    });
-  }
   $("[data-customer-open]").addEventListener("click", () => {
-    const search = $("[data-customer-search]");
-    customerBeforeLookup = state.customer;
-    search.value = "";
-    renderCustomers();
-    $("[data-customer-list]").scrollTop = 0;
-    $("[data-customer-modal]").hidden = false;
-    setTimeout(() => search.focus(), 0);
+    $("[data-counter-customer-lookup-open]")?.click();
   });
-  $("[data-customer-close]").addEventListener("click", cancelCustomerLookup);
-  $("[data-customer-search]").addEventListener("input", event => renderCustomers(event.target.value));
-  root.querySelectorAll("[data-customer-sort]").forEach(header => {
-    header.addEventListener("pointerdown", event => {
-      event.preventDefault();
-    });
-    header.addEventListener("click", () => {
-      const search = $("[data-customer-search]");
-      const key = header.dataset.customerSort;
-      customerSort = {
-        key,
-        direction: customerSort.key === key && customerSort.direction === "asc" ? "desc" : "asc"
-      };
-      root.querySelectorAll("[data-customer-sort]").forEach(candidate => {
-        const active = candidate === header;
-        candidate.classList.toggle("is-sorted", active);
-        candidate.classList.toggle("is-ascending", active && customerSort.direction === "asc");
-        candidate.setAttribute("aria-sort", active
-          ? (customerSort.direction === "asc" ? "ascending" : "descending")
-          : "none");
-      });
-      renderCustomers(search.value);
-      $("[data-customer-list]").scrollTop = 0;
-      search.focus({ preventScroll: true });
-    });
+  customerLookup?.addEventListener("micronote:lookup-selected", event => {
+    const row = event.detail?.row;
+    const code = Number(row?.code) || 0;
+    const customer = customers.find(item => Number(item.code) === code)
+      || (code > 0 ? { code, name: row?.label || "", city: row?.detail || "", storeCode: 0 } : null);
+    showCustomer(customer);
   });
-  $("[data-customer-search]").addEventListener("keydown", event => {
-    if (!["ArrowDown", "ArrowUp", "Home", "End", "Enter"].includes(event.key)) return;
-    const list = $("[data-customer-list]");
-    const rows = [...list.querySelectorAll("button")];
-    if (!rows.length) return;
-    const selected = list.querySelector("button.is-selected") || rows[0];
-    event.preventDefault();
-    if (event.key === "Enter") {
-      selected.click();
-      return;
-    }
-
-    const current = Math.max(0, rows.indexOf(selected));
-    let nextIndex = current;
-    if (event.key === "ArrowDown") nextIndex = Math.min(current + 1, rows.length - 1);
-    else if (event.key === "ArrowUp") nextIndex = Math.max(current - 1, 0);
-    else if (event.key === "Home") nextIndex = 0;
-    else if (event.key === "End") nextIndex = rows.length - 1;
-
-    const next = rows[nextIndex];
-    rows.forEach(row => {
-      const isSelected = row === next;
-      row.classList.toggle("is-selected", isSelected);
-      row.setAttribute("aria-selected", isSelected ? "true" : "false");
-    });
-    next.scrollIntoView({ block: "nearest" });
-  });
-  {
-    const customerList = $("[data-customer-list]");
-    let previousScrollTop = customerList.scrollTop;
-    let customerScrollFrame = 0;
-    let customerWheelFrame = 0;
-
-    const selectCustomerFromScroll = delta => {
-      if (delta === 0) return;
-
-      const buttons = [...customerList.querySelectorAll("button")];
-      const selected = customerList.querySelector("button.is-selected");
-      if (!buttons.length || !selected) return;
-
-      const frame = customerList.getBoundingClientRect();
-      const selectedBounds = selected.getBoundingClientRect();
-      if (selectedBounds.bottom > frame.top + 1 && selectedBounds.top < frame.bottom - 1) return;
-
-      const visible = buttons.filter(button => {
-        const bounds = button.getBoundingClientRect();
-        return bounds.top >= frame.top + 1 && bounds.bottom <= frame.bottom - 1;
-      });
-      if (!visible.length) return;
-
-      const next = delta > 0 ? visible[0] : visible[visible.length - 1];
-      buttons.forEach(button => {
-        const isSelected = button === next;
-        button.classList.toggle("is-selected", isSelected);
-        button.setAttribute("aria-selected", isSelected ? "true" : "false");
-      });
-    };
-
-    customerList.addEventListener("scroll", () => {
-      if (customerScrollFrame) cancelAnimationFrame(customerScrollFrame);
-      customerScrollFrame = requestAnimationFrame(() => {
-        customerScrollFrame = 0;
-        const currentScrollTop = customerList.scrollTop;
-        const delta = currentScrollTop - previousScrollTop;
-        previousScrollTop = currentScrollTop;
-        selectCustomerFromScroll(delta);
-      });
-    }, { passive: true });
-
-    customerList.addEventListener("wheel", event => {
-      if (customerWheelFrame) cancelAnimationFrame(customerWheelFrame);
-      const delta = event.deltaY;
-      customerWheelFrame = requestAnimationFrame(() => {
-        customerWheelFrame = requestAnimationFrame(() => {
-          customerWheelFrame = 0;
-          selectCustomerFromScroll(delta);
-        });
-      });
-    }, { passive: true });
-  }
   $("[data-customer-clear]").addEventListener("click", () => { state.customer = null; $("[data-customer-code]").textContent = ""; $("[data-customer-name]").textContent = ""; updateButtons(); });
 
   root.querySelectorAll("[data-dimension]").forEach(button => button.addEventListener("click", () => {
@@ -674,7 +520,6 @@
     $("[data-customer-code]").textContent = "";
     $("[data-customer-name]").textContent = "";
     $("[data-article-search]").value = "";
-    $("[data-customer-search]").value = "";
     $("[data-article-scroll]").scrollTop = 0;
     root.querySelectorAll("[data-dimension]").forEach(button =>
       button.classList.toggle("is-active", button.dataset.dimension === initialDimension));
@@ -725,12 +570,6 @@
     if (!rowModal.hidden) {
       escapeConsumedUntilKeyup = true;
       closeRow();
-      return;
-    }
-    const customerModal = $("[data-customer-modal]");
-    if (!customerModal.hidden) {
-      escapeConsumedUntilKeyup = true;
-      cancelCustomerLookup();
       return;
     }
     $("[data-exit]").click();

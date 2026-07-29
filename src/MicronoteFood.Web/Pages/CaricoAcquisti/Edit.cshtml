@@ -203,65 +203,7 @@
         </div>
     </form>
 
-    <div class="stock-load-line-overlay" hidden data-stock-load-line-overlay>
-        <div class="stock-load-line-dialog" role="dialog" aria-modal="true" aria-labelledby="stock-load-line-title">
-            <div class="stock-load-line-title" id="stock-load-line-title">Inserimento articolo</div>
-            <div class="stock-load-line-body">
-                <div class="stock-load-line-article">
-                    <label>Articolo</label>
-                    <input class="stock-load-line-code" type="text" autocomplete="off" data-line-code />
-                    <button class="lookup-button stock-load-line-lookup-button"
-                            type="button"
-                            title="Seleziona articolo"
-                            aria-label="Seleziona articolo"
-                            data-article-lookup-open></button>
-                    <input class="stock-load-line-description" type="text" readonly tabindex="-1" data-line-description />
-                </div>
-
-                <div class="stock-load-line-middle">
-                    <div class="field stock-load-line-unit">
-                        <label>Un. di misura</label>
-                        <input type="text" readonly tabindex="-1" data-line-unit />
-                    </div>
-                    <div class="field">
-                        <label>Giacenza</label>
-                        <input class="numeric-display" type="text" readonly tabindex="-1" data-line-stock />
-                    </div>
-                    <div class="field">
-                        <label>Ultimo prezzo</label>
-                        <input class="currency-display" type="text" readonly tabindex="-1" data-line-last-price />
-                    </div>
-                </div>
-
-                <div class="stock-load-line-right">
-                    <div class="field">
-                        <label>Quantità</label>
-                        <input class="numeric-display" type="text" inputmode="decimal" autocomplete="off" data-line-quantity />
-                    </div>
-                    <div class="field">
-                        <label>Prezzo</label>
-                        <input class="currency-display" type="text" inputmode="decimal" autocomplete="off" data-line-price />
-                    </div>
-                    <div class="field">
-                        <label>Sconto</label>
-                        <input class="numeric-display" type="text" inputmode="decimal" autocomplete="off" data-percent-field data-percent-integer-digits="3" data-line-discount />
-                    </div>
-                    <div class="field">
-                        <label>Aliquota iva</label>
-                        <input class="numeric-display" type="text" inputmode="decimal" autocomplete="off" data-percent-field data-percent-integer-digits="3" data-line-vat />
-                    </div>
-                    <div class="field">
-                        <label>Importo</label>
-                        <input class="currency-display" type="text" readonly tabindex="-1" data-line-amount />
-                    </div>
-                </div>
-            </div>
-            <div class="stock-load-line-actions">
-                <button class="button button-primary primary" type="button" data-line-confirm>Conferma</button>
-                <button class="button button-secondary secondary" type="button" data-line-cancel>Annulla</button>
-            </div>
-        </div>
-    </div>
+    <partial name="_ArticleRowDialog" model="@("carico")" />
 
     <div class="stock-load-article-lookup" hidden data-article-lookup>
         <div class="stock-load-article-lookup-dialog" role="dialog" aria-modal="true" aria-labelledby="stock-load-article-lookup-title">

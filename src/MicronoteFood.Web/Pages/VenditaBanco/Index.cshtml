@@ -116,56 +116,37 @@
         <input type="hidden" asp-for="SalePayload" data-sale-payload />
     </form>
 
-    <div class="counter-sale-overlay" hidden data-customer-modal>
-        <section class="counter-sale-dialog customer-dialog" role="dialog" aria-modal="true">
-            <header><h2>Seleziona cliente</h2><button type="button" data-customer-close>×</button></header>
-            <input type="search" placeholder="Codice o ragione sociale" autocomplete="off" data-customer-search />
-            <div class="counter-sale-customer-list-header">
-                <button type="button" data-customer-sort="code">Codice</button>
-                <button type="button" data-customer-sort="name" class="is-sorted is-ascending">Cliente</button>
-                <button type="button" data-customer-sort="city">Città</button>
-            </div>
-            <div class="counter-sale-customer-list" data-customer-list></div>
-        </section>
+    <div class="lookup-field counter-sale-customer-lookup"
+         hidden
+         data-lookup-field
+         data-lookup-type="clienti"
+         data-lookup-title="Seleziona cliente"
+         data-code-input="counterSaleCustomer"
+         data-code-display="counterSaleCustomerDisplay"
+         data-label-input="counterSaleCustomerName">
+        <input id="counterSaleCustomer" type="hidden" />
+        <input id="counterSaleCustomerDisplay" type="hidden" />
+        <input id="counterSaleCustomerName" type="hidden" />
+        <button type="button" data-lookup-open data-counter-customer-lookup-open></button>
     </div>
 
-    <div class="counter-sale-overlay" hidden data-row-modal>
-        <section class="counter-sale-dialog row-dialog" role="dialog" aria-modal="true">
-            <header><h2 data-row-title>Inserimento articolo</h2><button type="button" data-row-cancel>×</button></header>
-            <div class="counter-sale-row-panel">
-                <div class="counter-sale-row-article">
-                    <span>Articolo</span>
-                    <strong data-row-code></strong>
-                    <b data-row-description></b>
-                </div>
-                <div class="counter-sale-row-fields">
-                    <div class="counter-sale-row-column counter-sale-row-info">
-                        <label><span>Unità di misura</span><input readonly data-row-unit /></label>
-                        <label><span>Giacenza</span><input readonly data-row-stock /></label>
-                        <label><span>Tara</span><input readonly data-row-tare /></label>
-                        <div class="counter-sale-last-price">
-                            <span>Ultimo prezzo</span><input readonly data-row-last-price />
-                            <em>iva</em><input readonly data-row-last-vat />
-                        </div>
-                    </div>
-                    <div class="counter-sale-row-column counter-sale-row-measures">
-                        <label><span>Colli</span><input inputmode="numeric" maxlength="6" data-row-packages /></label>
-                    </div>
-                    <div class="counter-sale-row-column counter-sale-row-values">
-                        <label><span>Peso</span><input inputmode="decimal" maxlength="11" data-row-quantity /></label>
-                        <label><span>Prezzo</span><input inputmode="decimal" maxlength="9" data-row-price /></label>
-                        <label><span>I.v.a.</span><input inputmode="decimal" maxlength="8" data-row-vat /></label>
-                        <label><span>Prezzo ivato</span><input readonly data-row-vat-price /></label>
-                        <label><span>Importo</span><input inputmode="decimal" readonly data-row-amount /></label>
-                    </div>
-                </div>
-            </div>
-            <footer>
-                <button type="button" class="primary" data-row-confirm>Conferma</button>
-                <button type="button" data-row-cancel>Annulla</button>
-            </footer>
-        </section>
+    <div class="lookup-field counter-sale-row-article-lookup"
+         hidden
+         data-lookup-field
+         data-lookup-type="articoli"
+         data-lookup-title="Seleziona articolo"
+         data-lookup-article-unit="vendita"
+         data-lookup-article-price="vendita"
+         data-code-input="counterSaleRowArticle"
+         data-code-display="counterSaleRowArticleDisplay"
+         data-label-input="counterSaleRowArticleName">
+        <input id="counterSaleRowArticle" type="hidden" />
+        <input id="counterSaleRowArticleDisplay" type="hidden" />
+        <input id="counterSaleRowArticleName" type="hidden" />
+        <button type="button" data-lookup-open data-counter-row-article-lookup-open></button>
     </div>
+
+    <partial name="_ArticleRowDialog" model="@("vendita-banco")" />
 
     <div class="counter-sale-overlay" hidden data-close-modal>
         <section class="counter-sale-dialog close-dialog" role="dialog" aria-modal="true">
@@ -198,4 +179,5 @@
 
 @section Scripts {
     <script src="~/js/counter-sale.js" asp-append-version="true"></script>
+    <script src="~/js/lookup-fields.js" asp-append-version="true"></script>
 }

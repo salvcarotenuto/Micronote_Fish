@@ -61,6 +61,7 @@ builder.Services.AddScoped<PaymentCodeRepository>();
 builder.Services.AddScoped<PurchaseInvoiceRepository>();
 builder.Services.AddScoped<SalesEntryRepository>();
 builder.Services.AddScoped<SalesHistoryRepository>();
+builder.Services.AddScoped<SalesDocumentRepository>();
 builder.Services.AddScoped<SettingsRepository>();
 builder.Services.AddScoped<StockLoadRepository>();
 builder.Services.AddScoped<StockUnloadRepository>();
@@ -174,6 +175,7 @@ app.MapGet(
                 code = article.Code,
                 description = article.Description,
                 unitMeasure = article.SalesUnitCode ?? "",
+                tare = article.Tare ?? 0,
                 price = article.StandardCost ?? 0,
                 lastPrice = article.LastCost ?? 0,
                 stock = article.InitialWeight ?? 0,
@@ -202,6 +204,9 @@ app.MapGet(
                 code = article.Code,
                 description = article.Description,
                 unitMeasure = article.SalesUnitCode,
+                purchaseUnitMeasure = article.SalesUnitCode,
+                salesUnitMeasure = article.PurchaseUnitCode,
+                tare = article.Tare,
                 categoryCode = article.CategoryCode,
                 category = article.CategoryDescription,
                 group = article.GroupDescription,
@@ -210,6 +215,8 @@ app.MapGet(
                 origin = article.OriginDescription,
                 supplierCode = article.SupplierCode,
                 supplier = article.SupplierName,
+                standardCost = article.StandardCost,
+                standardPrice = article.StandardPrice,
                 price = article.StandardCost,
                 lastPrice = article.StandardCost,
                 stock = article.InitialWeight,

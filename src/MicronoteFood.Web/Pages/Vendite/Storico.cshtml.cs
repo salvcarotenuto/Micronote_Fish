@@ -16,6 +16,7 @@ public class StoricoModel(
         int? year,
         int? month,
         int? customer,
+        int? store,
         CancellationToken cancellationToken)
     {
         var filterYear = year ?? applicationState.Esercizio;
@@ -24,6 +25,7 @@ public class StoricoModel(
             filterYear,
             filterMonth,
             customer ?? 0,
+            store ?? 0,
             cancellationToken);
     }
 

@@ -475,11 +475,15 @@ document.addEventListener("DOMContentLoaded", () => {
     description: lineOverlay?.querySelector("[data-line-description]"),
     unit: lineOverlay?.querySelector("[data-line-unit]"),
     stock: lineOverlay?.querySelector("[data-line-stock]"),
+    tare: lineOverlay?.querySelector("[data-line-tare]"),
     lastPrice: lineOverlay?.querySelector("[data-line-last-price]"),
+    lastVat: lineOverlay?.querySelector("[data-line-last-vat]"),
+    packages: lineOverlay?.querySelector("[data-line-packages]"),
     quantity: lineOverlay?.querySelector("[data-line-quantity]"),
     price: lineOverlay?.querySelector("[data-line-price]"),
     discount: lineOverlay?.querySelector("[data-line-discount]"),
     vat: lineOverlay?.querySelector("[data-line-vat]"),
+    vatPrice: lineOverlay?.querySelector("[data-line-vat-price]"),
     amount: lineOverlay?.querySelector("[data-line-amount]")
   };
 
@@ -508,6 +512,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const amount = quantity * netPrice;
     if (lineFields.amount) {
       lineFields.amount.value = formatMoney(amount);
+    }
+    if (lineFields.vatPrice) {
+      lineFields.vatPrice.value = formatMoney(netPrice * (1 + parsePercent(lineFields.vat?.value) / 100));
     }
   };
 
@@ -2075,6 +2082,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     clearLineDialog();
+    const lineTitle = lineOverlay.querySelector("[data-line-title]");
+    if (lineTitle) {
+      lineTitle.textContent = "Inserimento articolo";
+    }
     lineOverlay.hidden = false;
     document.body.classList.add("lookup-open");
     window.setTimeout(() => lineFields.code?.focus(), 0);
@@ -2098,7 +2109,15 @@ document.addEventListener("DOMContentLoaded", () => {
     lineFields.amount.value = cells[6]?.value ?? "";
     lineFields.vat.value = cells[7]?.value ?? "";
     lineFields.stock.value = "";
+    lineFields.tare.value = "";
     lineFields.lastPrice.value = "";
+    lineFields.lastVat.value = "";
+    lineFields.packages.value = "";
+    lineFields.vatPrice.value = "";
+    const lineTitle = lineOverlay.querySelector("[data-line-title]");
+    if (lineTitle) {
+      lineTitle.textContent = "Modifica articolo";
+    }
     lineOverlay.hidden = false;
     document.body.classList.add("lookup-open");
     window.setTimeout(() => lineFields.quantity?.focus(), 0);
@@ -2133,9 +2152,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     lineFields.code.value = article.code ?? lineFields.code.value;
     lineFields.description.value = article.description ?? "";
-    lineFields.unit.value = article.unitMeasure ?? "";
+    lineFields.unit.value = article.purchaseUnitMeasure ?? article.unitMeasure ?? "";
     lineFields.stock.value = formatNumber(article.stock ?? 0, 3);
+    lineFields.tare.value = formatNumber(article.tare ?? 0, 3);
     lineFields.lastPrice.value = formatMoney(Number(article.lastPrice ?? 0));
+    lineFields.lastVat.value = "";
     lineFields.price.value = formatMoney(Number(article.price ?? 0));
     lineFields.vat.value = formatPercent(Number(article.vatRate ?? 0));
     calculateLineAmount();

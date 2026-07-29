@@ -8,7 +8,6 @@
         ViewData["BodyClass"] = "article-modal-page";
     }
     var it = CultureInfo.GetCultureInfo("it-IT");
-    string Money(decimal? value) => value is null or 0 ? "" : value.Value.ToString("N2", it);
     string Quantity(decimal? value) => value is null or 0 ? "" : value.Value.ToString("N3", it);
 }
 
@@ -173,12 +172,13 @@
                 <div class="field article-average-cost-field">
                     <label asp-for="Article.VatIncludedPrice"></label>
                     <input asp-for="Article.VatIncludedPrice"
-                           value="@Money(Model.Article.VatIncludedPrice)"
+                           value="@Quantity(Model.Article.VatIncludedPrice)"
                            class="currency-display"
                            inputmode="decimal"
                            tabindex="14"
-                           data-money-field
-                           data-money-integer-digits="7" />
+                           data-decimal-field
+                           data-decimal-integer-digits="7"
+                           data-decimal-digits="3" />
                 </div>
 
                 <div class="field article-supplier-field lookup-field"

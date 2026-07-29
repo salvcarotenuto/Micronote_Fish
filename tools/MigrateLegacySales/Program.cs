@@ -64,6 +64,7 @@ try
           `Iva` DECIMAL(10,2) NOT NULL DEFAULT 0,
           `Totale` DECIMAL(12,2) NOT NULL DEFAULT 0,
           `Abbuono` DECIMAL(10,2) NOT NULL DEFAULT 0,
+          `Pagato` DECIMAL(12,2) NOT NULL DEFAULT 0,
           `PuntoV` SMALLINT NOT NULL DEFAULT 0,
           PRIMARY KEY (`ID`),
           UNIQUE KEY `UX_Vendite_Anno_Codice` (`Anno`,`Codice`)
@@ -95,10 +96,10 @@ try
         await using var command = new MySqlCommand("""
             INSERT INTO Vendite
             (Anno,Codice,Stato,NumDoc,DataDoc,Cliente,Merce,Agente,
-             Provvigione,Iva,Totale,Abbuono,PuntoV)
+             Provvigione,Iva,Totale,Abbuono,Pagato,PuntoV)
             VALUES
             (@y,@c,@state,@number,@date,@customer,@goods,@agent,
-             @commission,@vat,@total,@discount,@store);
+             @commission,@vat,@total,@discount,@paid,@store);
             """, connection, transaction);
         AddHeaderParameters(command, h);
         await command.ExecuteNonQueryAsync();
@@ -139,7 +140,7 @@ static DateOnly? D(string x)=>x=="0"||x==""?null:DateOnly.ParseExact(x,"yyyy-MM-
 static string T(string x)=>Encoding.UTF8.GetString(Convert.FromBase64String(x));
 static void Unique<T>(IEnumerable<T> values,string label) where T:notnull { var d=values.GroupBy(x=>x).FirstOrDefault(g=>g.Count()>1); if(d!=null) throw new InvalidOperationException($"{label}: chiave duplicata {d.Key}."); }
 static Header? throwIfRowsHaveInvalidSector(IEnumerable<DetailRow> rows) { var row=rows.FirstOrDefault(x=>x.Sector!=20); return row is null?null:new Header(row.Year,row.Sector,row.Code,0,0,null,0,0,0,0,0,0,0,0,0,0); }
-static void AddHeaderParameters(MySqlCommand c,Header h) { c.Parameters.AddWithValue("@y",h.Year);c.Parameters.AddWithValue("@c",h.Code);c.Parameters.AddWithValue("@state",h.State);c.Parameters.AddWithValue("@number",h.Number);c.Parameters.AddWithValue("@date",h.Date?.ToDateTime(TimeOnly.MinValue)??(object)DBNull.Value);c.Parameters.AddWithValue("@customer",h.Customer);c.Parameters.AddWithValue("@goods",h.Goods);c.Parameters.AddWithValue("@agent",h.Agent);c.Parameters.AddWithValue("@commission",h.Commission);c.Parameters.AddWithValue("@vat",h.Vat);c.Parameters.AddWithValue("@total",h.Total);c.Parameters.AddWithValue("@discount",h.Discount);c.Parameters.AddWithValue("@store",h.Store); }
+static void AddHeaderParameters(MySqlCommand c,Header h) { c.Parameters.AddWithValue("@y",h.Year);c.Parameters.AddWithValue("@c",h.Code);c.Parameters.AddWithValue("@state",h.State);c.Parameters.AddWithValue("@number",h.Number);c.Parameters.AddWithValue("@date",h.Date?.ToDateTime(TimeOnly.MinValue)??(object)DBNull.Value);c.Parameters.AddWithValue("@customer",h.Customer);c.Parameters.AddWithValue("@goods",h.Goods);c.Parameters.AddWithValue("@agent",h.Agent);c.Parameters.AddWithValue("@commission",h.Commission);c.Parameters.AddWithValue("@vat",h.Vat);c.Parameters.AddWithValue("@total",h.Total);c.Parameters.AddWithValue("@discount",h.Discount);c.Parameters.AddWithValue("@paid",h.Paid);c.Parameters.AddWithValue("@store",h.Store); }
 static void AddRowParameters(MySqlCommand c,DetailRow r,int id) { c.Parameters.AddWithValue("@id",id);c.Parameters.AddWithValue("@row",r.RowNumber);c.Parameters.AddWithValue("@article",r.Article);c.Parameters.AddWithValue("@unit",r.Unit);c.Parameters.AddWithValue("@packages",r.Packages);c.Parameters.AddWithValue("@tare",r.Tare);c.Parameters.AddWithValue("@netWeight",r.NetWeight);c.Parameters.AddWithValue("@price",r.Price);c.Parameters.AddWithValue("@vat",r.Vat);c.Parameters.AddWithValue("@amount",r.Amount); }
 async Task Exec(string sql) { await using var c=new MySqlCommand(sql,connection); await c.ExecuteNonQueryAsync(); }
 async Task<long> Scalar(string sql) { await using var c=new MySqlCommand(sql,connection); return Convert.ToInt64(await c.ExecuteScalarAsync()); }

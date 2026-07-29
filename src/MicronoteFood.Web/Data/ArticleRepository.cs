@@ -26,6 +26,7 @@ public sealed class ArticleRepository(MicronoteDb database)
                 COALESCE(a.PrezzoStd, 0) AS PrezzoStd,
                 COALESCE(a.PrIvato, 0) AS PrIvato,
                 COALESCE(a.GiacinP, 0) AS GiacinP,
+                COALESCE(a.Tara, 0) AS Tara,
                 COALESCE(a.AliqIva, 0) AS AliqIva,
                 a.Fornitore,
                 COALESCE(fn.Nome, '') AS FornitoreNome
@@ -62,6 +63,7 @@ public sealed class ArticleRepository(MicronoteDb database)
                 Decimal(reader, "PrezzoStd") ?? 0,
                 Decimal(reader, "PrIvato") ?? 0,
                 Decimal(reader, "GiacinP") ?? 0,
+                Decimal(reader, "Tara") ?? 0,
                 Decimal(reader, "AliqIva") ?? 0,
                 Integer(reader, "Fornitore"),
                 Text(reader, "FornitoreNome") ?? ""));

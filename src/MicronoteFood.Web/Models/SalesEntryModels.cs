@@ -111,7 +111,11 @@ public sealed class SalesHistoryPageModel
 
     public string CustomerName { get; set; } = "";
 
+    public int StoreCode { get; set; }
+
     public IReadOnlyList<int> Years { get; set; } = [];
+
+    public IReadOnlyList<SalesEntryStoreRow> Stores { get; set; } = [];
 
     public IReadOnlyList<SalesHistoryListItem> Sales { get; set; } = [];
 

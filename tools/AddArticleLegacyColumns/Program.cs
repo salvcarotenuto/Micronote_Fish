@@ -21,7 +21,7 @@ var columns = new (string Name, string Definition)[]
     ("Tara", "DECIMAL(10,3) NULL DEFAULT 0.000"),
     ("GiacinC", "DECIMAL(10,3) NULL DEFAULT 0.000"),
     ("GiacinP", "DECIMAL(10,3) NULL DEFAULT 0.000"),
-    ("PrIvato", "DECIMAL(10,2) NULL DEFAULT 0.00")
+    ("PrIvato", "DECIMAL(10,3) NULL DEFAULT 0.000")
 };
 
 var builder = new MySqlConnectionStringBuilder(connectionString)

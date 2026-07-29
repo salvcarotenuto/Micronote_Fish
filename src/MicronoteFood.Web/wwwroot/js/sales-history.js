@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const body = table?.tBodies[0];
   const rows = Array.from(body?.querySelectorAll("[data-sales-history-row]") ?? []);
   const detailBody = root.querySelector("[data-sales-history-detail-body]");
+  const editButton = root.querySelector("[data-sales-history-edit]");
   const printButton = root.querySelector("[data-sales-history-print]");
   const preview = root.querySelector("[data-sales-history-print-preview]");
   const previewDocument = root.querySelector("[data-sales-history-preview-document]");
@@ -105,6 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     const changed = selected !== row;
     selected = row;
+    editButton.disabled = false;
     if (changed) loadDetails(row);
     if (focus) row.focus({ preventScroll: true });
     ensureVisible(row, direction);
@@ -125,6 +127,12 @@ document.addEventListener("DOMContentLoaded", () => {
   rows.forEach(row => {
     row.addEventListener("click", () => selectRow(row, true));
     row.addEventListener("keydown", event => navigate(event, row));
+  });
+
+  editButton?.addEventListener("click", () => {
+    if (!selected) return;
+    window.location.href =
+      `/BollaVendita/Index?id=${encodeURIComponent(selected.dataset.saleId)}`;
   });
 
   const sortValue = (row, key, type) => {

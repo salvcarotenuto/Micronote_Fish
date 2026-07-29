@@ -29,6 +29,12 @@
                 <strong>@Model.History.Sales.Count</strong>
                 <span>record</span>
             </span>
+            <button class="button button-secondary secondary"
+                    type="button"
+                    data-sales-history-edit
+                    disabled>
+                Modifica
+            </button>
             <button class="button button-primary primary" type="button" data-sales-history-print>
                 Stampa lista
             </button>
@@ -38,7 +44,6 @@
 
     <form class="sales-history-filters" method="get" data-sales-history-filters data-progress-disabled="true">
         <fieldset class="form-frame">
-            <legend>Applica filtri</legend>
             <div class="sales-history-filter-row">
                 <div class="field">
                     <label>Anno</label>
@@ -59,13 +64,44 @@
                         }
                     </select>
                 </div>
-                <div class="field sales-history-customer-filter">
+                <div class="field sales-history-customer-filter lookup-field"
+                     data-lookup-field
+                     data-lookup-type="clienti"
+                     data-lookup-title="Seleziona cliente"
+                     data-code-input="salesHistoryCustomer"
+                     data-code-display="salesHistoryCustomerDisplay"
+                     data-label-input="salesHistoryCustomerName">
                     <label>Cliente</label>
-                    <input name="customer"
+                    <input id="salesHistoryCustomer"
+                           name="customer"
+                           type="hidden"
+                           value="@(Model.History.CustomerCode == 0 ? "" : Model.History.CustomerCode)" />
+                    <input id="salesHistoryCustomerDisplay"
                            inputmode="numeric"
                            value="@(Model.History.CustomerCode == 0 ? "" : Model.History.CustomerCode.ToString("00000"))"
                            aria-label="Codice cliente" />
-                    <input value="@Model.History.CustomerName" readonly aria-label="Nome cliente" />
+                    <input id="salesHistoryCustomerName"
+                           value="@Model.History.CustomerName"
+                           readonly
+                           tabindex="-1"
+                           aria-label="Nome cliente" />
+                    <button class="lookup-button sales-history-customer-lookup"
+                            type="button"
+                            title="Seleziona cliente"
+                            aria-label="Seleziona cliente"
+                            data-lookup-open></button>
+                </div>
+                <div class="field sales-history-store-filter">
+                    <label>Punto vendita</label>
+                    <select name="store">
+                        <option value="0" selected="@(Model.History.StoreCode == 0)"></option>
+                        @foreach (var store in Model.History.Stores)
+                        {
+                            <option value="@store.Code" selected="@(Model.History.StoreCode == store.Code)">
+                                @store.Name
+                            </option>
+                        }
+                    </select>
                 </div>
             </div>
         </fieldset>
@@ -179,4 +215,5 @@
 
 @section Scripts {
     <script src="~/js/sales-history.js" asp-append-version="true"></script>
+    <script src="~/js/lookup-fields.js" asp-append-version="true"></script>
 }
