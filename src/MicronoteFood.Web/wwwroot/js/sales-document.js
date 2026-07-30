@@ -12,6 +12,8 @@
   };
   const parse = value => Number(String(value ?? "")
     .replace(/\s/g, "").replace(/%/g, "").replace(/\./g, "").replace(",", ".")) || 0;
+  const parseControlledDecimal = value =>
+    window.MicronoteDecimal?.parse?.(value) ?? parse(value);
   const format = (value, digits) => Number(value || 0).toLocaleString("it-IT", {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits
@@ -22,6 +24,62 @@
     : row.amount / (1 + row.vatRate / 100);
   const calculateAmount = row =>
     Math.round(effectiveQuantity(row) * row.price * (1 + row.vatRate / 100) * 100) / 100;
+
+  const saveDocument = async () => {
+    const customerCode = Number($("#salesDocumentCustomer").value) || 0;
+    if (customerCode <= 0 || state.rows.length === 0) {
+      window.MicronoteMessageBox?.show({
+        title: "Bolla di vendita",
+        message: customerCode <= 0 ? "Selezionare il cliente." : "Inserire almeno una riga articolo."
+      });
+      return;
+    }
+
+    const payload = JSON.stringify({
+      id: state.id,
+      customerCode,
+      storeCode: Number($("[data-sales-document-store]").value) || 0,
+      documentDate: $("[data-sales-document-date]").value,
+      discount: parse($("[data-sales-discount]").value),
+      paid: parse($("[data-sales-paid]").value),
+      rows: state.rows
+    });
+    const form = $("[data-sales-document-form]");
+    const formData = new FormData(form);
+    formData.set("SavePayload", payload);
+    const saveButton = $("[data-sales-document-save]");
+    saveButton.disabled = true;
+    window.MicronoteProgress?.show?.("Salvataggio in corso...");
+
+    try {
+      const response = await fetch(window.location.href, {
+        method: "POST",
+        body: formData,
+        headers: { Accept: "text/html" }
+      });
+      if (!response.ok) {
+        const message = (await response.text()).trim();
+        window.MicronoteMessageBox?.show({
+          title: "Bolla di vendita",
+          message: message || "Salvataggio non riuscito."
+        });
+        return;
+      }
+
+      window.location.assign(response.url);
+    } catch {
+      window.MicronoteMessageBox?.show({
+        title: "Bolla di vendita",
+        message: "Non è stato possibile salvare la vendita."
+      });
+    } finally {
+      window.MicronoteProgress?.hide?.();
+      saveButton.disabled = false;
+    }
+  };
+  $("[data-sales-document-form]").addEventListener("submit", event => {
+    event.preventDefault();
+  });
 
   const totals = () => {
     const goods = state.rows.reduce((sum, row) => sum + rowNet(row), 0);
@@ -37,6 +95,83 @@
     $("[data-sales-total-gross]").textContent = format(value.gross, 2);
     $("[data-sales-total-net]").textContent = format(value.net, 2);
   };
+  const closeModal = $("[data-sales-close-modal]");
+  const updateCloseTotals = () => {
+    const gross = totals().gross;
+    const discount = Math.min(gross, Math.max(0, parseControlledDecimal($("[data-sales-close-discount]").value)));
+    const net = Math.round((gross - discount) * 100) / 100;
+    const paid = Math.max(0, parseControlledDecimal($("[data-sales-close-paid]").value));
+    $("[data-sales-close-total]").textContent = format(net, 2);
+    $("[data-sales-close-balance]").textContent = format(net - paid, 2);
+  };
+  $("[data-sales-document-save]").addEventListener("click", () => {
+    const customerCode = Number($("#salesDocumentCustomer").value) || 0;
+    if (customerCode <= 0 || state.rows.length === 0) {
+      window.MicronoteMessageBox?.show({
+        title: "Bolla di vendita",
+        message: customerCode <= 0 ? "Selezionare il cliente." : "Inserire almeno una riga articolo."
+      });
+      return;
+    }
+
+    const value = totals();
+    $("[data-sales-close-goods]").textContent = format(value.goods, 2);
+    $("[data-sales-close-vat]").textContent = format(value.vat, 2);
+    $("[data-sales-close-gross]").textContent = format(value.gross, 2);
+    $("[data-sales-close-discount]").value = format(parse($("[data-sales-discount]").value), 2);
+    $("[data-sales-close-paid]").value = format(parse($("[data-sales-paid]").value), 2);
+    updateCloseTotals();
+    closeModal.hidden = false;
+    window.setTimeout(() => $("[data-sales-close-discount]").focus(), 0);
+  });
+  ["[data-sales-close-discount]", "[data-sales-close-paid]"].forEach(selector => {
+    const input = $(selector);
+    input.addEventListener("focus", () => input.select());
+    input.addEventListener("input", () => {
+      window.MicronoteDecimal?.clean?.(input);
+      updateCloseTotals();
+    });
+    input.addEventListener("blur", () => {
+      input.value = format(Math.max(0, parseControlledDecimal(input.value)), 2);
+      updateCloseTotals();
+    });
+  });
+  $("[data-sales-close-cancel]").addEventListener("click", () => {
+    closeModal.hidden = true;
+  });
+  const confirmClosure = () => {
+    const gross = totals().gross;
+    const discount = parseControlledDecimal($("[data-sales-close-discount]").value);
+    if (discount < 0 || discount > gross) {
+      $("[data-sales-close-discount]").focus();
+      return;
+    }
+
+    $("[data-sales-discount]").value = format(discount, 2);
+    $("[data-sales-paid]").value = format(
+      Math.max(0, parseControlledDecimal($("[data-sales-close-paid]").value)),
+      2);
+    renderTotals();
+    closeModal.hidden = true;
+    saveDocument();
+  };
+  $("[data-sales-close-confirm]").addEventListener("click", confirmClosure);
+  $("[data-sales-close-confirm-print]").addEventListener("click", confirmClosure);
+  closeModal.addEventListener("keydown", event => {
+    if (event.key !== "Tab") return;
+    const controls = [...closeModal.querySelectorAll("input:not(:disabled),button:not(:disabled)")]
+      .filter(control => control.offsetParent !== null);
+    if (!controls.length) return;
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
   const selectRow = index => {
     state.selected = index;
     Array.from($("[data-sales-document-rows]").rows).forEach((row, rowIndex) =>
@@ -260,29 +395,13 @@
     .forEach(input => input.addEventListener("input", updateEditorAmount));
   $("[data-sales-discount]").addEventListener("input", renderTotals);
 
-  $("[data-sales-document-form]").addEventListener("submit", event => {
-    const customerCode = Number($("#salesDocumentCustomer").value) || 0;
-    if (customerCode <= 0 || state.rows.length === 0) {
-      event.preventDefault();
-      window.MicronoteMessageBox?.show({
-        title: "Bolla di vendita",
-        message: customerCode <= 0 ? "Selezionare il cliente." : "Inserire almeno una riga articolo."
-      });
-      return;
-    }
-    $("[data-sales-document-payload]").value = JSON.stringify({
-      id: state.id,
-      customerCode,
-      storeCode: Number($("[data-sales-document-store]").value) || 0,
-      documentDate: $("[data-sales-document-date]").value,
-      discount: parse($("[data-sales-discount]").value),
-      paid: parse($("[data-sales-paid]").value),
-      rows: state.rows
-    });
-  });
-
   document.addEventListener("keydown", event => {
     if (event.key !== "Escape") return;
+    if (!closeModal.hidden) {
+      event.preventDefault();
+      closeModal.hidden = true;
+      return;
+    }
     const modal = $("[data-sales-line-modal]");
     if (!modal.hidden) {
       event.preventDefault();

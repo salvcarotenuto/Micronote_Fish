@@ -59,7 +59,7 @@ public static class MainMenuCatalog
                 Group(
                     "Articoli e movimenti",
                     new MenuItemDefinition("Anagrafica articoli", "/Articoli/Index"),
-                    new MenuItemDefinition("Carico merce (colli e peso)", "/CaricoAcquisti/Edit"),
+                    new MenuItemDefinition("Carico per acquisti", "/CaricoAcquisti/Edit"),
                     new MenuItemDefinition("Scarico per perdite e resi", "/ScaricoPerditeResi/Index"),
                     new MenuItemDefinition("Lista documenti di carico", "/CaricoAcquisti/Index")),
                 Group(

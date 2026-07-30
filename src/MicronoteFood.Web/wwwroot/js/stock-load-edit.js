@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
     .get("returnTo")?.toLocaleLowerCase("it") ?? "";
   const stockLoadReturnToList = stockLoadReturnTarget === "list";
   const stockLoadReturnToPurchaseInvoice = stockLoadReturnTarget === "purchaseinvoice";
+  const stockLoadReturnUrl = formPage?.dataset.stockLoadReturnUrl || "/CaricoAcquisti/Index";
   const stockLoadId = document.querySelector("[data-stock-load-id]");
   const stockLoadYear = document.querySelector("[data-stock-load-year]");
   const stockLoadCode = document.querySelector("[data-stock-load-code]");
@@ -1076,12 +1077,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    if (saveResult?.editUrl) {
-      window.location.assign(saveResult.editUrl);
-      return;
-    }
-
-    window.location.reload();
+    hideStockLoadProgress(() => {
+      window.location.assign(stockLoadReturnUrl);
+    });
   };
 
   const setFieldValue = (field, value) => {

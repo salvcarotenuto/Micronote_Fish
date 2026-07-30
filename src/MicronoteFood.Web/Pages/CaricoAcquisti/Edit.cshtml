@@ -16,6 +16,7 @@
 
 <section class="module-page form-module-page supplier-form-page stock-load-form-page data-form-skin"
          data-azione="@Model.Azione"
+         data-stock-load-return-url="@Model.ReturnUrl"
          data-stock-load-readonly="@Model.IsReadonly.ToString().ToLowerInvariant()">
     <header class="module-header">
         <div class="module-title-identity">
@@ -197,7 +198,7 @@
                 <button class="button button-primary primary" type="button" disabled="@Model.IsReadonly" tabindex="@(Model.IsReadonly ? "-1" : null)" data-stock-load-article-assign>Sostituisci articolo</button>
             </div>
             <div class="field stock-load-invoice-total-field">
-                <label>Totale fattura</label>
+                <label>Totale carico</label>
                 <input class="currency-display" type="text" readonly tabindex="-1" value="@Money(total)" />
             </div>
         </div>

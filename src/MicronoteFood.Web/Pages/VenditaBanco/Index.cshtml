@@ -148,25 +148,7 @@
 
     <partial name="_ArticleRowDialog" model="@("vendita-banco")" />
 
-    <div class="counter-sale-overlay" hidden data-close-modal>
-        <section class="counter-sale-dialog close-dialog" role="dialog" aria-modal="true">
-            <header><h2>Chiusura vendita</h2></header>
-            <div class="counter-sale-close-content">
-                <div class="counter-sale-close-fields">
-                    <div><span>Totale vendita</span><strong data-close-gross></strong></div>
-                    <label><span>Abbuono</span><input inputmode="decimal" maxlength="13" value="0,00" data-close-discount /></label>
-                    <div><span>Netto a pagare</span><strong data-close-total></strong></div>
-                    <label><span>Importo pagato</span><input inputmode="decimal" maxlength="13" value="0,00" data-close-paid /></label>
-                    <div><span>Saldo su vendita</span><strong data-close-balance></strong></div>
-                </div>
-                <footer>
-                    <button type="button" class="primary" data-close-confirm>Salva</button>
-                    <button type="button" data-close-confirm-print>Salva e<br />stampa</button>
-                    <button type="button" data-close-cancel>Annulla</button>
-                </footer>
-            </div>
-        </section>
-    </div>
+    <partial name="_SalesClosureDialog" model="@("vendita-banco")" />
 
     <div class="counter-sale-article-card-overlay" hidden data-article-card-modal>
         <section class="counter-sale-article-card-dialog" role="dialog" aria-modal="true" aria-label="Scheda articolo">

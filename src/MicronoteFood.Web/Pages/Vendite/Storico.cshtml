@@ -194,6 +194,7 @@
             <div><span>I.v.a.</span><strong>@Money(Model.History.Totals.Vat)</strong></div>
             <div><span>Totale vendite</span><strong>@Money(Model.History.Totals.Total)</strong></div>
             <div><span>Abbuoni</span><strong>@Money(Model.History.Totals.Discount)</strong></div>
+            <div><span>Netto vendite</span><strong>@Money(Model.History.Totals.Total - Model.History.Totals.Discount)</strong></div>
         </aside>
     </div>
 

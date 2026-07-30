@@ -24,12 +24,11 @@
         </div>
         <div class="top-actions sales-document-toolbar-actions">
             <button class="button button-primary primary"
-                    type="submit"
-                    form="sales-document-form"
+                    type="button"
                     data-sales-document-save>
                 Salva
             </button>
-            <a class="button button-secondary secondary" asp-page="/Vendite/Storico">Annulla</a>
+            <a class="button button-secondary secondary" href="@Model.ReturnUrl">Annulla</a>
         </div>
     </header>
 
@@ -147,6 +146,8 @@
     </div>
 
     <partial name="_ArticleRowDialog" model="@("bolla-vendita")" />
+
+    <partial name="_SalesClosureDialog" model="@("bolla-vendita")" />
 
     <script type="application/json" data-sales-document-data>@Html.Raw(payload)</script>
 </section>

@@ -131,8 +131,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   editButton?.addEventListener("click", () => {
     if (!selected) return;
+    const returnUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     window.location.href =
-      `/BollaVendita/Index?id=${encodeURIComponent(selected.dataset.saleId)}`;
+      `/BollaVendita/Index?id=${encodeURIComponent(selected.dataset.saleId)}&returnTo=history&returnUrl=${encodeURIComponent(returnUrl)}`;
   });
 
   const sortValue = (row, key, type) => {

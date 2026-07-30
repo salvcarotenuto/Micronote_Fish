@@ -104,7 +104,11 @@ window.MicronoteDecimal = (() => {
       options.onInput?.(input);
     });
     input.addEventListener("blur", () => {
-      input.value = format(parse(input.value), digits(input, "decimalDigits", defaultDecimalDigits));
+      const decimalDigits = digits(input, "decimalDigits", defaultDecimalDigits);
+      const value = parse(input.value);
+      input.value = value === 0 && input.dataset.decimalZero === "fixed"
+        ? `0,${"0".repeat(decimalDigits)}`
+        : format(value, decimalDigits);
       options.onBlur?.(input);
     });
   };

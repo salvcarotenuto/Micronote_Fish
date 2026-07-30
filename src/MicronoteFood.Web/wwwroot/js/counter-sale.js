@@ -16,6 +16,8 @@
     .replace(/%/g, "")
     .replace(/\./g, "")
     .replace(",", ".")) || 0;
+  const parseControlledDecimal = value =>
+    window.MicronoteDecimal?.parse?.(value) ?? parse(value);
   const isNumeric = value => {
     const text = String(value ?? "").replace(/\s/g, "").replace(/%/g, "");
     if (!text) return true;
@@ -587,6 +589,8 @@
       });
       return;
     }
+    $("[data-close-goods]").textContent = totalNumber.format(sum.net);
+    $("[data-close-vat]").textContent = totalNumber.format(sum.vat);
     $("[data-close-gross]").textContent = totalNumber.format(sum.total);
     $("[data-close-discount]").value = "0,00";
     $("[data-close-paid]").value = "0,00";
@@ -597,16 +601,16 @@
   });
   function updateCloseTotals() {
     const gross = totals().total;
-    const discount = Math.min(gross, Math.max(0, parse($("[data-close-discount]").value)));
+    const discount = Math.min(gross, Math.max(0, parseControlledDecimal($("[data-close-discount]").value)));
     const net = round(gross - discount);
-    const paid = Math.max(0, parse($("[data-close-paid]").value));
+    const paid = Math.max(0, parseControlledDecimal($("[data-close-paid]").value));
     $("[data-close-total]").textContent = totalNumber.format(net);
     $("[data-close-balance]").textContent = totalNumber.format(round(net - paid));
   }
   ["[data-close-discount]", "[data-close-paid]"].forEach(selector => {
     const input = $(selector);
     input.addEventListener("focus", () => {
-      input.value = editableDecimal(parse(input.value), 2);
+      input.value = editableDecimal(parseControlledDecimal(input.value), 2);
       input.select();
     });
     input.addEventListener("input", () => {
@@ -614,7 +618,7 @@
       updateCloseTotals();
     });
     input.addEventListener("blur", () => {
-      input.value = formatDecimal(Math.max(0, parse(input.value)), 2);
+      input.value = formatDecimal(Math.max(0, parseControlledDecimal(input.value)), 2);
       updateCloseTotals();
     });
   });
@@ -640,8 +644,8 @@
   });
   function submitSale(printAfterSave = false) {
     const gross = totals().total;
-    const discount = round(parse($("[data-close-discount]").value), 2);
-    const paidAmount = round(parse($("[data-close-paid]").value), 2);
+    const discount = round(parseControlledDecimal($("[data-close-discount]").value), 2);
+    const paidAmount = round(parseControlledDecimal($("[data-close-paid]").value), 2);
     if (discount < 0 || discount > gross) {
       $("[data-close-discount]").focus();
       return;

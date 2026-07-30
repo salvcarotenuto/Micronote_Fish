@@ -1,0 +1,70 @@
+@model string
+<div class="counter-sale-overlay"
+     hidden
+     data-sales-closure-dialog
+     data-close-modal
+     data-sales-close-modal>
+    <section class="counter-sale-dialog close-dialog" role="dialog" aria-modal="true">
+        <header><h2>Chiusura vendita</h2></header>
+        <div class="counter-sale-close-content">
+            <div class="counter-sale-close-fields">
+                <div>
+                    <span>Totale merce</span>
+                    <strong data-close-goods data-sales-close-goods></strong>
+                </div>
+                <div>
+                    <span>I.v.a.</span>
+                    <strong data-close-vat data-sales-close-vat></strong>
+                </div>
+                <div>
+                    <span>Totale vendita</span>
+                    <strong data-close-gross data-sales-close-gross></strong>
+                </div>
+                <label>
+                    <span>Abbuono</span>
+                    <input inputmode="decimal"
+                           maxlength="13"
+                           value="0,00"
+                           data-decimal-field
+                           data-decimal-integer-digits="10"
+                           data-decimal-digits="2"
+                           data-decimal-zero="fixed"
+                           data-close-discount
+                           data-sales-close-discount />
+                </label>
+                <div>
+                    <span>Netto vendita</span>
+                    <strong data-close-total data-sales-close-total></strong>
+                </div>
+                <label>
+                    <span>Pagato</span>
+                    <input inputmode="decimal"
+                           maxlength="13"
+                           value="0,00"
+                           data-decimal-field
+                           data-decimal-integer-digits="10"
+                           data-decimal-digits="2"
+                           data-decimal-zero="fixed"
+                           data-close-paid
+                           data-sales-close-paid />
+                </label>
+                <div>
+                    <span>Saldo a pagare</span>
+                    <strong data-close-balance data-sales-close-balance></strong>
+                </div>
+            </div>
+            <footer>
+                <button type="button"
+                        class="primary"
+                        data-close-confirm
+                        data-sales-close-confirm>Salva</button>
+                <button type="button"
+                        data-close-confirm-print
+                        data-sales-close-confirm-print>Salva e<br />stampa</button>
+                <button type="button"
+                        data-close-cancel
+                        data-sales-close-cancel>Annulla</button>
+            </footer>
+        </div>
+    </section>
+</div>
