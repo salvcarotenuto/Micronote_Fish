@@ -536,6 +536,18 @@ public sealed class EditModel(
             var supplierVat = ChildValue(FirstDescendant(supplierData, "IdFiscaleIVA"), "IdCodice");
             var supplierFiscalCode = ChildValue(supplierData, "CodiceFiscale");
             var supplierName = SubjectName(supplier);
+            var supplierOffice = FirstDescendant(supplier, "Sede");
+            var supplierContacts = FirstDescendant(supplier, "Contatti");
+            var supplierAddress = JoinNonEmpty(" ",
+                ChildValue(supplierOffice, "Indirizzo"),
+                ChildValue(supplierOffice, "NumeroCivico"));
+            var supplierPostalCode = ChildValue(supplierOffice, "CAP");
+            var supplierCityRaw = ChildValue(supplierOffice, "Comune");
+            var supplierProvinceRaw = ChildValue(supplierOffice, "Provincia");
+            var (supplierCity, supplierProvince) = SplitCityAndProvince(supplierCityRaw, supplierProvinceRaw);
+            var supplierPhone = ChildValue(supplierContacts, "Telefono");
+            var supplierEmail = ChildValue(supplierContacts, "Email");
+            var supplierCertifiedEmail = ChildValue(supplierContacts, "PECDestinatario");
             var matchedSupplier = await FindSupplierByFiscalDataAsync(supplierVat, supplierFiscalCode, cancellationToken);
             if (matchedSupplier is null)
             {
@@ -548,7 +560,14 @@ public sealed class EditModel(
                     {
                         name = supplierName,
                         vat = supplierVat,
-                        fiscalCode = supplierFiscalCode
+                        fiscalCode = supplierFiscalCode,
+                        address = supplierAddress,
+                        postalCode = supplierPostalCode,
+                        city = supplierCity,
+                        province = supplierProvince,
+                        phone = supplierPhone,
+                        email = supplierEmail,
+                        certifiedEmail = supplierCertifiedEmail
                     }
                 });
             }
@@ -1387,6 +1406,25 @@ public sealed class EditModel(
 
     private static string NormalizeFiscalCode(string value) =>
         Regex.Replace(value ?? "", @"[\s\-.]", "").ToUpperInvariant();
+
+    private static string JoinNonEmpty(string separator, params string[] values) =>
+        string.Join(separator, values.Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value.Trim()));
+
+    private static (string City, string Province) SplitCityAndProvince(string city, string province)
+    {
+        var normalizedCity = city?.Trim() ?? "";
+        var normalizedProvince = province?.Trim().ToUpperInvariant() ?? "";
+        var match = Regex.Match(normalizedCity, @"^(?<city>.+?)\s*\((?<province>[A-Za-z]{2})\)\s*$");
+        if (!match.Success)
+        {
+            return (normalizedCity, normalizedProvince);
+        }
+
+        var extractedProvince = match.Groups["province"].Value.Trim().ToUpperInvariant();
+        return (
+            match.Groups["city"].Value.Trim(),
+            string.IsNullOrWhiteSpace(normalizedProvince) ? extractedProvince : normalizedProvince);
+    }
 
     private readonly record struct BerElement(
         int TagClass,

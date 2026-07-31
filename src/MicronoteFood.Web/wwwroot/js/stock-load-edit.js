@@ -387,6 +387,54 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
+  const showMissingSupplierMessage = (result) => {
+    const supplier = result?.supplier ?? {};
+    const name = String(supplier.name ?? "").trim() || "(nome non disponibile)";
+    const vat = String(supplier.vat ?? "").trim() || "(partita IVA non disponibile)";
+    const fiscalCode = String(supplier.fiscalCode ?? "").trim();
+    const supplierParams = {
+      address: supplier.address,
+      city: supplier.city,
+      postalCode: supplier.postalCode,
+      province: supplier.province,
+      phone: supplier.phone,
+      email: supplier.email,
+      certifiedEmail: supplier.certifiedEmail
+    };
+
+    window.MicronoteMessageBox?.show({
+      title: "Fornitore non trovato",
+      message: `Il fornitore\n${name}\npartita iva: ${vat}\nnon e' presente in archivio\nvuoi inserirlo ora ?`,
+      mode: "confirm",
+      variant: "confirm",
+      okText: "Inserisci",
+      cancelText: "Annulla",
+      onConfirm: () => {
+        const supplierUrl = new URL("/Fornitori/Edit", window.location.origin);
+        const returnUrl = new URL(window.location.href);
+        if (selectedElectronicInvoiceFile?.fullPath) {
+          returnUrl.searchParams.set("importXml", selectedElectronicInvoiceFile.fullPath);
+        }
+
+        supplierUrl.searchParams.set("returnUrl", returnUrl.pathname + returnUrl.search);
+        supplierUrl.searchParams.set("name", name === "(nome non disponibile)" ? "" : name);
+        supplierUrl.searchParams.set("vat", vat === "(partita IVA non disponibile)" ? "" : vat);
+        if (fiscalCode) {
+          supplierUrl.searchParams.set("fiscalCode", fiscalCode);
+        }
+
+        Object.entries(supplierParams).forEach(([key, value]) => {
+          const normalized = String(value ?? "").trim();
+          if (normalized) {
+            supplierUrl.searchParams.set(key, normalized);
+          }
+        });
+
+        window.location.href = supplierUrl.toString();
+      }
+    });
+  };
+
   const requestVerificationToken = () =>
     document.querySelector("input[name='__RequestVerificationToken']")?.value ?? "";
 
@@ -529,8 +577,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const gridRows = () => Array.from(linesGrid?.querySelectorAll("tbody tr") ?? []);
 
+  const hasGridRowValues = (row) => gridLineInputs(row)
+    .some((input) => String(input.value ?? "").trim());
+
   const visibleGridRows = () => gridRows()
-    .filter((row) => String(row.querySelector("td:first-child input")?.value ?? "").trim());
+    .filter(hasGridRowValues);
 
   const selectedGridRow = () => linesGrid?.querySelector("tbody tr.selected") ?? null;
 
@@ -560,8 +611,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const selectGridRow = (row, focus = false, direction = 0) => {
-    const code = String(row?.querySelector("td:first-child input")?.value ?? "").trim();
-    if (!row || !code) {
+    if (!row || !hasGridRowValues(row)) {
       return;
     }
 
@@ -1591,6 +1641,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const result = await response.json();
       if (!result.success) {
+        if (result.reason === "supplierMissing") {
+          closeElectronicInvoiceDialog();
+          showMissingSupplierMessage(result);
+          return;
+        }
+
         showMessage(result.message || "Non e' stato possibile leggere la fattura elettronica.");
         return;
       }

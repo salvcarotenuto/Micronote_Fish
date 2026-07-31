@@ -57,6 +57,16 @@
     </section>
 </div>
 
+@if (Model.ShowDatabaseUpdatePrompt)
+{
+    <form method="post"
+          asp-page-handler="UpdateDatabase"
+          data-database-update-form
+          data-progress-message="Backup e aggiornamento database in corso. Non chiudere la pagina..."
+          data-progress-minimum-time="800"></form>
+    <form method="post" asp-page-handler="CancelDatabaseUpdate" data-database-update-cancel-form></form>
+}
+
 
 @if (Model.ShowUserLogin)
 {
@@ -144,7 +154,40 @@
                 form.querySelector('button[type="submit"]')?.click();
             });
         });
-        @if (Model.ShowUserLogin && Model.ErrorMessage is null)
+        @if (Model.ShowDatabaseUpdatePrompt)
+        {
+            <text>
+            window.addEventListener('load', () => {
+                window.MicronoteMessageBox?.show({
+                    title: 'Aggiornamento database aziendale',
+                    message: @Json.Serialize(Model.ErrorMessage ?? $"Il database di {Model.SelectedCompanyName} deve essere aggiornato prima dell'accesso."),
+                    detail: @Json.Serialize($"{(Model.ErrorDetail is null ? "" : Model.ErrorDetail + "\n\n")}Versione attuale: {Model.CurrentDatabaseVersion:yyyy-MM-dd HH:mm:ss}\nVersione richiesta: {Model.RequiredDatabaseVersion:yyyy-MM-dd HH:mm:ss}\nPrima dell'aggiornamento verrà creata una copia di sicurezza completa."),
+                    mode: 'confirm',
+                    variant: @Json.Serialize(Model.ErrorMessage is null ? "confirm" : "error"),
+                    okText: @Json.Serialize(Model.ErrorMessage is null ? "Aggiorna" : "Riprova"),
+                    cancelText: 'Annulla',
+                    onConfirm: () => document.querySelector('[data-database-update-form]')?.requestSubmit(),
+                    onCancel: () => document.querySelector('[data-database-update-cancel-form]')?.requestSubmit()
+                });
+            });
+            </text>
+        }
+        @if (Model.DatabaseUpdateSuccessMessage is not null)
+        {
+            <text>
+            window.addEventListener('load', () => {
+                window.MicronoteMessageBox?.show({
+                    title: 'Aggiornamento database aziendale',
+                    message: @Json.Serialize(Model.DatabaseUpdateSuccessMessage),
+                    detail: @Json.Serialize(Model.DatabaseUpdateSuccessDetail ?? ""),
+                    variant: 'success',
+                    okText: 'OK',
+                    onConfirm: () => document.getElementById('UserCode')?.focus()
+                });
+            });
+            </text>
+        }
+        @if (Model.ShowUserLogin && Model.ErrorMessage is null && Model.DatabaseUpdateSuccessMessage is null)
         {
             <text>
             window.addEventListener('load', () => {
@@ -152,7 +195,8 @@
                 userSelect?.focus();
             });
             </text>
-        }        @if (Model.ErrorMessage is not null)
+        }
+        @if (Model.ErrorMessage is not null && !Model.ShowDatabaseUpdatePrompt)
         {
             <text>
             window.addEventListener('load', () => {

@@ -7,6 +7,11 @@ public sealed class MasterRepository(
     MicronoteDb database,
     MicronoteDatabaseOptions options)
 {
+    private const string FixedTableCatalog = "FixedTable";
+    private const string FixedTemplatePrefix = "Fixed_";
+    private const string SchemaTemplatePrefix = "Schema_";
+    private const string DatabaseSchemaVersionKey = "VersioneSchemaDatabase";
+
     private static readonly string[] FixedTables =
     [
         "Aspetto",
@@ -60,18 +65,78 @@ public sealed class MasterRepository(
                 Attiva TINYINT(1) NOT NULL DEFAULT 1,
                 Bloccata TINYINT(1) NOT NULL DEFAULT 0,
                 NomeDatabase VARCHAR(120) NULL,
-                VersioneDbAttuale VARCHAR(30) NULL,
-                VersioneDbRichiesta VARCHAR(30) NULL,
+                VersioneDbAttuale DATETIME NULL,
+                VersioneDbRichiesta DATETIME NULL,
                 UNIQUE KEY UX_Aziende_Nome (Nome)
             );
 
             CREATE TABLE IF NOT EXISTS Parametri (
                 Chiave VARCHAR(100) NOT NULL PRIMARY KEY,
-                Valore TEXT NULL
+                Valore TEXT NULL,
+                VersioneSchemaDatabase DATETIME NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS Accessi (
+                Utente INT UNSIGNED NOT NULL,
+                Azienda INT UNSIGNED NOT NULL,
+                TheDate DATE NULL,
+                TheTime TIME NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS FixedTable (
+                Nome VARCHAR(254) NOT NULL,
+                Descrizione VARCHAR(254) NULL,
+                Record INT NULL,
+                UNIQUE KEY UX_FixedTable_Nome (Nome)
             );
             """,
             connection);
         await command.ExecuteNonQueryAsync(cancellationToken);
+        if (!await ColumnExistsAsync(
+                connection,
+                "Parametri",
+                "VersioneSchemaDatabase",
+                cancellationToken))
+        {
+            await ExecuteAsync(
+                connection,
+                "ALTER TABLE Parametri ADD COLUMN VersioneSchemaDatabase DATETIME NULL;",
+                cancellationToken);
+        }
+
+        await using (var versionCommand = new MySqlCommand(
+            """
+            INSERT INTO Parametri (Chiave, VersioneSchemaDatabase)
+            SELECT @key, @version
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM Parametri
+                WHERE Chiave = @key
+            );
+            """,
+            connection))
+        {
+            versionCommand.Parameters.AddWithValue("@key", DatabaseSchemaVersionKey);
+            versionCommand.Parameters.AddWithValue("@version", DateTime.Now);
+            await versionCommand.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        foreach (var table in FixedTables.Append(FixedTableCatalog))
+        {
+            await using var fixedTableCommand = new MySqlCommand(
+                """
+                INSERT INTO FixedTable (Nome)
+                SELECT @name
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM FixedTable
+                    WHERE LOWER(Nome) = LOWER(@name)
+                );
+                """,
+                connection);
+            fixedTableCommand.Parameters.AddWithValue("@name", table);
+            await fixedTableCommand.ExecuteNonQueryAsync(cancellationToken);
+        }
 
         await using var normalizeCommand = new MySqlCommand(
             """
@@ -154,6 +219,58 @@ public sealed class MasterRepository(
         return await reader.ReadAsync(cancellationToken)
             ? ReadCompany(reader)
             : null;
+    }
+
+    public async Task<CompanyMasterRecord?> FindCompanyByCodeAsync(
+        int code,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureSchemaAsync(cancellationToken);
+        await using var connection = await database.OpenMasterConnectionAsync(cancellationToken);
+        await using var command = new MySqlCommand(
+            """
+            SELECT
+                Codice,
+                COALESCE(Nome, '') AS Nome,
+                COALESCE(Password, '') AS Password,
+                COALESCE(Attiva, 1) AS Attiva,
+                COALESCE(Bloccata, 0) AS Bloccata,
+                COALESCE(NomeDatabase, '') AS NomeDatabase,
+                VersioneDbAttuale,
+                VersioneDbRichiesta
+            FROM Aziende
+            WHERE Codice = @code
+            LIMIT 1;
+            """,
+            connection);
+        command.Parameters.AddWithValue("@code", code);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        return await reader.ReadAsync(cancellationToken)
+            ? ReadCompany(reader)
+            : null;
+    }
+
+    public async Task MarkCompanyDatabaseUpdatedAsync(
+        int code,
+        DateTime version,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureSchemaAsync(cancellationToken);
+        await using var connection = await database.OpenMasterConnectionAsync(cancellationToken);
+        await using var command = new MySqlCommand(
+            """
+            UPDATE Aziende
+            SET VersioneDbAttuale = @version
+            WHERE Codice = @code;
+            """,
+            connection);
+        command.Parameters.AddWithValue("@version", version);
+        command.Parameters.AddWithValue("@code", code);
+        if (await command.ExecuteNonQueryAsync(cancellationToken) != 1)
+        {
+            throw new InvalidOperationException("Impossibile registrare la nuova versione del database aziendale.");
+        }
     }
 
     public async Task<CompanyLoginResult> CheckCompanyLoginAsync(
@@ -329,8 +446,8 @@ public sealed class MasterRepository(
             Active = Convert.ToBoolean(reader["Attiva"]),
             Locked = Convert.ToBoolean(reader["Bloccata"]),
             DatabaseName = databaseName,
-            CurrentDatabaseVersion = Text(reader, "VersioneDbAttuale"),
-            RequiredDatabaseVersion = Text(reader, "VersioneDbRichiesta"),
+            CurrentDatabaseVersion = DateTimeValue(reader, "VersioneDbAttuale"),
+            RequiredDatabaseVersion = DateTimeValue(reader, "VersioneDbRichiesta"),
             IsNew = false
         };
     }
@@ -459,7 +576,7 @@ public sealed class MasterRepository(
             return new CompanyDatabaseServiceResult(false, "Azienda non trovata.");
         }
 
-        var sourceDatabase = options.BuildCompanyDatabaseName(MicronoteDatabaseOptions.DefaultCompanyCode);
+        var sourceDatabase = options.MasterDatabase;
         var targetDatabase = string.IsNullOrWhiteSpace(company.DatabaseName)
             ? options.BuildCompanyDatabaseName(code)
             : company.DatabaseName.Trim();
@@ -472,32 +589,90 @@ public sealed class MasterRepository(
         await ExecuteAsync(connection, $"CREATE DATABASE `{targetDatabase}` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;", cancellationToken);
 
         var tables = await ListTablesAsync(connection, sourceDatabase, cancellationToken);
-        var tableSet = tables.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var fixedTemplates = tables
+            .Where(table => table.StartsWith(FixedTemplatePrefix, StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(
+                table => table[FixedTemplatePrefix.Length..],
+                table => table,
+                StringComparer.OrdinalIgnoreCase);
+        var schemaTemplates = tables
+            .Where(table => table.StartsWith(SchemaTemplatePrefix, StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(
+                table => table[SchemaTemplatePrefix.Length..],
+                table => table,
+                StringComparer.OrdinalIgnoreCase);
         var missingFixed = FixedTables
-            .Where(table => !tableSet.Contains(table))
+            .Where(table => !fixedTemplates.ContainsKey(table))
             .ToArray();
-        if (missingFixed.Length > 0)
+        if (missingFixed.Length > 0
+            || !tables.Contains(FixedTableCatalog, StringComparer.OrdinalIgnoreCase))
         {
             await ExecuteAsync(connection, $"DROP DATABASE `{targetDatabase}`;", cancellationToken);
-            return new CompanyDatabaseServiceResult(false, "Tabelle fisse non trovate: " + string.Join(", ", missingFixed) + ".");
+            var missing = missingFixed.Length > 0
+                ? string.Join(", ", missingFixed)
+                : FixedTableCatalog;
+            return new CompanyDatabaseServiceResult(false, "Tabelle fisse non trovate nel master: " + missing + ".");
         }
 
-        foreach (var table in tables)
+        var targetNames = fixedTemplates.Keys
+            .Concat(schemaTemplates.Keys)
+            .Append(FixedTableCatalog)
+            .ToArray();
+        var duplicateTarget = targetNames
+            .GroupBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(group => group.Count() > 1);
+        if (duplicateTarget is not null)
         {
-            var sourceTable = ResolveTableName(tableSet, table);
-            await ExecuteAsync(
-                connection,
-                $"CREATE TABLE `{targetDatabase}`.`{sourceTable}` LIKE `{sourceDatabase}`.`{sourceTable}`;",
-                cancellationToken);
+            await ExecuteAsync(connection, $"DROP DATABASE `{targetDatabase}`;", cancellationToken);
+            return new CompanyDatabaseServiceResult(
+                false,
+                $"Tabella modello duplicata nel master: {duplicateTarget.Key}.");
         }
 
-        foreach (var fixedTable in FixedTables)
+        try
         {
-            var table = ResolveTableName(tableSet, fixedTable);
             await ExecuteAsync(
                 connection,
-                $"INSERT INTO `{targetDatabase}`.`{table}` SELECT * FROM `{sourceDatabase}`.`{table}`;",
+                $"CREATE TABLE `{targetDatabase}`.`{FixedTableCatalog}` LIKE `{sourceDatabase}`.`{FixedTableCatalog}`;",
                 cancellationToken);
+            await ExecuteAsync(
+                connection,
+                $"INSERT INTO `{targetDatabase}`.`{FixedTableCatalog}` SELECT * FROM `{sourceDatabase}`.`{FixedTableCatalog}`;",
+                cancellationToken);
+
+            foreach (var template in fixedTemplates.Concat(schemaTemplates))
+            {
+                await ExecuteAsync(
+                    connection,
+                    $"CREATE TABLE `{targetDatabase}`.`{template.Key}` LIKE `{sourceDatabase}`.`{template.Value}`;",
+                    cancellationToken);
+            }
+
+            foreach (var template in fixedTemplates)
+            {
+                await ExecuteAsync(
+                    connection,
+                    $"INSERT INTO `{targetDatabase}`.`{template.Key}` SELECT * FROM `{sourceDatabase}`.`{template.Value}`;",
+                    cancellationToken);
+            }
+
+            var masterVersion = await ReadMasterSchemaVersionAsync(connection, cancellationToken);
+            await using var versionCommand = new MySqlCommand(
+                """
+                UPDATE Aziende
+                SET VersioneDbAttuale = @version,
+                    VersioneDbRichiesta = @version
+                WHERE Codice = @code;
+                """,
+                connection);
+            versionCommand.Parameters.AddWithValue("@version", masterVersion);
+            versionCommand.Parameters.AddWithValue("@code", code);
+            await versionCommand.ExecuteNonQueryAsync(cancellationToken);
+        }
+        catch
+        {
+            await ExecuteAsync(connection, $"DROP DATABASE `{targetDatabase}`;", cancellationToken);
+            throw;
         }
 
         return new CompanyDatabaseServiceResult(true, $"Database {targetDatabase} creato.");
@@ -593,8 +768,12 @@ public sealed class MasterRepository(
         command.Parameters.AddWithValue("@active", company.Active ? 1 : 0);
         command.Parameters.AddWithValue("@locked", company.Locked ? 1 : 0);
         command.Parameters.AddWithValue("@databaseName", company.DatabaseName.Trim());
-        command.Parameters.AddWithValue("@currentVersion", DbText(company.CurrentDatabaseVersion));
-        command.Parameters.AddWithValue("@requiredVersion", DbText(company.RequiredDatabaseVersion));
+        command.Parameters.AddWithValue(
+            "@currentVersion",
+            company.CurrentDatabaseVersion ?? (object)DBNull.Value);
+        command.Parameters.AddWithValue(
+            "@requiredVersion",
+            company.RequiredDatabaseVersion ?? (object)DBNull.Value);
     }
 
     private static object DbText(string? value) =>
@@ -640,6 +819,30 @@ public sealed class MasterRepository(
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    private static async Task<DateTime> ReadMasterSchemaVersionAsync(
+        MySqlConnection connection,
+        CancellationToken cancellationToken)
+    {
+        await using var command = new MySqlCommand(
+            "SELECT VersioneSchemaDatabase FROM Parametri WHERE Chiave = @key LIMIT 1;",
+            connection);
+        command.Parameters.AddWithValue("@key", DatabaseSchemaVersionKey);
+        var value = await command.ExecuteScalarAsync(cancellationToken);
+        if (value is null or DBNull)
+        {
+            throw new InvalidOperationException(
+                "Versione dello schema database non configurata nel master.");
+        }
+
+        return Convert.ToDateTime(value);
+    }
+
+    private static DateTime? DateTimeValue(MySqlDataReader reader, string name)
+    {
+        var ordinal = reader.GetOrdinal(name);
+        return reader.IsDBNull(ordinal) ? null : reader.GetDateTime(ordinal);
+    }
+
     private static async Task<bool> TableExistsAsync(
         MySqlConnection connection,
         string tableName,
@@ -654,6 +857,26 @@ public sealed class MasterRepository(
             """,
             connection);
         command.Parameters.AddWithValue("@tableName", tableName);
+        return Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken)) == 1;
+    }
+
+    private static async Task<bool> ColumnExistsAsync(
+        MySqlConnection connection,
+        string tableName,
+        string columnName,
+        CancellationToken cancellationToken)
+    {
+        await using var command = new MySqlCommand(
+            """
+            SELECT COUNT(*)
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND LOWER(TABLE_NAME) = LOWER(@tableName)
+              AND LOWER(COLUMN_NAME) = LOWER(@columnName);
+            """,
+            connection);
+        command.Parameters.AddWithValue("@tableName", tableName);
+        command.Parameters.AddWithValue("@columnName", columnName);
         return Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken)) == 1;
     }
 
@@ -702,8 +925,8 @@ public sealed class MasterRepository(
             Convert.ToBoolean(reader["Attiva"]),
             Convert.ToBoolean(reader["Bloccata"]),
             databaseName,
-            Text(reader, "VersioneDbAttuale"),
-            Text(reader, "VersioneDbRichiesta"));
+            DateTimeValue(reader, "VersioneDbAttuale"),
+            DateTimeValue(reader, "VersioneDbRichiesta"));
     }
 
     private static string? Text(MySqlDataReader reader, string name)

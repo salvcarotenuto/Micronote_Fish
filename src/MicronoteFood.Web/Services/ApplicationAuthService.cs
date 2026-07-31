@@ -71,6 +71,18 @@ public sealed class ApplicationAuthService(
     public string? SelectedCompanyName =>
         httpContextAccessor.HttpContext?.Session.GetString(CompanyNameKey);
 
+    public int? SelectedCompanyCode
+    {
+        get
+        {
+            var value = httpContextAccessor.HttpContext?.Session.GetString(CompanyCodeKey);
+            return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var code)
+                && code > 0
+                    ? code
+                    : null;
+        }
+    }
+
     public async Task<ApplicationCompanyLoginResult> LoginCompanyAsync(
         string? companyName,
         string? companyPassword,

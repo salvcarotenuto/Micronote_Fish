@@ -80,6 +80,7 @@ builder.Services.AddScoped<SmtpConnectionTester>();
 builder.Services.AddScoped<MasterRepository>();
 builder.Services.AddScoped<SystemAdminAuthService>();
 builder.Services.AddScoped<ApplicationAuthService>();
+builder.Services.AddScoped<CompanyDatabaseUpdateService>();
 builder.Services.AddScoped<ActivityLogService>();
 
 var app = builder.Build();
