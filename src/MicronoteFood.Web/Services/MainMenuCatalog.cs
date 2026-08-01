@@ -116,6 +116,7 @@ public static class MainMenuCatalog
                 Group(
                     "Prima nota contabile",
                     new MenuItemDefinition("Movimento di prima nota", "/PrimaNota/Edit", "menu"),
+                    new MenuItemDefinition("Movimento contabile cliente", "/MovimentoContabileCliente/Edit"),
                     new MenuItemDefinition("Lista movimenti di prima nota", "/PrimaNota/Index"),
                     new MenuItemDefinition("Lista movimenti di banca", "/MovimentiBanca/Index"),
                     new MenuItemDefinition("Pagamento scadenza passiva"),

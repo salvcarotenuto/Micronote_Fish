@@ -16193,6 +16193,135 @@ body.customer-card-modal-page fieldset:disabled select {
   min-width: 120px;
 }
 
+/* Movimento contabile cliente: scheda compatta dedicata ai soli clienti. */
+.customer-cash-movement-page {
+  min-width: 760px;
+}
+.customer-cash-movement-form {
+  box-sizing: border-box;
+  width: min(860px, calc(100vw - 40px));
+  margin: 18px auto 0;
+  padding: 14px;
+  border: 1px solid #77869a;
+  background: #fff;
+}
+.customer-cash-movement-frame {
+  padding: 18px;
+}
+.customer-cash-movement-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px 18px;
+}
+.customer-cash-movement-grid .field {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.customer-cash-movement-grid .field > label {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  padding: 0 8px;
+  border: 1px solid #8a8f98;
+  border-radius: 5px;
+  background: #b8cbe0;
+  color: #0e1824;
+  font: 500 13px/1 "Microsoft Sans Serif", "Segoe UI", Arial, sans-serif;
+}
+.customer-cash-movement-grid input,
+.customer-cash-movement-grid select,
+.customer-cash-movement-grid .micronote-date-control {
+  box-sizing: border-box;
+  height: 32px;
+  min-height: 32px;
+}
+.customer-cash-movement-grid input,
+.customer-cash-movement-grid select {
+  min-width: 0;
+  border: 1px solid #8a8f98;
+  border-radius: 5px;
+  font-size: 13px;
+}
+.customer-cash-movement-grid input[readonly] {
+  background: rgb(230, 230, 240);
+  user-select: none;
+  pointer-events: none;
+}
+.customer-cash-movement-customer,
+.customer-cash-movement-cause,
+.customer-cash-movement-document,
+.customer-cash-movement-store,
+.customer-cash-movement-description {
+  grid-column: 1 / -1;
+}
+.customer-cash-movement-document-control {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr) 34px 34px 34px;
+  gap: 6px;
+  min-width: 0;
+}
+#cashMovementDocumentDisplay {
+  text-align: center;
+}
+.customer-cash-movement-document-control .lookup-button,
+.customer-cash-movement-document-copy,
+.customer-cash-movement-document-clear {
+  width: 34px;
+  min-width: 34px;
+  height: 32px;
+}
+.customer-cash-movement-document-copy {
+  border: 1px solid #8a8f98;
+  border-radius: 5px;
+  background: linear-gradient(#fff, #dce4ec);
+  color: #183a62;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.customer-cash-movement-document-copy:disabled {
+  opacity: .45;
+  cursor: default;
+}
+.customer-cash-movement-document-clear {
+  border: 1px solid #8a8f98;
+  border-radius: 5px;
+  background: linear-gradient(#fff, #dce4ec);
+  color: #a31313;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.customer-cash-movement-number,
+.customer-cash-movement-date {
+  grid-column: 1 / 2;
+}
+.customer-cash-movement-number > input,
+.customer-cash-movement-date > .micronote-date-control {
+  width: 160px;
+}
+.customer-cash-movement-grid .customer-cash-movement-amount > input {
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+}
+.customer-cash-movement-customer-control {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr) 32px;
+  gap: 5px;
+  min-width: 0;
+}
+.customer-cash-movement-customer-control .lookup-button {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+}
 @media print {
   .customer-note-filters,
   .customer-note-toolbar,
@@ -16203,3 +16332,49 @@ body.customer-card-modal-page fieldset:disabled select {
   .customer-note-panel { break-inside: avoid; margin-bottom: 10px; }
   .customer-note-panel .list-grid-frame { overflow: visible; }
 }
+
+.customer-cash-document-dialog {
+  width: min(760px, calc(100vw - 48px));
+  padding: 0;
+  border: 1px solid #66758a;
+  border-radius: 6px;
+  background: #eef3fa;
+  color: #10223c;
+}
+.customer-cash-document-dialog::backdrop { background: rgba(25, 40, 65, 0.42); }
+.customer-cash-document-dialog-head,
+.customer-cash-document-dialog-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #a9c4df;
+}
+.customer-cash-document-dialog-head { justify-content: space-between; }
+.customer-cash-document-dialog-head button {
+  border: 0;
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+.customer-cash-document-table-wrap {
+  height: 360px;
+  overflow: auto;
+  background: white;
+}
+.customer-cash-document-dialog table { width: 100%; border-collapse: collapse; }
+.customer-cash-document-dialog th,
+.customer-cash-document-dialog td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #c5d2df;
+  text-align: left;
+}
+.customer-cash-document-dialog th:last-child,
+.customer-cash-document-dialog td:last-child { text-align: right; }
+.customer-cash-document-dialog tbody tr { cursor: pointer; }
+.customer-cash-document-dialog tbody tr:hover { background: #e2eef9; }
+.customer-cash-document-dialog tbody tr.selected { background: #b7d4f0; }
+.customer-cash-document-dialog-foot { justify-content: flex-end; }
+.customer-cash-document-dialog-foot label { margin-left: auto; }
+.customer-cash-document-dialog-foot select { width: 100px; height: 32px; }
