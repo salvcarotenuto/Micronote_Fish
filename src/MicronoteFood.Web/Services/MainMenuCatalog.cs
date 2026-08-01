@@ -84,6 +84,7 @@ public static class MainMenuCatalog
                     new MenuItemDefinition("Vendita al banco", "/VenditaBanco/Index"),
                     new MenuItemDefinition("Vendita plurima"),
                     new MenuItemDefinition("Bolla di vendita", "/BollaVendita/Index"),
+                    new MenuItemDefinition("Nota cliente", "/NotaCliente/Index"),
                     new MenuItemDefinition("Dettaglio vendite del giorno", "/VenditeGiorno/Index"),
                     new MenuItemDefinition("Storico vendite", "/Vendite/Storico")),
                 Group(

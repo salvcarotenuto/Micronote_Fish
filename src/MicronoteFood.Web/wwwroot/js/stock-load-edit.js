@@ -2611,6 +2611,14 @@ document.addEventListener("DOMContentLoaded", () => {
     lineOverlay.querySelector("[data-line-cancel]")?.addEventListener("click", closeLineDialog);
     lineOverlay.querySelector("[data-line-confirm]")?.addEventListener("click", confirmLineDialog);
     lineFields.code?.addEventListener("change", loadArticle);
+    lineFields.code?.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") {
+        return;
+      }
+
+      event.preventDefault();
+      loadArticle().then(() => lineFields.quantity?.focus());
+    });
     [lineFields.quantity, lineFields.price, lineFields.discount, lineFields.vat].forEach((field) => {
       field?.addEventListener("blur", calculateLineAmount);
     });
@@ -2626,35 +2634,6 @@ document.addEventListener("DOMContentLoaded", () => {
         openArticleLookup();
       }
 
-      if (event.key === "Tab" || event.key === "Enter") {
-        const tabFields = [
-          lineFields.code,
-          lineOverlay.querySelector("[data-article-lookup-open]"),
-          lineFields.quantity,
-          lineFields.price,
-          lineFields.discount,
-          lineFields.vat,
-          lineOverlay.querySelector("[data-line-confirm]"),
-          lineOverlay.querySelector("[data-line-cancel]")
-        ].filter(Boolean);
-        const currentIndex = tabFields.indexOf(event.target);
-        if (currentIndex >= 0) {
-          if (event.key === "Enter" && event.target instanceof HTMLButtonElement) {
-            return;
-          }
-
-          event.preventDefault();
-          if (event.key === "Enter" && event.target === lineFields.code) {
-            loadArticle().then(() => lineFields.quantity?.focus());
-            return;
-          }
-
-          const nextIndex = event.shiftKey
-            ? (currentIndex - 1 + tabFields.length) % tabFields.length
-            : (currentIndex + 1) % tabFields.length;
-          tabFields[nextIndex].focus();
-        }
-      }
     });
 
     lineOverlay.querySelector("[data-article-lookup-open]")?.addEventListener("click", openArticleLookup);

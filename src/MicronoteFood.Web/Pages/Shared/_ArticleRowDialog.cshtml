@@ -4,7 +4,7 @@
     var isLoad = mode == "carico";
     var isCounterSale = mode == "vendita-banco";
 }
-<div class="stock-load-line-overlay"
+<div class="article-row-component stock-load-line-overlay"
      hidden
      data-article-row-dialog
      data-row-mode="@mode"
@@ -28,6 +28,7 @@
                        data-row-code />
                 <button class="lookup-button stock-load-line-lookup-button"
                         type="button"
+                        disabled="@isCounterSale"
                         title="Seleziona articolo"
                         aria-label="Seleziona articolo"
                         data-article-lookup-open

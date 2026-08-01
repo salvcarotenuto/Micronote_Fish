@@ -357,12 +357,6 @@
       closeRow();
       return;
     }
-    if (event.key !== "Enter" || event.target.tagName !== "INPUT") return;
-    event.preventDefault();
-    const inputs = [...$("[data-row-modal]").querySelectorAll("input:not([readonly])")];
-    const index = inputs.indexOf(event.target);
-    if (index >= 0 && index < inputs.length - 1) inputs[index + 1].focus();
-    else $("[data-row-confirm]").focus();
   });
   $("[data-row-confirm]").addEventListener("keydown", event => {
     if (event.key !== "ArrowUp") return;
@@ -562,10 +556,7 @@
       closeArticleCard();
       return;
     }
-    const closeModal = $("[data-close-modal]");
-    if (!closeModal.hidden) {
-      escapeConsumedUntilKeyup = true;
-      closeModal.hidden = true;
+    if (!$("[data-close-modal]").hidden) {
       return;
     }
     const rowModal = $("[data-row-modal]");
@@ -623,25 +614,6 @@
     });
   });
   root.querySelectorAll("[data-close-cancel]").forEach(button => button.addEventListener("click", () => $("[data-close-modal]").hidden = true));
-  $("[data-close-modal]").addEventListener("keydown", event => {
-    if (event.key !== "Tab") return;
-    const controls = [...$("[data-close-modal]").querySelectorAll(
-      "input:not(:disabled), button:not(:disabled), [href], [tabindex]:not([tabindex='-1'])"
-    )].filter(control => control.offsetParent !== null);
-    if (!controls.length) return;
-    const first = controls[0];
-    const last = controls[controls.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    } else if (!controls.includes(document.activeElement)) {
-      event.preventDefault();
-      (event.shiftKey ? last : first).focus();
-    }
-  });
   function submitSale(printAfterSave = false) {
     const gross = totals().total;
     const discount = round(parseControlledDecimal($("[data-close-discount]").value), 2);

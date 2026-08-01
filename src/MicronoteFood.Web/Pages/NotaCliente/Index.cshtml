@@ -1,0 +1,172 @@
+@page
+@model MicronoteFood.Web.Pages.NotaCliente.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Nota cliente";
+    ViewData["BodyClass"] = "customer-note-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Quantity(decimal value) => value == 0 ? "" : value.ToString("N3", it);
+    var selected = Model.Report.SelectedCustomer;
+}
+
+<section class="module-page customer-note-page supplier-form-page data-form-skin"
+         data-customer-note
+         data-selected-customer="@Model.Report.SelectedCustomerCode"
+         data-printed-in-session="@Model.HasPrintedInSession.ToString().ToLowerInvariant()"
+         data-processing-date="@Model.Report.DateTo.ToString("yyyy-MM-dd")">
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div><h1>Nota cliente</h1><p>Emissione nota cliente</p></div>
+        </div>
+        <div class="top-actions customer-note-toolbar">
+            <span class="list-records-box"><span>Records</span><strong>@Model.Report.Customers.Count / @Model.Report.Details.Count</strong></span>
+            <button class="button button-primary" type="button" data-customer-note-action="modify" disabled="@(selected is null)">Modifica</button>
+            <button class="button button-primary" type="button" data-customer-note-action="customer-card" disabled="@(selected is null)">Scheda cliente</button>
+            <button class="button button-primary" type="button" data-customer-note-action="statement">Vedi e/conto</button>
+            <button class="button button-primary" type="button" data-customer-note-action="print" disabled="@(selected is null)">Stampa</button>
+            <button class="button button-secondary" type="button" data-customer-note-action="exit">Esci</button>
+        </div>
+    </header>
+
+    @if (TempData["SuccessMessage"] is string success)
+    {
+        <span hidden data-page-message data-message-variant="success" data-message-text="@success"></span>
+    }
+    @if (TempData["ErrorMessage"] is string error)
+    {
+        <span hidden data-page-message data-message-variant="error" data-message-text="@error"></span>
+    }
+
+    <form class="customer-note-filters" method="get" data-customer-note-filters
+          data-progress-message="Elaborazione nota cliente in corso..." data-progress-minimum-time="300">
+        <fieldset class="form-frame">
+            <div class="customer-note-filter-row">
+                <label>Periodo</label>
+                <span class="micronote-date-control" data-date-control>
+                    <input type="hidden" name="dateFrom" value="@Model.Report.DateFrom.ToString("yyyy-MM-dd")" data-filter-date-hidden />
+                    <input class="micronote-date-input" type="text" inputmode="numeric" maxlength="10" autocomplete="off"
+                           value="@Model.Report.DateFrom.ToString("dd/MM/yyyy", it)" data-filter-date-display />
+                    <button class="micronote-date-button" type="button" tabindex="-1"
+                            aria-label="Seleziona data iniziale" data-date-picker-button></button>
+                </span>
+                <span>/</span>
+                <span class="micronote-date-control" data-date-control>
+                    <input type="hidden" name="dateTo" value="@Model.Report.DateTo.ToString("yyyy-MM-dd")" data-filter-date-hidden />
+                    <input class="micronote-date-input" type="text" inputmode="numeric" maxlength="10" autocomplete="off"
+                           value="@Model.Report.DateTo.ToString("dd/MM/yyyy", it)" data-filter-date-display />
+                    <button class="micronote-date-button" type="button" tabindex="-1"
+                            aria-label="Seleziona data finale" data-date-picker-button></button>
+                </span>
+                <label>Punto vendita</label>
+                <select name="storeCode">
+                    <option value="">Tutti</option>
+                    @foreach (var store in Model.Report.Stores)
+                    {
+                        <option value="@store.Code" selected="@(Model.Report.StoreCode == store.Code)">@store.Name</option>
+                    }
+                </select>
+                <label for="customer-note-last-processing">Ultima elaborazione</label>
+                <input id="customer-note-last-processing" class="customer-note-last-processing"
+                       value="@(Model.LastProcessingDate?.ToString("dd/MM/yyyy") ?? "")" readonly />
+            </div>
+        </fieldset>
+    </form>
+
+    <div class="customer-note-layout">
+        <section class="customer-note-panel">
+            <h2>Lista vendite</h2>
+            <div class="list-grid-frame customer-note-summary-frame">
+                <table class="list-grid customer-note-summary-grid">
+                    <colgroup data-customer-note-summary-columns>
+                        <col data-base-width="70" />
+                        <col data-base-width="300" />
+                        <col data-base-width="90" />
+                        <col data-base-width="95" />
+                        <col data-base-width="90" />
+                        <col data-base-width="90" />
+                        <col data-base-width="95" />
+                        <col data-base-width="110" />
+                    </colgroup>
+                    <thead><tr><th>Cliente</th><th>Nome</th><th>Merce</th><th>Iva</th><th>Totale</th><th>Resta</th><th>Pagato</th><th>Saldo agg.</th></tr></thead>
+                    <tbody>
+                    @foreach (var row in Model.Report.Customers)
+                    {
+                        <tr tabindex="0" class="@(row.CustomerCode == Model.Report.SelectedCustomerCode ? "selected selected-row" : "")"
+                            data-customer-note-row data-customer-code="@row.CustomerCode">
+                            <td>@row.CustomerCode.ToString("00000")</td>
+                            <td>@row.CustomerName</td>
+                            <td>@Money(row.Merchandise)</td><td>@Money(row.Vat)</td><td>@Money(row.Total)</td>
+                            <td>@Money(row.PreviousBalance)</td><td>@Money(row.Paid)</td>
+                            <td>@Money(row.UpdatedBalance)</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="customer-note-panel">
+            <h2>Dettaglio vendite del cliente</h2>
+            <div class="list-grid-frame customer-note-detail-frame">
+                <table class="list-grid customer-note-detail-grid">
+                    <thead><tr><th>Data doc</th><th>Articolo</th><th>Descrizione</th><th>Quantità</th><th>Prezzo</th><th>Importo</th></tr></thead>
+                    <tbody>
+                    @foreach (var row in Model.Report.Details)
+                    {
+                        <tr><td>@row.DocumentDate.ToString("dd-MM")</td><td>@row.ArticleCode</td><td>@row.ArticleDescription</td>
+                            <td>@Quantity(row.Quantity)</td><td>@Money(row.Price)</td><td>@Money(row.Amount)</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <form method="post" hidden data-customer-note-session-form>
+        @Html.AntiForgeryToken()
+    </form>
+    <form method="post" asp-page-handler="SaveProcessingDate" hidden data-customer-note-save-date-form>
+        <input type="hidden" name="processingDate" value="@Model.Report.DateTo.ToString("yyyy-MM-dd")" />
+    </form>
+
+    <div class="customer-note-customer-card-overlay" hidden data-customer-note-customer-card>
+        <section class="customer-note-customer-card-dialog" role="dialog" aria-modal="true" aria-label="Scheda cliente">
+            <iframe title="Scheda cliente" data-customer-note-customer-card-frame></iframe>
+        </section>
+    </div>
+
+    @if (selected is not null)
+    {
+        <div class="customer-note-discount-overlay" hidden data-customer-note-discount>
+            <section class="customer-note-discount-dialog" role="dialog" aria-modal="true" aria-labelledby="customer-note-discount-title">
+                <h2 id="customer-note-discount-title">Nota cliente</h2>
+                <form method="post" asp-page-handler="CashAllowance" data-customer-note-discount-form>
+                    <input type="hidden" name="CustomerCode" value="@selected.CustomerCode" />
+                    <input type="hidden" name="DateFrom" value="@Model.Report.DateFrom.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="DateTo" value="@Model.Report.DateTo.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="StoreCode" value="@Model.Report.StoreCode" />
+                    <div class="customer-note-discount-row customer-note-discount-customer">
+                        <span>Cliente</span>
+                        <input value="@selected.CustomerName" readonly tabindex="-1" />
+                    </div>
+                    <label><span>Fido</span><input class="currency-display" value="@(selected.CreditLimit?.ToString("N2", it) ?? "")" readonly tabindex="-1" /></label>
+                    <label><span>Saldo precedente</span><input class="money-input currency-display" name="PreviousBalance" value="@selected.PreviousBalance.ToString("0.00", it)" inputmode="decimal" data-note-previous data-money-field data-money-integer-digits="9" autofocus /></label>
+                    <label><span>Vendite del periodo</span><input class="currency-display" value="@selected.Merchandise.ToString("N2", it)" readonly tabindex="-1" data-note-merchandise /></label>
+                    <label><span>Importi pagati</span><input class="money-input currency-display" name="Paid" value="@selected.Paid.ToString("0.00", it)" inputmode="decimal" data-note-paid data-money-field data-money-integer-digits="9" /></label>
+                    <label><span>Importo abbuono</span><input class="money-input currency-display" name="CashAllowance" value="@selected.CashAllowance.ToString("0.00", it)" inputmode="decimal" data-note-discount data-money-field data-money-integer-digits="9" /></label>
+                    <label><span>Saldo aggiornato</span><input class="currency-display" value="@selected.UpdatedBalance.ToString("N2", it)" readonly tabindex="-1" data-note-updated /></label>
+                    <footer><button class="button button-primary" type="submit">Conferma</button><button class="button button-secondary" type="button" data-customer-note-discount-cancel>Annulla</button></footer>
+                </form>
+            </section>
+        </div>
+    }
+</section>
+
+@section Scripts {
+    <script src="~/js/customer-note.js" asp-append-version="true"></script>
+    <script src="~/js/filter-date-picker.js" asp-append-version="true"></script>
+}

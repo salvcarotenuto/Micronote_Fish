@@ -157,21 +157,6 @@
   };
   $("[data-sales-close-confirm]").addEventListener("click", confirmClosure);
   $("[data-sales-close-confirm-print]").addEventListener("click", confirmClosure);
-  closeModal.addEventListener("keydown", event => {
-    if (event.key !== "Tab") return;
-    const controls = [...closeModal.querySelectorAll("input:not(:disabled),button:not(:disabled)")]
-      .filter(control => control.offsetParent !== null);
-    if (!controls.length) return;
-    const first = controls[0];
-    const last = controls[controls.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  });
   const selectRow = index => {
     state.selected = index;
     Array.from($("[data-sales-document-rows]").rows).forEach((row, rowIndex) =>
