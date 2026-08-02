@@ -18,6 +18,7 @@ public sealed record CustomerNoteStoreOption(int Code, string Name);
 public sealed record CustomerNoteSummaryRow(
     int CustomerCode,
     string CustomerName,
+    string VatNumber,
     decimal Merchandise,
     decimal Vat,
     decimal Total,

@@ -12,6 +12,7 @@ public sealed class IndexModel(CustomerNoteRepository repository) : PageModel
     public CustomerNotePageModel Report { get; private set; } = new();
     public bool HasPrintedInSession => HttpContext.Session.GetString(PrintedInSessionKey) == "1";
     public DateOnly? LastProcessingDate { get; private set; }
+    public string PrintFormat { get; private set; } = "a4";
 
     public async Task OnGetAsync(
         DateOnly? dateFrom,
@@ -24,6 +25,7 @@ public sealed class IndexModel(CustomerNoteRepository repository) : PageModel
         if (dateFrom is null && dateTo is null && storeCode is null && customerCode is null)
             HttpContext.Session.Remove(PrintedInSessionKey);
         LastProcessingDate = await repository.GetLastProcessingDateAsync(cancellationToken);
+        PrintFormat = await repository.GetPrintFormatAsync(cancellationToken);
         var from = dateFrom ?? LastProcessingDate?.AddDays(1) ?? today.AddDays(-6);
         var to = dateTo ?? today;
         if (from > to)
@@ -34,6 +36,14 @@ public sealed class IndexModel(CustomerNoteRepository repository) : PageModel
     public IActionResult OnPostPrinted()
     {
         HttpContext.Session.SetString(PrintedInSessionKey, "1");
+        return new JsonResult(new { success = true });
+    }
+
+    public async Task<IActionResult> OnPostPrintFormatAsync(
+        string? format,
+        CancellationToken cancellationToken)
+    {
+        await repository.SavePrintFormatAsync(format, cancellationToken);
         return new JsonResult(new { success = true });
     }
 

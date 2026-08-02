@@ -9,6 +9,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const summaryGrid = page.querySelector(".customer-note-summary-grid");
   const detailGrid = page.querySelector(".customer-note-detail-frame");
   const detailTable = page.querySelector(".customer-note-detail-grid");
+  const printFormatPrompt = page.querySelector("[data-customer-note-print-format]");
+  const printPreview = page.querySelector("[data-customer-note-print-preview]");
+  const printDocument = page.querySelector("[data-customer-note-preview-document]");
+  const printSummary = page.querySelector("[data-customer-note-print-summary]");
+  const printZoomLabel = page.querySelector("[data-customer-note-preview-zoom-label]");
+  let printZoom = 1;
+  let printFormat = page.dataset.printFormat === "a5" ? "a5" : "a4";
+  let pendingPrintMode = "single";
+  let massPrintActive = false;
   const summaryColumns = Array.from(page.querySelectorAll("[data-customer-note-summary-columns] col"));
   const resizeSummaryColumns = () => {
     if (!summaryGrid || !summaryColumns.length) return;
@@ -218,17 +227,195 @@ document.addEventListener("DOMContentLoaded", () => {
   let printedInSession = page.dataset.printedInSession === "true";
   const sessionForm = page.querySelector("[data-customer-note-session-form]");
   const token = sessionForm?.querySelector("input[name='__RequestVerificationToken']")?.value || "";
-  page.querySelector("[data-customer-note-action='print']")?.addEventListener("click", async () => {
+  const escapeHtml = value => String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+  const displayDate = value => {
+    const parts = String(value || "").split("-");
+    return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : value;
+  };
+  const buildReportArticle = (customer, articleRows) => {
+    const articleHtml = articleRows.map(row => {
+      const cells = Array.from(row.cells).map(cell => escapeHtml(cell.textContent.trim()));
+      const values = [cells[0], cells[1], cells[2], cells[3],
+        escapeHtml(row.dataset.printVatRate), cells[4], cells[5]];
+      return `<tr>${values.map(value => `<td>${value}</td>`).join("")}</tr>`;
+    }).join("");
+    const from = displayDate(filterForm.elements.dateFrom?.value);
+    const to = displayDate(filterForm.elements.dateTo?.value);
+    return `
+      <article class="supplier-report-page customer-note-report-page ${printFormat === "a5" ? "format-a5" : "format-a4"}">
+        <header class="customer-note-report-header">
+          <img src="/images/micronote-fish.png" alt="" />
+          <strong>NOTA CLIENTE</strong>
+          <span>Periodo ${escapeHtml(from)} - ${escapeHtml(to)}</span>
+        </header>
+        <div class="customer-note-report-customer">
+          <span>Cliente:</span><strong>${String(customer.dataset.customerCode || "").padStart(5, "0")}</strong>
+          <strong>${escapeHtml(customer.dataset.customerName)}</strong>
+          <span>Part. iva:</span><strong>${escapeHtml(customer.dataset.customerVat)}</strong>
+        </div>
+        <table class="customer-note-report-lines">
+          <thead><tr><th>Data</th><th>Articolo</th><th>Descrizione</th><th>Quantità</th><th>Iva</th><th>Prezzo</th><th>Importo</th></tr></thead>
+          <tbody>${articleHtml || '<tr><td colspan="7">Nessun articolo nel periodo selezionato</td></tr>'}</tbody>
+        </table>
+        <div class="customer-note-report-totals customer-note-report-totals-main">
+          <span>Merce</span><strong>${escapeHtml(customer.dataset.printMerchandise)}</strong>
+          <span>Iva</span><strong>${escapeHtml(customer.dataset.printVat)}</strong>
+          <span>Totale</span><strong>${escapeHtml(customer.dataset.printTotal)}</strong>
+        </div>
+        <div class="customer-note-report-totals customer-note-report-balances">
+          <span>Resta</span><strong>${escapeHtml(customer.dataset.printRemaining)}</strong>
+          <span>Pagato</span><strong>${escapeHtml(customer.dataset.printPaid)}</strong>
+          <span>Abbuoni</span><strong>${escapeHtml(customer.dataset.printAllowance)}</strong>
+          <span>Saldo agg.</span><strong>${escapeHtml(customer.dataset.printUpdated)}</strong>
+        </div>
+      </article>`;
+  };
+  const buildPrintPreview = () => {
+    const customer = selectedRow();
+    if (!customer || !printPreview || !printDocument) return;
+    const articleRows = Array.from(detailTable?.tBodies?.[0]?.rows ?? []);
+    printDocument.innerHTML = buildReportArticle(customer, articleRows);
+    if (printSummary) {
+      printSummary.textContent = `${customer.dataset.customerCode} · ${customer.dataset.customerName} · Foglio ${printFormat.toUpperCase()}`;
+    }
+    printZoom = 1;
+    printDocument.style.setProperty("--report-preview-zoom", printZoom);
+    if (printZoomLabel) printZoomLabel.textContent = "100%";
+    printPreview.hidden = false;
+  };
+  const fetchCustomerDetails = async customer => {
+    const params = new URLSearchParams(new FormData(filterForm));
+    params.set("customerCode", customer.dataset.customerCode || "");
+    const response = await fetch(`${window.location.pathname}?${params}`, {
+      headers: { Accept: "text/html" }
+    });
+    if (!response.ok) throw new Error(`Lettura della nota ${customer.dataset.customerCode} non riuscita.`);
+    const documentCopy = new DOMParser().parseFromString(await response.text(), "text/html");
+    return Array.from(documentCopy.querySelectorAll("[data-customer-note-detail-row]"));
+  };
+  const registerPrinted = async () => {
+    const response = await fetch(`${window.location.pathname}?handler=Printed`, {
+      method: "POST",
+      headers: { RequestVerificationToken: token }
+    });
+    if (!response.ok) throw new Error("Impossibile registrare la stampa della nota cliente.");
+    printedInSession = true;
+  };
+  const printAllNotes = async () => {
+    if (!printPreview || !printDocument || rows.length === 0) return;
     try {
-      const response = await fetch(`${window.location.pathname}?handler=Printed`, {
-        method: "POST",
-        headers: { RequestVerificationToken: token }
+      const buildAll = async () => {
+        const reports = [];
+        for (const customer of rows) {
+          const customerDetails = await fetchCustomerDetails(customer);
+          reports.push(buildReportArticle(customer, customerDetails));
+        }
+        return reports;
+      };
+      const reports = window.MicronoteProgress
+        ? await window.MicronoteProgress.run(buildAll, {
+            message: "Preparazione stampa massiva in corso...",
+            minimumTime: 0
+          })
+        : await buildAll();
+      printDocument.innerHTML = reports.join("");
+      await registerPrinted();
+      massPrintActive = true;
+      printPreview.hidden = false;
+      document.body.classList.add("is-printing-supplier-report", "is-printing-customer-note");
+      window.print();
+    } catch (error) {
+      massPrintActive = false;
+      printPreview.hidden = true;
+      window.MicronoteMessageBox?.show({
+        title: "Nota cliente",
+        message: error.message || "Preparazione della stampa massiva non riuscita.",
+        variant: "error"
       });
-      if (!response.ok) throw new Error("Impossibile registrare la stampa della nota cliente.");
-      printedInSession = true;
+    }
+  };
+  const changePrintZoom = delta => {
+    printZoom = Math.min(1.5, Math.max(0.5, Math.round((printZoom + delta) * 10) / 10));
+    printDocument?.style.setProperty("--report-preview-zoom", printZoom);
+    if (printZoomLabel) printZoomLabel.textContent = `${Math.round(printZoom * 100)}%`;
+  };
+  const openPrintFormatPrompt = mode => {
+    if (!printFormatPrompt) return;
+    pendingPrintMode = mode;
+    const savedOption = printFormatPrompt.querySelector(`input[value="${printFormat}"]`);
+    if (savedOption) savedOption.checked = true;
+    printFormatPrompt.hidden = false;
+    savedOption?.focus();
+  };
+  page.querySelector("[data-customer-note-action='print-note']")?.addEventListener("click", () => openPrintFormatPrompt("single"));
+  page.querySelector("[data-customer-note-action='print-all']")?.addEventListener("click", () => openPrintFormatPrompt("all"));
+  page.querySelector("[data-customer-note-format-confirm]")?.addEventListener("click", async () => {
+    printFormat = printFormatPrompt.querySelector("input[name='customerNotePrintFormat']:checked")?.value || "a4";
+    try {
+      const body = new URLSearchParams({ format: printFormat });
+      const response = await fetch(`${window.location.pathname}?handler=PrintFormat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+          RequestVerificationToken: token
+        },
+        body
+      });
+      if (!response.ok) throw new Error();
+      page.dataset.printFormat = printFormat;
+      printFormatPrompt.hidden = true;
+      if (pendingPrintMode === "all") {
+        await printAllNotes();
+      } else {
+        buildPrintPreview();
+      }
+    } catch {
+      window.MicronoteMessageBox?.show({
+        title: "Nota cliente",
+        message: "Memorizzazione del formato di stampa non riuscita.",
+        variant: "error"
+      });
+    }
+  });
+  page.querySelector("[data-customer-note-format-cancel]")?.addEventListener("click", () => {
+    printFormatPrompt.hidden = true;
+    page.querySelector(`[data-customer-note-action='${pendingPrintMode === "all" ? "print-all" : "print-note"}']`)?.focus();
+  });
+  page.querySelector("[data-customer-note-preview-close]")?.addEventListener("click", () => {
+    printPreview.hidden = true;
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && printFormatPrompt && !printFormatPrompt.hidden) {
+      event.preventDefault();
+      printFormatPrompt.hidden = true;
+      page.querySelector(`[data-customer-note-action='${pendingPrintMode === "all" ? "print-all" : "print-note"}']`)?.focus();
+      return;
+    }
+    if (event.key !== "Escape" || !printPreview || printPreview.hidden) return;
+    event.preventDefault();
+    printPreview.hidden = true;
+    page.querySelector("[data-customer-note-action='print-note']")?.focus();
+  });
+  page.querySelector("[data-customer-note-preview-zoom-out]")?.addEventListener("click", () => changePrintZoom(-0.1));
+  page.querySelector("[data-customer-note-preview-zoom-in]")?.addEventListener("click", () => changePrintZoom(0.1));
+  page.querySelector("[data-customer-note-preview-print]")?.addEventListener("click", async () => {
+    try {
+      await registerPrinted();
+      document.body.classList.add("is-printing-supplier-report", "is-printing-customer-note");
       window.print();
     } catch (error) {
       window.MicronoteMessageBox?.show({ title: "Nota cliente", message: error.message, variant: "error" });
+    }
+  });
+  window.addEventListener("afterprint", () => {
+    document.body.classList.remove("is-printing-supplier-report", "is-printing-customer-note");
+    if (massPrintActive) {
+      printPreview.hidden = true;
+      massPrintActive = false;
     }
   });
   page.querySelector("[data-customer-note-action='exit']")?.addEventListener("click", () => {

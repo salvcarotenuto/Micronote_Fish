@@ -6,6 +6,35 @@ namespace MicronoteFood.Web.Data;
 public sealed class CustomerNoteRepository(MicronoteDb database)
 {
     private const string LastProcessingDateKey = "DataUltimaElaborazioneNoteClienti";
+    private const string PrintFormatKey = "FormatoStampaNotaCliente";
+
+    public async Task<string> GetPrintFormatAsync(CancellationToken cancellationToken = default)
+    {
+        await using var connection = await database.OpenConnectionAsync(cancellationToken);
+        await EnsurePrintFormatOptionAsync(connection, cancellationToken);
+        await using var command = new MySqlCommand(
+            "SELECT Valore FROM Opzioni WHERE Chiave = @key LIMIT 1;", connection);
+        command.Parameters.AddWithValue("@key", PrintFormatKey);
+        var value = Convert.ToString(await command.ExecuteScalarAsync(cancellationToken));
+        return string.Equals(value, "A5", StringComparison.OrdinalIgnoreCase) ? "a5" : "a4";
+    }
+
+    public async Task SavePrintFormatAsync(
+        string? format,
+        CancellationToken cancellationToken = default)
+    {
+        var value = string.Equals(format, "a5", StringComparison.OrdinalIgnoreCase) ? "A5" : "A4";
+        await using var connection = await database.OpenConnectionAsync(cancellationToken);
+        await using var command = new MySqlCommand(
+            """
+            INSERT INTO Opzioni (Chiave, Valore)
+            VALUES (@key, @value)
+            ON DUPLICATE KEY UPDATE Valore = @value;
+            """, connection);
+        command.Parameters.AddWithValue("@key", PrintFormatKey);
+        command.Parameters.AddWithValue("@value", value);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
 
     public async Task<DateOnly?> GetLastProcessingDateAsync(
         CancellationToken cancellationToken = default)
@@ -144,7 +173,12 @@ public sealed class CustomerNoteRepository(MicronoteDb database)
         CancellationToken cancellationToken)
     {
         const string sql = """
-            WITH sales_period AS (
+            WITH balance_options AS (
+                SELECT COALESCE(NULLIF(MAX(CASE WHEN Chiave = 'AnnoSaldoIniCF'
+                           THEN CAST(NULLIF(Valore, '') AS UNSIGNED) END), 0), 2000) AS AnnoIniziale
+                FROM Opzioni
+            ),
+            sales_period AS (
                 SELECT Cliente,
                        SUM(COALESCE(Merce, 0)) AS Merce,
                        SUM(COALESCE(Iva, 0)) AS Iva,
@@ -163,18 +197,39 @@ public sealed class CustomerNoteRepository(MicronoteDb database)
                   AND DataMov BETWEEN @dateFrom AND @dateTo
                   AND (@storeCode IS NULL OR PuntoV = @storeCode)
                 GROUP BY Ditta
+            ),
+            previous_sales AS (
+                SELECT Cliente, SUM(COALESCE(Totale, 0)) AS Totale
+                FROM Vendite, balance_options
+                WHERE Anno >= balance_options.AnnoIniziale
+                  AND DataDoc < @dateFrom
+                GROUP BY Cliente
+            ),
+            previous_cash AS (
+                SELECT Ditta, SUM(COALESCE(Importo, 0)) AS Incassi
+                FROM MovCassa, balance_options
+                WHERE CliFor = 'C'
+                  AND Anno >= balance_options.AnnoIniziale
+                  AND DataMov < @dateFrom
+                GROUP BY Ditta
             )
             SELECT c.Codice,
                    COALESCE(c.Nome, '') AS Nome,
+                   COALESCE(c.Piva, '') AS Piva,
                    COALESCE(sp.Merce, 0) AS Merce,
                    COALESCE(sp.Iva, 0) AS Iva,
                    COALESCE(sp.Totale, 0) AS Totale,
+                   COALESCE(c.SaldoIni, 0)
+                     + COALESCE(ps.Totale, 0)
+                     - COALESCE(pc.Incassi, 0) AS SaldoPrecedente,
                    COALESCE(cp.Incassi, 0) - COALESCE(cp.Abbuoni, 0) AS Pagato,
                    COALESCE(cp.Abbuoni, 0) AS AbbuonoCassa,
                    COALESCE(c.Fido, NULL) AS Fido
             FROM Clienti c
             LEFT JOIN sales_period sp ON sp.Cliente = c.Codice
             LEFT JOIN cash_period cp ON cp.Ditta = c.Codice
+            LEFT JOIN previous_sales ps ON ps.Cliente = c.Codice
+            LEFT JOIN previous_cash pc ON pc.Ditta = c.Codice
             WHERE sp.Cliente IS NOT NULL OR cp.Ditta IS NOT NULL
             ORDER BY c.Nome, c.Codice;
             """;
@@ -189,19 +244,20 @@ public sealed class CustomerNoteRepository(MicronoteDb database)
         while (await reader.ReadAsync(cancellationToken))
         {
             var total = Money(reader["Totale"]);
+            var previous = Money(reader["SaldoPrecedente"]);
             var paid = Money(reader["Pagato"]);
             var cashAllowance = Money(reader["AbbuonoCassa"]);
-            var remaining = decimal.Round(total - paid, 2);
             rows.Add(new CustomerNoteSummaryRow(
                 Convert.ToInt32(reader["Codice"]),
                 Convert.ToString(reader["Nome"]) ?? "",
+                Convert.ToString(reader["Piva"]) ?? "",
                 Money(reader["Merce"]),
                 Money(reader["Iva"]),
                 total,
-                remaining,
+                previous,
                 paid,
                 cashAllowance,
-                decimal.Round(remaining - cashAllowance, 2),
+                decimal.Round(total + previous - paid - cashAllowance, 2),
                 reader["Fido"] is DBNull ? null : Money(reader["Fido"])));
         }
         return rows;
@@ -301,6 +357,24 @@ public sealed class CustomerNoteRepository(MicronoteDb database)
             """,
             connection);
         command.Parameters.AddWithValue("@key", LastProcessingDateKey);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static async Task EnsurePrintFormatOptionAsync(
+        MySqlConnection connection,
+        CancellationToken cancellationToken)
+    {
+        await using var command = new MySqlCommand(
+            """
+            INSERT INTO Opzioni (Chiave, Valore)
+            SELECT @key, 'A4'
+            WHERE NOT EXISTS (SELECT 1 FROM Opzioni WHERE Chiave = @key);
+
+            UPDATE Opzioni
+            SET Valore = 'A4'
+            WHERE Chiave = @key AND UPPER(COALESCE(Valore, '')) NOT IN ('A4', 'A5');
+            """, connection);
+        command.Parameters.AddWithValue("@key", PrintFormatKey);
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 }

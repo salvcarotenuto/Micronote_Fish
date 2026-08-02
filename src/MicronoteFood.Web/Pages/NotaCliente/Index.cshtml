@@ -13,6 +13,7 @@
 <section class="module-page customer-note-page supplier-form-page data-form-skin"
          data-customer-note
          data-selected-customer="@Model.Report.SelectedCustomerCode"
+         data-print-format="@Model.PrintFormat"
          data-printed-in-session="@Model.HasPrintedInSession.ToString().ToLowerInvariant()"
          data-processing-date="@Model.Report.DateTo.ToString("yyyy-MM-dd")">
     <header class="module-header">
@@ -27,7 +28,8 @@
             <button class="button button-primary" type="button" data-customer-note-action="modify" disabled="@(selected is null)">Modifica</button>
             <button class="button button-primary" type="button" data-customer-note-action="customer-card" disabled="@(selected is null)">Scheda cliente</button>
             <button class="button button-primary" type="button" data-customer-note-action="statement">Vedi e/conto</button>
-            <button class="button button-primary" type="button" data-customer-note-action="print" disabled="@(selected is null)">Stampa</button>
+            <button class="button button-primary" type="button" data-customer-note-action="print-note" disabled="@(selected is null)">Stampa nota</button>
+            <button class="button button-primary" type="button" data-customer-note-action="print-all" disabled="@(Model.Report.Customers.Count == 0)">Stampa tutte</button>
             <button class="button button-secondary" type="button" data-customer-note-action="exit">Esci</button>
         </div>
     </header>
@@ -97,7 +99,12 @@
                     @foreach (var row in Model.Report.Customers)
                     {
                         <tr tabindex="0" class="@(row.CustomerCode == Model.Report.SelectedCustomerCode ? "selected selected-row" : "")"
-                            data-customer-note-row data-customer-code="@row.CustomerCode">
+                            data-customer-note-row data-customer-code="@row.CustomerCode"
+                            data-customer-name="@row.CustomerName" data-customer-vat="@row.VatNumber"
+                            data-print-merchandise="@Money(row.Merchandise)" data-print-vat="@Money(row.Vat)"
+                            data-print-total="@Money(row.Total)" data-print-remaining="@Money(row.PreviousBalance)"
+                            data-print-paid="@Money(row.Paid)" data-print-allowance="@Money(row.CashAllowance)"
+                            data-print-updated="@Money(row.UpdatedBalance)">
                             <td>@row.CustomerCode.ToString("00000")</td>
                             <td>@row.CustomerName</td>
                             <td>@Money(row.Merchandise)</td><td>@Money(row.Vat)</td><td>@Money(row.Total)</td>
@@ -119,7 +126,8 @@
                     <tbody>
                     @foreach (var row in Model.Report.Details)
                     {
-                        <tr tabindex="0" data-customer-note-detail-row data-sale-id="@row.SaleId">
+                        <tr tabindex="0" data-customer-note-detail-row data-sale-id="@row.SaleId"
+                            data-print-vat-rate="@Money(row.VatRate)">
                             <td>@row.DocumentDate.ToString("dd-MM")</td><td>@row.ArticleCode</td><td>@row.ArticleDescription</td>
                             <td>@Quantity(row.Quantity)</td><td>@Money(row.Price)</td><td>@Money(row.Amount)</td></tr>
                     }
@@ -139,6 +147,43 @@
     <div class="customer-note-customer-card-overlay" hidden data-customer-note-customer-card>
         <section class="customer-note-customer-card-dialog" role="dialog" aria-modal="true" aria-label="Scheda cliente">
             <iframe title="Scheda cliente" data-customer-note-customer-card-frame></iframe>
+        </section>
+    </div>
+
+    <div class="customer-note-print-format-overlay" data-customer-note-print-format hidden>
+        <section class="customer-note-print-format-dialog" role="dialog" aria-modal="true"
+                 aria-labelledby="customerNotePrintFormatTitle">
+            <h2 id="customerNotePrintFormatTitle">Formato di stampa</h2>
+            <div class="customer-note-print-format-options">
+                <label><input type="radio" name="customerNotePrintFormat" value="a4" checked /> Foglio A4</label>
+                <label><input type="radio" name="customerNotePrintFormat" value="a5" /> Foglio A5</label>
+            </div>
+            <footer>
+                <button class="button button-primary" type="button" data-customer-note-format-confirm>Stampa</button>
+                <button class="button button-secondary" type="button" data-customer-note-format-cancel>Annulla</button>
+            </footer>
+        </section>
+    </div>
+
+    <div class="report-preview-backdrop" data-customer-note-print-preview hidden>
+        <section class="report-preview-window" role="dialog" aria-modal="true"
+                 aria-labelledby="customerNotePrintPreviewTitle">
+            <header class="report-preview-toolbar">
+                <div>
+                    <strong id="customerNotePrintPreviewTitle">Anteprima Nota cliente</strong>
+                    <span data-customer-note-print-summary></span>
+                </div>
+                <div class="report-preview-actions">
+                    <button type="button" data-customer-note-preview-zoom-out aria-label="Riduci anteprima">−</button>
+                    <span data-customer-note-preview-zoom-label>100%</span>
+                    <button type="button" data-customer-note-preview-zoom-in aria-label="Ingrandisci anteprima">+</button>
+                    <button type="button" data-customer-note-preview-print>Stampa</button>
+                    <button type="button" class="report-preview-close" data-customer-note-preview-close>Chiudi</button>
+                </div>
+            </header>
+            <div class="report-preview-viewport">
+                <div class="report-preview-document" data-customer-note-preview-document></div>
+            </div>
         </section>
     </div>
 

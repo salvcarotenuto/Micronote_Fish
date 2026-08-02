@@ -129,6 +129,19 @@ public sealed class SettingsRepository(MicronoteDb database)
             WHERE Chiave = 'RaggruppamentoVenditaBanco'
               AND (Valore IS NULL
                    OR Valore NOT IN ('category', 'group', 'species', 'origin'));
+
+            INSERT INTO Opzioni (Chiave, Valore)
+            SELECT 'FormatoStampaNotaCliente', 'A4'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM Opzioni
+                WHERE Chiave = 'FormatoStampaNotaCliente'
+            );
+
+            UPDATE Opzioni
+            SET Valore = 'A4'
+            WHERE Chiave = 'FormatoStampaNotaCliente'
+              AND UPPER(COALESCE(Valore, '')) NOT IN ('A4', 'A5');
             """,
             connection);
         command.Parameters.AddWithValue("@defaultValue", DefaultSalesVatRate);

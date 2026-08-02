@@ -10704,6 +10704,7 @@ body.purchase-invoice-edit-module {
   height: 100%;
   min-height: 0;
   overflow: hidden;
+  padding-top: 8px;
 }
 
 .initial-customer-supplier-balance-module .page-container {
@@ -10726,7 +10727,7 @@ body.initial-customer-supplier-balance-module .app-footer {
 }
 
 .initial-cf-balance-page .list-titlebar {
-  margin-bottom: 6px;
+  margin-bottom: 0;
   min-height: 58px;
   padding-bottom: 4px;
   padding-top: 4px;
@@ -10743,12 +10744,13 @@ body.initial-customer-supplier-balance-module .app-footer {
 
 .list-title-actions .initial-cf-balance-records {
   margin-left: 0;
-  margin-right: 12px;
+  margin-right: 4px;
+  min-width: 112px;
   min-height: 36px;
 }
 
 .initial-cf-filter-frame {
-  margin-top: 4px;
+  margin-top: 8px;
   padding: 4px 6px;
 }
 
@@ -10797,7 +10799,8 @@ body.initial-customer-supplier-balance-module .app-footer {
   padding: 0 7px;
 }
 
-.initial-cf-filter-grid select {
+.initial-cf-filter-grid select,
+.initial-cf-filter-grid input[type="date"] {
   background: #ffffff;
   border: 1px solid #8a8f98;
   border-radius: 6px;
@@ -10839,11 +10842,15 @@ body.initial-customer-supplier-balance-module .app-footer {
   font-weight: 520;
 }
 
+.initial-cf-note span {
+  white-space: nowrap;
+}
+
 .initial-cf-grid-layout {
   display: grid;
   gap: 5px;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
 .initial-cf-panel {
@@ -10875,7 +10882,7 @@ body.initial-customer-supplier-balance-module .app-footer {
 }
 
 .initial-cf-grid {
-  min-width: 730px;
+  min-width: 703px;
   table-layout: fixed;
   user-select: none;
 }
@@ -10917,12 +10924,12 @@ body.initial-customer-supplier-balance-module .app-footer {
 
 .initial-cf-grid th:nth-child(2),
 .initial-cf-grid td:nth-child(2) {
-  width: 270px;
+  width: 254px;
 }
 
 .initial-cf-grid th:nth-child(3),
 .initial-cf-grid td:nth-child(3) {
-  width: 160px;
+  width: 149px;
 }
 
 .initial-cf-grid th:nth-child(4),
@@ -10938,7 +10945,7 @@ body.initial-customer-supplier-balance-module .app-footer {
 
 .initial-cf-grid td:nth-child(5) {
   background: #ffffff;
-  padding: 0;
+  padding: 0 10px 0 0;
 }
 
 .initial-cf-grid tbody tr.selected-row td:nth-child(5) {
@@ -16049,6 +16056,199 @@ body.sales-document-module .app-footer { display:none; }
   color: #102b49;
 }
 
+.customer-note-report-page {
+  page: customer-note;
+  width: 794px;
+  min-height: 1123px;
+  padding: 42px 44px;
+  color: #111;
+  font-family: Arial, sans-serif;
+}
+.customer-note-report-page > .customer-note-report-header {
+  display: grid;
+  grid-template-columns: 92px 1fr auto;
+  align-items: center;
+  min-height: 48px;
+  margin: 0 0 16px;
+  padding: 4px 12px;
+  border: 1px solid #b7b7b7;
+  background: #f1f1f1;
+}
+.customer-note-report-header img {
+  width: 78px;
+  height: 44px;
+  object-fit: contain;
+}
+.customer-note-report-page > .customer-note-report-header strong {
+  color: #111;
+  font-size: 18px;
+  font-weight: 500;
+  text-align: center;
+}
+.customer-note-report-page > .customer-note-report-header span {
+  color: #111;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.customer-note-report-customer {
+  display: grid;
+  grid-template-columns: auto 55px minmax(180px, 1fr) auto 150px;
+  gap: 9px;
+  align-items: center;
+  margin: 0 14px 14px;
+  font-size: 13px;
+}
+.customer-note-report-customer strong { font-weight: 500; }
+.customer-note-report-page .customer-note-report-lines {
+  font-size: 11px;
+}
+.customer-note-report-page .customer-note-report-lines th,
+.customer-note-report-page .customer-note-report-lines td {
+  height: 21px;
+  padding: 2px 5px;
+  border: 0;
+  border-bottom: 1px solid #dedede;
+  background: #fff;
+  color: #111;
+}
+.customer-note-report-page .customer-note-report-lines th {
+  height: 24px;
+  border-top: 1px solid #aaa;
+  border-bottom: 1px solid #aaa;
+  background: #eee;
+  font-weight: 500;
+}
+.customer-note-report-lines th:nth-child(1),
+.customer-note-report-lines td:nth-child(1) { width: 12%; }
+.customer-note-report-lines th:nth-child(2),
+.customer-note-report-lines td:nth-child(2) { width: 12%; }
+.customer-note-report-lines th:nth-child(3),
+.customer-note-report-lines td:nth-child(3) { width: 35%; }
+.customer-note-report-lines th:nth-child(4),
+.customer-note-report-lines td:nth-child(4) { width: 11%; text-align: right; }
+.customer-note-report-lines th:nth-child(5),
+.customer-note-report-lines td:nth-child(5) { width: 8%; text-align: right; }
+.customer-note-report-lines th:nth-child(6),
+.customer-note-report-lines td:nth-child(6) { width: 11%; text-align: right; }
+.customer-note-report-lines th:nth-child(7),
+.customer-note-report-lines td:nth-child(7) { width: 11%; text-align: right; }
+.customer-note-report-totals {
+  display: grid;
+  align-items: center;
+  margin-top: 8px;
+  border: 1px solid #aaa;
+  background: #eee;
+  font-size: 12px;
+}
+.customer-note-report-totals span,
+.customer-note-report-totals strong {
+  min-height: 25px;
+  padding: 5px 8px;
+  border-right: 1px solid #fff;
+  font-weight: 500;
+}
+.customer-note-report-totals strong { text-align: right; }
+.customer-note-report-totals-main { grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; }
+.customer-note-report-balances { grid-template-columns: repeat(4, 1fr 1fr); }
+
+.customer-note-print-format-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3100;
+  display: grid;
+  place-items: center;
+  background: rgba(28, 45, 66, 0.66);
+}
+.customer-note-print-format-overlay[hidden] { display: none; }
+.customer-note-print-format-dialog {
+  width: 390px;
+  overflow: hidden;
+  border: 1px solid #8da5bd;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 18px 48px rgba(12, 28, 48, 0.38);
+}
+.customer-note-print-format-dialog h2 {
+  margin: 0;
+  padding: 12px 16px;
+  background: var(--BlueNote);
+  color: #fff;
+  font-size: 16px;
+}
+.customer-note-print-format-options {
+  display: grid;
+  gap: 12px;
+  padding: 22px 28px;
+}
+.customer-note-print-format-options label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  cursor: pointer;
+}
+.customer-note-print-format-options input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+.customer-note-print-format-dialog footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #ccd6e0;
+  background: #f4f7fa;
+}
+.customer-note-report-page.format-a5 {
+  page: customer-note-a5;
+  width: 559px;
+  min-height: 794px;
+  padding: 28px 30px;
+}
+.customer-note-report-page.format-a5 > .customer-note-report-header {
+  grid-template-columns: 68px 1fr auto;
+  min-height: 38px;
+  margin-bottom: 10px;
+  padding: 3px 8px;
+}
+.customer-note-report-page.format-a5 .customer-note-report-header img {
+  width: 58px;
+  height: 34px;
+}
+.customer-note-report-page.format-a5 > .customer-note-report-header strong { font-size: 15px; }
+.customer-note-report-page.format-a5 > .customer-note-report-header span { font-size: 8px; }
+.customer-note-report-page.format-a5 .customer-note-report-customer {
+  grid-template-columns: auto 42px minmax(110px, 1fr) auto 92px;
+  gap: 5px;
+  margin: 0 8px 9px;
+  font-size: 9px;
+}
+.customer-note-report-page.format-a5 .customer-note-report-lines { font-size: 8px; }
+.customer-note-report-page.format-a5 .customer-note-report-lines th,
+.customer-note-report-page.format-a5 .customer-note-report-lines td {
+  height: 16px;
+  padding: 1px 3px;
+}
+.customer-note-report-page.format-a5 .customer-note-report-totals {
+  margin-top: 5px;
+  font-size: 8px;
+}
+.customer-note-report-page.format-a5 .customer-note-report-totals span,
+.customer-note-report-page.format-a5 .customer-note-report-totals strong {
+  min-height: 19px;
+  padding: 3px 4px;
+}
+
+@page customer-note {
+  size: A4 portrait;
+  margin: 0;
+}
+@page customer-note-a5 {
+  size: A5 portrait;
+  margin: 0;
+}
+
 .customer-note-customer-card-overlay {
   position: fixed;
   inset: 0;
@@ -16338,7 +16538,7 @@ body.cash-movements-list-module .app-footer { display: none; }
   height: 40px;
   display: flex;
   align-items: center;
-  padding: 0 7px;
+  padding: 0 0 0 7px;
   background: #b8cbe0;
   border: 1px solid #8fa3b9;
 }
