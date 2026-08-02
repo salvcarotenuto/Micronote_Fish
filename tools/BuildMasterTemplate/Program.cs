@@ -21,10 +21,10 @@ var fixedTables = File.ReadAllLines(fixedListPath)
     .Where(value => value.Length > 0)
     .Distinct(StringComparer.OrdinalIgnoreCase)
     .ToArray();
-if (fixedTables.Length != 26)
+if (fixedTables.Length != 27)
 {
     throw new InvalidOperationException(
-        $"Il catalogo delle tabelle fisse contiene {fixedTables.Length} nomi; attesi 26.");
+        $"Il catalogo delle tabelle fisse contiene {fixedTables.Length} nomi; attesi 27.");
 }
 
 var configuration = new ConfigurationBuilder()

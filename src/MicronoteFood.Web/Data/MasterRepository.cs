@@ -16,6 +16,7 @@ public sealed class MasterRepository(
     [
         "Aspetto",
         "CausaliCont",
+        "CausaliCassa",
         "CausaliMag",
         "Codiciiva",
         "Comuni",

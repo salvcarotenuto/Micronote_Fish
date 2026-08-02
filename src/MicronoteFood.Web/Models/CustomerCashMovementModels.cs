@@ -3,21 +3,24 @@ namespace MicronoteFood.Web.Models;
 public sealed class CustomerCashMovementEditModel
 {
     public int Id { get; set; }
+    public int Code { get; set; }
     public bool IsNew { get; set; } = true;
     public int Year { get; set; }
     public int Sector { get; set; } = 40;
     public DateOnly MovementDate { get; set; }
     public int CustomerCode { get; set; }
-    public string CustomerName { get; set; } = "";
+    public string? CustomerName { get; set; }
     public int CustomerStoreCode { get; set; }
     public int CauseCode { get; set; }
     public decimal Amount { get; set; }
     public int PaymentMethod { get; set; }
-    public string DocumentType { get; set; } = "";
+    public string? DocumentType { get; set; }
     public int? DocumentId { get; set; }
+    public int? DocumentYear { get; set; }
+    public int? DocumentCode { get; set; }
     public int? DocumentNumber { get; set; }
     public DateOnly? DocumentDate { get; set; }
-    public string Description { get; set; } = "";
+    public string? Description { get; set; }
 }
 
 public sealed record CustomerCashMovementCauseOption(int Code, string Description);

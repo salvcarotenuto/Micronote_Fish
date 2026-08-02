@@ -2,15 +2,25 @@
   const form = document.querySelector("[data-customer-cash-movement-form]");
   if (!form) return;
 
+  const saveButton = document.querySelector("#cashMovementSave");
+  const enableSaveButton = () => {
+    if (saveButton) saveButton.disabled = false;
+  };
+  enableSaveButton();
+  window.addEventListener("pageshow", enableSaveButton);
+
   const lookup = form.querySelector("[data-lookup-field]");
   const code = form.querySelector("#cashMovementCustomerCode");
   const display = form.querySelector("#cashMovementCustomerDisplay");
   const name = form.querySelector("#cashMovementCustomerName");
+  const customerClear = form.querySelector("#cashMovementCustomerClear");
   const storeCode = form.querySelector("#cashMovementCustomerStoreCode");
   const store = form.querySelector("#cashMovementCustomerStore");
   const amount = form.querySelector("[name='Movement.Amount']");
   const documentType = form.querySelector("#cashMovementDocumentType");
   const documentId = form.querySelector("#cashMovementDocumentId");
+  const documentYearValue = form.querySelector("#cashMovementDocumentYearValue");
+  const documentCode = form.querySelector("#cashMovementDocumentCode");
   const documentNumber = form.querySelector("#cashMovementDocumentNumber");
   const documentDate = form.querySelector("#cashMovementDocumentDate");
   const documentDisplay = form.querySelector("#cashMovementDocumentDisplay");
@@ -22,6 +32,7 @@
   const documentYear = document.querySelector("#cashMovementDocumentYear");
   const documentRows = document.querySelector("[data-document-rows]");
   const documentTitle = document.querySelector("#cashMovementDocumentDialogTitle");
+  const customerReadOnly = lookup?.dataset.customerReadonly === "true";
   let selectedDocument = null;
 
   const setCustomerStore = (value) => {
@@ -55,6 +66,11 @@
       if (name) name.value = payload.row.label || "";
       setCustomerStore(payload.row.pointV);
     } catch {
+      if (customerReadOnly) {
+        if (code) code.value = String(customerCode);
+        display.value = String(customerCode).padStart(5, "0");
+        return;
+      }
       if (code) code.value = "0";
       if (name) name.value = "";
       setCustomerStore(0);
@@ -67,6 +83,10 @@
     }
   });
 
+  if (customerReadOnly && Number(display?.value || 0) > 0) {
+    window.setTimeout(() => display.dispatchEvent(new Event("blur")), 0);
+  }
+
   lookup?.addEventListener("micronote:lookup-selected", (event) => {
     setCustomerStore(event.detail?.row?.pointV);
     window.setTimeout(() => form.querySelector("select[name='Movement.CauseCode']")?.focus(), 0);
@@ -78,6 +98,8 @@
     if (!row) return;
     if (documentType) documentType.value = "B";
     if (documentId) documentId.value = String(row.id);
+    if (documentYearValue) documentYearValue.value = String(row.year);
+    if (documentCode) documentCode.value = String(row.code);
     if (documentNumber) documentNumber.value = String(row.number || "");
     if (documentDate) documentDate.value = row.date || "";
     if (documentDisplay) documentDisplay.value = documentLabel(row);
@@ -95,6 +117,8 @@
     selectedDocument = null;
     if (documentType) documentType.value = "";
     if (documentId) documentId.value = "";
+    if (documentYearValue) documentYearValue.value = "";
+    if (documentCode) documentCode.value = "";
     if (documentNumber) documentNumber.value = "";
     if (documentDate) documentDate.value = "";
     if (documentDisplay) documentDisplay.value = "";
@@ -107,6 +131,15 @@
     }
     documentLookup?.focus();
   };
+
+  customerClear?.addEventListener("click", () => {
+    if (code) code.value = "0";
+    if (display) display.value = "";
+    if (name) name.value = "";
+    setCustomerStore(0);
+    clearDocument();
+    display?.focus();
+  });
 
   const chooseDocument = (row) => {
     selectedDocument = row;
@@ -182,7 +215,7 @@
     applyDocument(selectedDocument);
     documentDialog?.close();
   });
-  form.addEventListener("submit", (event) => {
+  const validateBeforeSave = () => {
     let message = "";
     let field = null;
     if (Number(code?.value || 0) <= 0) {
@@ -192,14 +225,22 @@
       message = "Campo Importo obbligatorio.";
       field = amount;
     }
-    if (!message) return;
-    event.preventDefault();
+    if (!message) return true;
     window.MicronoteMessageBox?.show({
       title: "Movimento contabile cliente",
       message,
       variant: "error",
       onConfirm: () => field?.focus()
     });
+    return false;
+  };
+
+  saveButton?.addEventListener("click", (event) => {
+    if (!validateBeforeSave()) event.preventDefault();
+  });
+
+  form.addEventListener("submit", (event) => {
+    if (!validateBeforeSave()) event.preventDefault();
   });
 
   document.addEventListener("keydown", (event) => {
@@ -213,6 +254,6 @@
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape" || document.body.classList.contains("lookup-open")) return;
     event.preventDefault();
-    window.location.href = "/";
+    window.location.href = form.dataset.returnUrl || "/";
   });
 })();

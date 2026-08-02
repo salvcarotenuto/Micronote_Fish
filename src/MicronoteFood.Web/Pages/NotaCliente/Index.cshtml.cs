@@ -13,12 +13,6 @@ public sealed class IndexModel(CustomerNoteRepository repository) : PageModel
     public bool HasPrintedInSession => HttpContext.Session.GetString(PrintedInSessionKey) == "1";
     public DateOnly? LastProcessingDate { get; private set; }
 
-    [BindProperty] public int CustomerCode { get; set; }
-    [BindProperty] public DateOnly DateFrom { get; set; }
-    [BindProperty] public DateOnly DateTo { get; set; }
-    [BindProperty] public int? StoreCode { get; set; }
-    [BindProperty] public decimal CashAllowance { get; set; }
-
     public async Task OnGetAsync(
         DateOnly? dateFrom,
         DateOnly? dateTo,
@@ -53,25 +47,4 @@ public sealed class IndexModel(CustomerNoteRepository repository) : PageModel
         return RedirectToPage("/Index");
     }
 
-    public async Task<IActionResult> OnPostCashAllowanceAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            await repository.SaveCashAllowanceAsync(
-                CustomerCode, DateFrom, DateTo, CashAllowance, cancellationToken);
-            TempData["SuccessMessage"] = "Abbuono di cassa aggiornato correttamente.";
-        }
-        catch (Exception exception) when (exception is InvalidOperationException or MySqlConnector.MySqlException)
-        {
-            TempData["ErrorMessage"] = exception.Message;
-        }
-
-        return RedirectToPage(new
-        {
-            dateFrom = DateFrom.ToString("yyyy-MM-dd"),
-            dateTo = DateTo.ToString("yyyy-MM-dd"),
-            storeCode = StoreCode,
-            customerCode = CustomerCode
-        });
-    }
 }

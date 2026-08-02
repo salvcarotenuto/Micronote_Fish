@@ -8,13 +8,24 @@ namespace MicronoteFood.Web.Pages.MovimentoContabileCliente;
 
 public sealed class EditModel(
     CustomerCashMovementRepository repository,
+    LookupRepository lookupRepository,
     ApplicationState applicationState) : PageModel
 {
     [BindProperty] public CustomerCashMovementEditModel Movement { get; set; } = new();
     public CustomerCashMovementMaskModel Mask { get; private set; } = new();
+    public string ReturnTo { get; private set; } = "";
+    public string ReturnUrl { get; private set; } = "/";
+    public bool CustomerReadOnly { get; private set; }
 
-    public async Task<IActionResult> OnGetAsync(int? id, CancellationToken cancellationToken)
+    public async Task<IActionResult> OnGetAsync(
+        int? id,
+        int? customerCode,
+        bool customerReadOnly,
+        string? returnTo,
+        CancellationToken cancellationToken)
     {
+        SetReturnTarget(returnTo);
+        CustomerReadOnly = customerReadOnly;
         Mask = await repository.GetMaskAsync(cancellationToken);
         if (id.GetValueOrDefault() > 0)
         {
@@ -34,6 +45,17 @@ public sealed class EditModel(
                 : new DateOnly(applicationState.Esercizio, 1, 1),
             CauseCode = 20
         };
+        if (customerCode.GetValueOrDefault() > 0)
+        {
+            Movement.CustomerCode = customerCode!.Value;
+            var customer = await lookupRepository.FindAnagraficaAsync(
+                "clienti", customerCode.Value, cancellationToken);
+            if (customer is not null)
+            {
+                Movement.CustomerName = customer.Label;
+                Movement.CustomerStoreCode = customer.StoreCode ?? 0;
+            }
+        }
         return Page();
     }
 
@@ -58,9 +80,20 @@ public sealed class EditModel(
             total = row.Total
         }));
     }
-    public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> OnPostAsync(
+        string? returnTo,
+        bool customerReadOnly,
+        CancellationToken cancellationToken)
     {
+        SetReturnTarget(returnTo);
+        CustomerReadOnly = customerReadOnly;
         Mask = await repository.GetMaskAsync(cancellationToken);
+        if (!Movement.IsNew && Movement.Id > 0)
+        {
+            var existing = await repository.GetAsync(Movement.Id, cancellationToken);
+            if (existing is null) return NotFound();
+            Movement.Year = existing.Year;
+        }
         Normalize();
         ValidateMovement();
         if (!ModelState.IsValid) return Page();
@@ -72,10 +105,38 @@ public sealed class EditModel(
             return Page();
         }
 
-        TempData["SuccessMessage"] = Movement.IsNew
-            ? "Movimento contabile cliente registrato."
-            : "Movimento contabile cliente aggiornato.";
+        if (string.Equals(ReturnTo, "menu", StringComparison.OrdinalIgnoreCase))
+            return RedirectToPage("./Edit", new { returnTo = "menu" });
+        if (ReturnTo.StartsWith('/') && !ReturnTo.StartsWith("//", StringComparison.Ordinal))
+        {
+            var separator = ReturnTo.Contains('?') ? '&' : '?';
+            return LocalRedirect($"{ReturnTo}{separator}refresh={DateTime.UtcNow.Ticks}");
+        }
+
         return RedirectToPage("./Edit", new { id = result.Id });
+    }
+
+    private void SetReturnTarget(string? returnTo)
+    {
+        if (string.Equals(returnTo, "menu", StringComparison.OrdinalIgnoreCase))
+        {
+            ReturnTo = "menu";
+            ReturnUrl = "/";
+            return;
+        }
+
+        var target = returnTo?.Trim() ?? "";
+        if (target.StartsWith('/')
+            && !target.StartsWith("//", StringComparison.Ordinal)
+            && !target.Contains("://", StringComparison.Ordinal))
+        {
+            ReturnTo = target;
+            ReturnUrl = target;
+            return;
+        }
+
+        ReturnTo = "";
+        ReturnUrl = "/";
     }
 
     private void Normalize()
@@ -90,7 +151,7 @@ public sealed class EditModel(
             Movement.DocumentId = null;
             Movement.DocumentType = "";
         }
-        else if (Movement.DocumentType.Length == 0)
+        else if (Movement.DocumentType?.Length == 0)
         {
             Movement.DocumentType = "B";
         }
@@ -98,10 +159,15 @@ public sealed class EditModel(
 
     private void ValidateMovement()
     {
+        var requiredYear = Movement.IsNew
+            ? applicationState.Esercizio
+            : Movement.Year;
         if (Movement.MovementDate == default)
             ModelState.AddModelError("", "Campo Data movimento obbligatorio.");
-        else if (Movement.MovementDate.Year != applicationState.Esercizio)
-            ModelState.AddModelError("", $"La data movimento deve rientrare nell'esercizio contabile in linea ({applicationState.Esercizio}).");
+        else if (Movement.MovementDate.Year != requiredYear)
+            ModelState.AddModelError("", Movement.IsNew
+                ? $"La data movimento deve rientrare nell'esercizio contabile in linea ({requiredYear})."
+                : $"La data movimento deve rientrare nell'anno registrato nel movimento ({requiredYear}).");
         if (Movement.CustomerCode <= 0)
             ModelState.AddModelError("", "Campo Cliente obbligatorio.");
         if (Movement.CauseCode is not (5 or 20))
@@ -110,11 +176,11 @@ public sealed class EditModel(
             ModelState.AddModelError("", "Campo Importo obbligatorio.");
         if (Movement.DocumentType is not ("" or "B"))
             ModelState.AddModelError("", "Tipo documento collegato non valido.");
-        if (Movement.DocumentId.HasValue && Movement.DocumentType.Length == 0)
+        if (Movement.DocumentId.HasValue && Movement.DocumentType?.Length == 0)
             ModelState.AddModelError("", "Indicare il tipo del documento collegato.");
         if (Movement.PaymentMethod is < 0 or > 2)
             ModelState.AddModelError("", "Modo di pagamento non valido.");
-        if (Movement.Description.Length > 100)
+        if (Movement.Description?.Length > 100)
             ModelState.AddModelError("", "Le annotazioni non possono superare 100 caratteri.");
     }
 }

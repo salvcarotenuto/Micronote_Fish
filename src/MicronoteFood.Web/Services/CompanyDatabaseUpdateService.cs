@@ -208,6 +208,42 @@ public sealed class CompanyDatabaseUpdateService(
             companyDatabase,
             template.TargetTable,
             cancellationToken);
+        if (string.Equals(template.TargetTable, "MovCassa", StringComparison.OrdinalIgnoreCase)
+            && definitions.Any(definition => string.Equals(
+                definition.Name, "Annotazioni", StringComparison.OrdinalIgnoreCase))
+            && targetDefinitions.Any(definition =>
+                string.Equals(definition.Name, "Descrizione", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(definition.Name, "Ammotazioni", StringComparison.OrdinalIgnoreCase))
+            && !targetDefinitions.Any(definition => string.Equals(
+                definition.Name, "Annotazioni", StringComparison.OrdinalIgnoreCase)))
+        {
+            var notesDefinition = definitions.First(definition => string.Equals(
+                definition.Name, "Annotazioni", StringComparison.OrdinalIgnoreCase));
+            var oldNotesName = targetDefinitions.Any(definition => string.Equals(
+                definition.Name, "Ammotazioni", StringComparison.OrdinalIgnoreCase))
+                ? "Ammotazioni"
+                : "Descrizione";
+            await ExecuteAsync(
+                connection,
+                $"ALTER TABLE {Q(companyDatabase)}.{Q(template.TargetTable)} " +
+                $"CHANGE COLUMN {Q(oldNotesName)} `Annotazioni` {notesDefinition.Definition};",
+                cancellationToken);
+            targetDefinitions = await ReadColumnDefinitionsAsync(
+                connection,
+                companyDatabase,
+                template.TargetTable,
+                cancellationToken);
+        }
+        if (template.CopyData && !DefinitionsMatch(definitions, targetDefinitions))
+        {
+            await ExecuteAsync(
+                connection,
+                $"DROP TABLE {Q(companyDatabase)}.{Q(template.TargetTable)}; " +
+                $"CREATE TABLE {Q(companyDatabase)}.{Q(template.TargetTable)} " +
+                $"LIKE {Q(masterDatabase)}.{Q(template.MasterTable)};",
+                cancellationToken);
+            return;
+        }
         var targetByName = targetDefinitions.ToDictionary(
             definition => definition.Name,
             StringComparer.OrdinalIgnoreCase);
@@ -245,6 +281,17 @@ public sealed class CompanyDatabaseUpdateService(
 
     private static string NormalizeDefinition(string definition) =>
         Regex.Replace(definition.Trim(), "\\s+", " ");
+
+    private static bool DefinitionsMatch(
+        IReadOnlyList<ColumnDefinition> source,
+        IReadOnlyList<ColumnDefinition> target) =>
+        source.Count == target.Count
+        && source.Zip(target).All(pair =>
+            string.Equals(pair.First.Name, pair.Second.Name, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(
+                NormalizeDefinition(pair.First.Definition),
+                NormalizeDefinition(pair.Second.Definition),
+                StringComparison.OrdinalIgnoreCase));
 
     private static async Task<bool> TableDataMatchesAsync(
         MySqlConnection connection,

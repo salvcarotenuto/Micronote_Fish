@@ -84,7 +84,9 @@ public sealed class CustomerNoteRepository(MicronoteDb database)
             throw new InvalidOperationException("L'abbuono deve essere positivo e avere al massimo due decimali.");
 
         await using var connection = await database.OpenConnectionAsync(cancellationToken);
-        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(
+            System.Data.IsolationLevel.Serializable,
+            cancellationToken);
         const string deleteSql = """
             DELETE FROM MovCassa
             WHERE CliFor = 'C'
@@ -101,16 +103,30 @@ public sealed class CustomerNoteRepository(MicronoteDb database)
 
         if (discount > 0)
         {
+            const string nextCodeSql = """
+                SELECT COALESCE(MAX(Codice), 0) + 1
+                FROM MovCassa
+                WHERE Anno = @year
+                FOR UPDATE;
+                """;
+            await using var nextCode = new MySqlCommand(nextCodeSql, connection, transaction);
+            nextCode.Parameters.AddWithValue("@year", dateTo.Year);
+            var movementCode = Convert.ToInt32(
+                await nextCode.ExecuteScalarAsync(cancellationToken));
+
             const string insertSql = """
                 INSERT INTO MovCassa
-                    (Anno, Settore, DataMov, Causale, TipoMov,
-                     CliFor, Ditta, Importo, ModoPag, Documento, Descrizione)
+                    (Anno, Settore, Codice, DataMov, Causale, TipoMov,
+                     CliFor, Ditta, Importo, ModoPag, Documento, PuntoV, Annotazioni)
                 VALUES
-                    (@year, 40, @movementDate, 5, 'E',
-                     'C', @customer, @discount, 0, 0, 'Abbuono');
+                    (@year, 40, @code, @movementDate, 5, 'E',
+                     'C', @customer, @discount, 0, 0,
+                     (SELECT COALESCE(PuntoV, 0) FROM Clienti WHERE Codice = @customer),
+                     'Abbuono');
                 """;
             await using var insert = new MySqlCommand(insertSql, connection, transaction);
             insert.Parameters.AddWithValue("@year", dateTo.Year);
+            insert.Parameters.AddWithValue("@code", movementCode);
             insert.Parameters.AddWithValue("@movementDate", dateTo.ToDateTime(TimeOnly.MinValue));
             insert.Parameters.AddWithValue("@customer", customerCode);
             insert.Parameters.AddWithValue("@discount", discount);
@@ -145,19 +161,7 @@ public sealed class CustomerNoteRepository(MicronoteDb database)
                 FROM MovCassa
                 WHERE CliFor = 'C'
                   AND DataMov BETWEEN @dateFrom AND @dateTo
-                GROUP BY Ditta
-            ),
-            previous_sales AS (
-                SELECT Cliente, SUM(COALESCE(Totale, 0)) AS Totale
-                FROM Vendite
-                WHERE DataDoc >= @yearStart AND DataDoc < @dateFrom
-                GROUP BY Cliente
-            ),
-            previous_cash AS (
-                SELECT Ditta, SUM(COALESCE(Importo, 0)) AS Incassi
-                FROM MovCassa
-                WHERE CliFor = 'C'
-                  AND DataMov >= @yearStart AND DataMov < @dateFrom
+                  AND (@storeCode IS NULL OR PuntoV = @storeCode)
                 GROUP BY Ditta
             )
             SELECT c.Codice,
@@ -165,19 +169,12 @@ public sealed class CustomerNoteRepository(MicronoteDb database)
                    COALESCE(sp.Merce, 0) AS Merce,
                    COALESCE(sp.Iva, 0) AS Iva,
                    COALESCE(sp.Totale, 0) AS Totale,
-                   COALESCE(si.Importo, 0)
-                     + COALESCE(ps.Totale, 0)
-                     - COALESCE(pc.Incassi, 0) AS SaldoPrecedente,
                    COALESCE(cp.Incassi, 0) - COALESCE(cp.Abbuoni, 0) AS Pagato,
                    COALESCE(cp.Abbuoni, 0) AS AbbuonoCassa,
                    COALESCE(c.Fido, NULL) AS Fido
             FROM Clienti c
             LEFT JOIN sales_period sp ON sp.Cliente = c.Codice
             LEFT JOIN cash_period cp ON cp.Ditta = c.Codice
-            LEFT JOIN previous_sales ps ON ps.Cliente = c.Codice
-            LEFT JOIN previous_cash pc ON pc.Ditta = c.Codice
-            LEFT JOIN SaldoIniCf si
-              ON si.Anno = @year AND si.CliFor = 'C' AND si.Ditta = c.Codice
             WHERE sp.Cliente IS NOT NULL OR cp.Ditta IS NOT NULL
             ORDER BY c.Nome, c.Codice;
             """;
@@ -185,8 +182,6 @@ public sealed class CustomerNoteRepository(MicronoteDb database)
         await using var command = new MySqlCommand(sql, connection);
         command.Parameters.AddWithValue("@dateFrom", dateFrom.ToDateTime(TimeOnly.MinValue));
         command.Parameters.AddWithValue("@dateTo", dateTo.ToDateTime(new TimeOnly(23, 59, 59)));
-        command.Parameters.AddWithValue("@yearStart", new DateTime(dateFrom.Year, 1, 1));
-        command.Parameters.AddWithValue("@year", dateFrom.Year);
         command.Parameters.AddWithValue("@storeCode", storeCode is null ? DBNull.Value : storeCode.Value);
 
         var rows = new List<CustomerNoteSummaryRow>();
@@ -194,19 +189,19 @@ public sealed class CustomerNoteRepository(MicronoteDb database)
         while (await reader.ReadAsync(cancellationToken))
         {
             var total = Money(reader["Totale"]);
-            var previous = Money(reader["SaldoPrecedente"]);
             var paid = Money(reader["Pagato"]);
             var cashAllowance = Money(reader["AbbuonoCassa"]);
+            var remaining = decimal.Round(total - paid, 2);
             rows.Add(new CustomerNoteSummaryRow(
                 Convert.ToInt32(reader["Codice"]),
                 Convert.ToString(reader["Nome"]) ?? "",
                 Money(reader["Merce"]),
                 Money(reader["Iva"]),
                 total,
-                previous,
+                remaining,
                 paid,
                 cashAllowance,
-                decimal.Round(previous + total - paid - cashAllowance, 2),
+                decimal.Round(remaining - cashAllowance, 2),
                 reader["Fido"] is DBNull ? null : Money(reader["Fido"])));
         }
         return rows;

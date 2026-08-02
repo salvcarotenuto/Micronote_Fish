@@ -10,8 +10,8 @@ public sealed class CustomerCashMovementRepository(MicronoteDb database)
     {
         const string sql = """
             SELECT Codice, COALESCE(Descrizione, '') AS Descrizione
-            FROM CausaliCont
-            WHERE COALESCE(CliFor, '') = 'C'
+            FROM CausaliCassa
+            WHERE COALESCE(Ditta, '') = 'C'
             ORDER BY Descrizione, Codice;
             """;
 
@@ -80,11 +80,12 @@ public sealed class CustomerCashMovementRepository(MicronoteDb database)
         CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT m.ID, m.Anno, m.Settore, m.DataMov, m.Ditta,
+            SELECT m.ID, m.Anno, m.Settore, m.Codice, m.DataMov, m.Ditta,
                    COALESCE(c.Nome, '') AS ClienteNome, COALESCE(m.PuntoV, 0) AS ClientePuntoV,
                    m.Causale, m.Importo, m.ModoPag, COALESCE(m.TipoDocumento, '') AS TipoDocumento, m.Documento,
+                   v.Anno AS DocumentoAnno, v.Codice AS DocumentoCodice,
                    v.NumDoc AS DocumentoNumero, v.DataDoc AS DocumentoData,
-                   COALESCE(m.Descrizione, '') AS Descrizione
+                   COALESCE(m.Annotazioni, '') AS Descrizione
             FROM MovCassa m
             LEFT JOIN Clienti c ON c.Codice = m.Ditta
             LEFT JOIN Vendite v ON m.TipoDocumento = 'B' AND v.ID = m.Documento
@@ -101,6 +102,7 @@ public sealed class CustomerCashMovementRepository(MicronoteDb database)
         return new CustomerCashMovementEditModel
         {
             Id = Convert.ToInt32(reader["ID"]),
+            Code = Convert.ToInt32(reader["Codice"]),
             IsNew = false,
             Year = Convert.ToInt32(reader["Anno"]),
             Sector = Convert.ToInt32(reader["Settore"]),
@@ -114,6 +116,10 @@ public sealed class CustomerCashMovementRepository(MicronoteDb database)
             DocumentType = Convert.ToString(reader["TipoDocumento"]) ?? "",
             DocumentId = reader["Documento"] is DBNull || Convert.ToInt32(reader["Documento"]) <= 0
                 ? null : Convert.ToInt32(reader["Documento"]),
+            DocumentYear = reader["DocumentoAnno"] is DBNull
+                ? null : Convert.ToInt32(reader["DocumentoAnno"]),
+            DocumentCode = reader["DocumentoCodice"] is DBNull
+                ? null : Convert.ToInt32(reader["DocumentoCodice"]),
             DocumentNumber = reader["DocumentoNumero"] is DBNull
                 ? null : Convert.ToInt32(reader["DocumentoNumero"]),
             DocumentDate = reader["DocumentoData"] is DBNull
@@ -131,20 +137,37 @@ public sealed class CustomerCashMovementRepository(MicronoteDb database)
             return new(false, movement.Id, "Cliente inesistente.");
         if (!await CustomerCauseExistsAsync(connection, movement.CauseCode, cancellationToken))
             return new(false, movement.Id, "Causale contabile cliente inesistente.");
+        if (movement.DocumentId is > 0
+            && !await CustomerDocumentExistsAsync(
+                connection,
+                movement.DocumentId.Value,
+                movement.CustomerCode,
+                cancellationToken))
+            return new(false, movement.Id, "La bolla collegata non appartiene al cliente selezionato.");
 
         if (movement.IsNew || movement.Id <= 0)
         {
+            await using var transaction = await connection.BeginTransactionAsync(
+                System.Data.IsolationLevel.Serializable,
+                cancellationToken);
+            movement.Code = await NextCodeAsync(
+                connection,
+                transaction,
+                movement.Year,
+                cancellationToken);
             const string insert = """
                 INSERT INTO MovCassa
-                    (Anno, Settore, DataMov, Causale, TipoMov, CliFor, Ditta,
-                     Importo, ModoPag, TipoDocumento, Documento, PuntoV, Descrizione)
+                    (Anno, Settore, Codice, DataMov, Causale, TipoMov, CliFor, Ditta,
+                     Importo, ModoPag, TipoDocumento, Documento, PuntoV, Annotazioni)
                 VALUES
-                    (@year, 40, @date, @cause, 'E', 'C', @customer,
+                    (@year, 40, @code, @date, @cause, 'E', 'C', @customer,
                      @amount, @payment, @documentType, @document, @store, @description);
                 """;
-            await using var command = Command(insert, connection, movement);
+            await using var command = Command(insert, connection, movement, transaction);
+            command.Parameters.AddWithValue("@code", movement.Code);
             await command.ExecuteNonQueryAsync(cancellationToken);
             movement.Id = checked((int)command.LastInsertedId);
+            await transaction.CommitAsync(cancellationToken);
             return new(true, movement.Id);
         }
 
@@ -152,7 +175,7 @@ public sealed class CustomerCashMovementRepository(MicronoteDb database)
             UPDATE MovCassa
             SET Anno = @year, Settore = 40, DataMov = @date, Causale = @cause,
                 TipoMov = 'E', CliFor = 'C', Ditta = @customer, Importo = @amount,
-                ModoPag = @payment, TipoDocumento = @documentType, Documento = @document, PuntoV = @store, Descrizione = @description
+                ModoPag = @payment, TipoDocumento = @documentType, Documento = @document, PuntoV = @store, Annotazioni = @description
             WHERE ID = @id AND CliFor = 'C';
             """;
         await using var updateCommand = Command(update, connection, movement);
@@ -166,21 +189,40 @@ public sealed class CustomerCashMovementRepository(MicronoteDb database)
     private static MySqlCommand Command(
         string sql,
         MySqlConnection connection,
-        CustomerCashMovementEditModel movement)
+        CustomerCashMovementEditModel movement,
+        MySqlTransaction? transaction = null)
     {
-        var command = new MySqlCommand(sql, connection);
+        var command = new MySqlCommand(sql, connection, transaction);
         command.Parameters.AddWithValue("@year", movement.Year);
         command.Parameters.Add("@date", MySqlDbType.DateTime).Value = movement.MovementDate.ToDateTime(TimeOnly.MinValue);
         command.Parameters.AddWithValue("@cause", movement.CauseCode);
         command.Parameters.AddWithValue("@customer", movement.CustomerCode);
         command.Parameters.AddWithValue("@amount", movement.Amount);
         command.Parameters.AddWithValue("@payment", movement.PaymentMethod);
-        command.Parameters.AddWithValue("@documentType", movement.DocumentType.Length > 0 ? movement.DocumentType : DBNull.Value);
+        command.Parameters.AddWithValue("@documentType", !string.IsNullOrEmpty(movement.DocumentType)
+            ? movement.DocumentType : DBNull.Value);
         command.Parameters.AddWithValue("@document", movement.DocumentId is > 0
             ? movement.DocumentId.GetValueOrDefault() : DBNull.Value);
         command.Parameters.AddWithValue("@store", movement.CustomerStoreCode);
         command.Parameters.AddWithValue("@description", movement.Description?.Trim() ?? "");
         return command;
+    }
+
+    private static async Task<int> NextCodeAsync(
+        MySqlConnection connection,
+        MySqlTransaction transaction,
+        int year,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT COALESCE(MAX(Codice), 0) + 1
+            FROM MovCassa
+            WHERE Anno = @year
+            FOR UPDATE;
+            """;
+        await using var command = new MySqlCommand(sql, connection, transaction);
+        command.Parameters.AddWithValue("@year", year);
+        return Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
     }
 
     private static async Task<bool> ExistsAsync(
@@ -201,12 +243,29 @@ public sealed class CustomerCashMovementRepository(MicronoteDb database)
         CancellationToken cancellationToken)
     {
         const string sql = """
-            SELECT 1 FROM CausaliCont
-            WHERE Codice = @code AND COALESCE(CliFor, '') = 'C'
+            SELECT 1 FROM CausaliCassa
+            WHERE Codice = @code AND COALESCE(Ditta, '') = 'C'
             LIMIT 1;
             """;
         await using var command = new MySqlCommand(sql, connection);
         command.Parameters.AddWithValue("@code", code);
+        return await command.ExecuteScalarAsync(cancellationToken) is not null;
+    }
+
+    private static async Task<bool> CustomerDocumentExistsAsync(
+        MySqlConnection connection,
+        int documentId,
+        int customerCode,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT 1 FROM Vendite
+            WHERE ID = @documentId AND Cliente = @customerCode
+            LIMIT 1;
+            """;
+        await using var command = new MySqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@documentId", documentId);
+        command.Parameters.AddWithValue("@customerCode", customerCode);
         return await command.ExecuteScalarAsync(cancellationToken) is not null;
     }
 }

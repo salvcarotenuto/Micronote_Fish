@@ -89,9 +89,10 @@
                         <col data-base-width="90" />
                         <col data-base-width="90" />
                         <col data-base-width="95" />
+                        <col data-base-width="90" />
                         <col data-base-width="110" />
                     </colgroup>
-                    <thead><tr><th>Cliente</th><th>Nome</th><th>Merce</th><th>Iva</th><th>Totale</th><th>Resta</th><th>Pagato</th><th>Saldo agg.</th></tr></thead>
+                    <thead><tr><th>Cliente</th><th>Nome</th><th>Merce</th><th>Iva</th><th>Totale</th><th>Resta</th><th>Pagato</th><th>Abbuoni</th><th>Saldo agg.</th></tr></thead>
                     <tbody>
                     @foreach (var row in Model.Report.Customers)
                     {
@@ -101,6 +102,7 @@
                             <td>@row.CustomerName</td>
                             <td>@Money(row.Merchandise)</td><td>@Money(row.Vat)</td><td>@Money(row.Total)</td>
                             <td>@Money(row.PreviousBalance)</td><td>@Money(row.Paid)</td>
+                            <td>@Money(row.CashAllowance)</td>
                             <td>@Money(row.UpdatedBalance)</td>
                         </tr>
                     }
@@ -117,7 +119,8 @@
                     <tbody>
                     @foreach (var row in Model.Report.Details)
                     {
-                        <tr><td>@row.DocumentDate.ToString("dd-MM")</td><td>@row.ArticleCode</td><td>@row.ArticleDescription</td>
+                        <tr tabindex="0" data-customer-note-detail-row data-sale-id="@row.SaleId">
+                            <td>@row.DocumentDate.ToString("dd-MM")</td><td>@row.ArticleCode</td><td>@row.ArticleDescription</td>
                             <td>@Quantity(row.Quantity)</td><td>@Money(row.Price)</td><td>@Money(row.Amount)</td></tr>
                     }
                     </tbody>
@@ -139,31 +142,6 @@
         </section>
     </div>
 
-    @if (selected is not null)
-    {
-        <div class="customer-note-discount-overlay" hidden data-customer-note-discount>
-            <section class="customer-note-discount-dialog" role="dialog" aria-modal="true" aria-labelledby="customer-note-discount-title">
-                <h2 id="customer-note-discount-title">Nota cliente</h2>
-                <form method="post" asp-page-handler="CashAllowance" data-customer-note-discount-form>
-                    <input type="hidden" name="CustomerCode" value="@selected.CustomerCode" />
-                    <input type="hidden" name="DateFrom" value="@Model.Report.DateFrom.ToString("yyyy-MM-dd")" />
-                    <input type="hidden" name="DateTo" value="@Model.Report.DateTo.ToString("yyyy-MM-dd")" />
-                    <input type="hidden" name="StoreCode" value="@Model.Report.StoreCode" />
-                    <div class="customer-note-discount-row customer-note-discount-customer">
-                        <span>Cliente</span>
-                        <input value="@selected.CustomerName" readonly tabindex="-1" />
-                    </div>
-                    <label><span>Fido</span><input class="currency-display" value="@(selected.CreditLimit?.ToString("N2", it) ?? "")" readonly tabindex="-1" /></label>
-                    <label><span>Saldo precedente</span><input class="money-input currency-display" name="PreviousBalance" value="@selected.PreviousBalance.ToString("0.00", it)" inputmode="decimal" data-note-previous data-money-field data-money-integer-digits="9" autofocus /></label>
-                    <label><span>Vendite del periodo</span><input class="currency-display" value="@selected.Merchandise.ToString("N2", it)" readonly tabindex="-1" data-note-merchandise /></label>
-                    <label><span>Importi pagati</span><input class="money-input currency-display" name="Paid" value="@selected.Paid.ToString("0.00", it)" inputmode="decimal" data-note-paid data-money-field data-money-integer-digits="9" /></label>
-                    <label><span>Importo abbuono</span><input class="money-input currency-display" name="CashAllowance" value="@selected.CashAllowance.ToString("0.00", it)" inputmode="decimal" data-note-discount data-money-field data-money-integer-digits="9" /></label>
-                    <label><span>Saldo aggiornato</span><input class="currency-display" value="@selected.UpdatedBalance.ToString("N2", it)" readonly tabindex="-1" data-note-updated /></label>
-                    <footer><button class="button button-primary" type="submit">Conferma</button><button class="button button-secondary" type="button" data-customer-note-discount-cancel>Annulla</button></footer>
-                </form>
-            </section>
-        </div>
-    }
 </section>
 
 @section Scripts {

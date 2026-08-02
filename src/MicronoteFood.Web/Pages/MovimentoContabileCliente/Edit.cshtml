@@ -16,26 +16,29 @@
             <div><h1>Movimento contabile cliente</h1><p>Registrazione incassi e movimenti contabili dei clienti.</p></div>
         </div>
         <div class="top-actions">
-            <button class="button button-primary primary" type="submit"
+            <button class="button button-primary primary" id="cashMovementSave" type="submit"
                     form="customer-cash-movement-form">Registra</button>
-            <a class="button button-secondary secondary" href="/">Annulla</a>
+            <a class="button button-secondary secondary" href="@Model.ReturnUrl">Annulla</a>
         </div>
     </header>
 
     <form id="customer-cash-movement-form" method="post"
           class="entity-form customer-cash-movement-form" novalidate
-          data-enter-navigation data-customer-cash-movement-form>
+          data-enter-navigation data-customer-cash-movement-form data-return-url="@Model.ReturnUrl">
         <input asp-for="Movement.Id" type="hidden" />
+        <input asp-for="Movement.Code" type="hidden" />
         <input asp-for="Movement.IsNew" type="hidden" />
         <input asp-for="Movement.Year" type="hidden" />
         <input asp-for="Movement.Sector" type="hidden" />
+        <input type="hidden" name="returnTo" value="@Model.ReturnTo" />
+        <input type="hidden" name="customerReadOnly" value="@(Model.CustomerReadOnly ? "true" : "false")" />
         <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
 
         <fieldset class="form-frame customer-cash-movement-frame">
             <div class="customer-cash-movement-grid">
                 <div class="field customer-cash-movement-number">
                     <label>Numero movimento</label>
-                    <input value="@(Model.Movement.Id > 0 ? Model.Movement.Id.ToString("000000") : "Automatico")"
+                    <input value="@(Model.Movement.Code > 0 ? $"{Model.Movement.Code:000000} / {Model.Movement.Year:0000}" : "Automatico")"
                            readonly tabindex="-1" />
                 </div>
                 <div class="field customer-cash-movement-date">
@@ -52,6 +55,7 @@
                 </div>
 
                 <div class="field customer-cash-movement-customer lookup-field"
+                     data-customer-readonly="@(Model.CustomerReadOnly ? "true" : "false")"
                      data-lookup-field data-lookup-type="clienti" data-lookup-title="Clienti"
                      data-code-input="cashMovementCustomerCode"
                      data-code-display="cashMovementCustomerDisplay"
@@ -62,11 +66,18 @@
                         <input asp-for="Movement.CustomerStoreCode" id="cashMovementCustomerStoreCode" type="hidden" />
                         <input id="cashMovementCustomerDisplay" class="customer-cash-movement-customer-code"
                                type="text" inputmode="numeric" maxlength="5" autocomplete="off" required aria-required="true"
+                               readonly="@(Model.CustomerReadOnly ? "readonly" : null)"
                                value="@(Model.Movement.CustomerCode > 0 ? Model.Movement.CustomerCode.ToString("00000") : "")" />
                         <input asp-for="Movement.CustomerName" id="cashMovementCustomerName"
                                class="customer-cash-movement-customer-name" readonly tabindex="-1" />
-                        <button class="lookup-button" type="button" title="Seleziona cliente"
-                                aria-label="Seleziona cliente" data-lookup-open></button>
+                        @if (!Model.CustomerReadOnly)
+                        {
+                            <button class="lookup-button" type="button" title="Seleziona cliente"
+                                    aria-label="Seleziona cliente" data-lookup-open></button>
+                            <button class="customer-cash-movement-customer-clear" id="cashMovementCustomerClear"
+                                    type="button" title="Cancella cliente"
+                                    aria-label="Cancella cliente">×</button>
+                        }
                     </div>
                 </div>
 
@@ -83,10 +94,12 @@
                     <div class="customer-cash-movement-document-control">
                         <input asp-for="Movement.DocumentType" id="cashMovementDocumentType" type="hidden" />
                         <input asp-for="Movement.DocumentId" id="cashMovementDocumentId" type="hidden" />
+                        <input asp-for="Movement.DocumentYear" id="cashMovementDocumentYearValue" type="hidden" />
+                        <input asp-for="Movement.DocumentCode" id="cashMovementDocumentCode" type="hidden" />
                         <input asp-for="Movement.DocumentNumber" id="cashMovementDocumentNumber" type="hidden" />
                         <input asp-for="Movement.DocumentDate" id="cashMovementDocumentDate" type="hidden" />
                         <input id="cashMovementDocumentDisplay" type="text" readonly tabindex="-1"
-                               value="@(Model.Movement.DocumentId.HasValue ? Model.Movement.DocumentId.Value.ToString("000000") : "")" />
+                               value="@(Model.Movement.DocumentCode.HasValue && Model.Movement.DocumentYear.HasValue ? $"{Model.Movement.DocumentCode.Value:000000} / {Model.Movement.DocumentYear.Value:0000}" : "")" />
                         <input id="cashMovementDocumentDescription" type="text" readonly tabindex="-1"
                                value="@(Model.Movement.DocumentNumber.HasValue && Model.Movement.DocumentDate.HasValue ? $"Bolla n.ro {Model.Movement.DocumentNumber.Value} del {Model.Movement.DocumentDate.Value:dd/MM/yyyy}" : "")" />
                         <button class="lookup-button" id="cashMovementDocumentLookup" type="button"
@@ -153,8 +166,8 @@
                     <option value="@year">@year</option>
                 }
             </select>
-            <button class="button button-secondary secondary" type="button" data-document-close>Annulla</button>
             <button class="button button-primary primary" type="button" data-document-confirm>Seleziona</button>
+            <button class="button button-secondary secondary" type="button" data-document-close>Annulla</button>
         </div>
     </dialog>
 </section>
