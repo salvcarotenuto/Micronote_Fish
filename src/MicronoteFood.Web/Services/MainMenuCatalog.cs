@@ -40,6 +40,7 @@ public static class MainMenuCatalog
                 Group(
                     "Contabili",
                     new MenuItemDefinition("Causali contabili", "/CausaliContabili/Index"),
+                    new MenuItemDefinition("Causali movimenti di cassa", "/CausaliCassa/Index"),
                     new MenuItemDefinition("Mastri di conto", "/Mastri/Index"),
                     new MenuItemDefinition("Aliquote IVA", "/AliquoteIva/Index"),
                     new MenuItemDefinition("Piano dei conti", "/PianoConti/Index"),

@@ -6,6 +6,7 @@
     ViewData["BodyClass"] = "customer-note-module";
     var it = CultureInfo.GetCultureInfo("it-IT");
     string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string PrintMoney(decimal value) => value.ToString("N2", it);
     string Quantity(decimal value) => value == 0 ? "" : value.ToString("N3", it);
     var selected = Model.Report.SelectedCustomer;
 }
@@ -86,29 +87,28 @@
                     <colgroup data-customer-note-summary-columns>
                         <col data-base-width="70" />
                         <col data-base-width="300" />
-                        <col data-base-width="90" />
-                        <col data-base-width="95" />
-                        <col data-base-width="90" />
-                        <col data-base-width="90" />
-                        <col data-base-width="95" />
-                        <col data-base-width="90" />
                         <col data-base-width="110" />
+                        <col data-base-width="110" />
+                        <col data-base-width="110" />
+                        <col data-base-width="100" />
+                        <col data-base-width="120" />
                     </colgroup>
-                    <thead><tr><th>Cliente</th><th>Nome</th><th>Merce</th><th>Iva</th><th>Totale</th><th>Resta</th><th>Pagato</th><th>Abbuoni</th><th>Saldo agg.</th></tr></thead>
+                    <thead><tr><th>Cliente</th><th>Nome</th><th>Saldo prec.</th><th>Vendite</th><th>Pagamenti</th><th>Abbuoni</th><th>Saldo agg.</th></tr></thead>
                     <tbody>
                     @foreach (var row in Model.Report.Customers)
                     {
                         <tr tabindex="0" class="@(row.CustomerCode == Model.Report.SelectedCustomerCode ? "selected selected-row" : "")"
                             data-customer-note-row data-customer-code="@row.CustomerCode"
                             data-customer-name="@row.CustomerName" data-customer-vat="@row.VatNumber"
-                            data-print-merchandise="@Money(row.Merchandise)" data-print-vat="@Money(row.Vat)"
-                            data-print-total="@Money(row.Total)" data-print-remaining="@Money(row.PreviousBalance)"
-                            data-print-paid="@Money(row.Paid)" data-print-allowance="@Money(row.CashAllowance)"
-                            data-print-updated="@Money(row.UpdatedBalance)">
+                            data-print-merchandise="@PrintMoney(row.Merchandise)" data-print-vat="@PrintMoney(row.Vat)"
+                            data-print-total="@PrintMoney(row.Total)" data-print-remaining="@PrintMoney(row.PreviousBalance)"
+                            data-print-paid="@PrintMoney(row.Paid)" data-print-allowance="@PrintMoney(row.CashAllowance)"
+                            data-print-updated="@PrintMoney(row.UpdatedBalance)">
                             <td>@row.CustomerCode.ToString("00000")</td>
                             <td>@row.CustomerName</td>
-                            <td>@Money(row.Merchandise)</td><td>@Money(row.Vat)</td><td>@Money(row.Total)</td>
-                            <td>@Money(row.PreviousBalance)</td><td>@Money(row.Paid)</td>
+                            <td>@Money(row.PreviousBalance)</td>
+                            <td>@Money(row.Total)</td>
+                            <td>@Money(row.Paid)</td>
                             <td>@Money(row.CashAllowance)</td>
                             <td>@Money(row.UpdatedBalance)</td>
                         </tr>
@@ -122,7 +122,7 @@
             <h2>Dettaglio vendite del cliente</h2>
             <div class="list-grid-frame customer-note-detail-frame">
                 <table class="list-grid customer-note-detail-grid">
-                    <thead><tr><th>Data doc</th><th>Articolo</th><th>Descrizione</th><th>Quantità</th><th>Prezzo</th><th>Importo</th></tr></thead>
+                    <thead><tr><th>Data</th><th>Articolo</th><th>Descrizione</th><th>Quantità</th><th>Prezzo</th><th>Importo</th></tr></thead>
                     <tbody>
                     @foreach (var row in Model.Report.Details)
                     {

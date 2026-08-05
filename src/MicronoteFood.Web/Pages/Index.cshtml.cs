@@ -23,6 +23,10 @@ public class IndexModel(
 
     public IActionResult OnGet()
     {
+        Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+        Response.Headers.Pragma = "no-cache";
+        Response.Headers.Expires = "0";
+
         if (!auth.IsCompanyLoggedIn())
         {
             return RedirectToPage("/Login");

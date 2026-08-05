@@ -261,14 +261,10 @@ document.addEventListener("DOMContentLoaded", () => {
           <thead><tr><th>Data</th><th>Articolo</th><th>Descrizione</th><th>Quantità</th><th>Iva</th><th>Prezzo</th><th>Importo</th></tr></thead>
           <tbody>${articleHtml || '<tr><td colspan="7">Nessun articolo nel periodo selezionato</td></tr>'}</tbody>
         </table>
-        <div class="customer-note-report-totals customer-note-report-totals-main">
-          <span>Merce</span><strong>${escapeHtml(customer.dataset.printMerchandise)}</strong>
-          <span>Iva</span><strong>${escapeHtml(customer.dataset.printVat)}</strong>
-          <span>Totale</span><strong>${escapeHtml(customer.dataset.printTotal)}</strong>
-        </div>
         <div class="customer-note-report-totals customer-note-report-balances">
-          <span>Resta</span><strong>${escapeHtml(customer.dataset.printRemaining)}</strong>
-          <span>Pagato</span><strong>${escapeHtml(customer.dataset.printPaid)}</strong>
+          <span>Saldo pr.</span><strong>${escapeHtml(customer.dataset.printRemaining)}</strong>
+          <span>Vendite</span><strong>${escapeHtml(customer.dataset.printTotal)}</strong>
+          <span>Pagamenti</span><strong>${escapeHtml(customer.dataset.printPaid)}</strong>
           <span>Abbuoni</span><strong>${escapeHtml(customer.dataset.printAllowance)}</strong>
           <span>Saldo agg.</span><strong>${escapeHtml(customer.dataset.printUpdated)}</strong>
         </div>

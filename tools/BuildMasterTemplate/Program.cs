@@ -186,10 +186,10 @@ finally
 
 var fixedTemplateCount = await CountTemplatesAsync(fixedPrefix);
 var schemaTemplateCount = await CountTemplatesAsync(schemaPrefix);
-if (fixedTemplateCount != 26)
+if (fixedTemplateCount != fixedTables.Length)
 {
     throw new InvalidOperationException(
-        $"Verifica non superata: template Fixed={fixedTemplateCount}, attesi 26.");
+        $"Verifica non superata: template Fixed={fixedTemplateCount}, attesi {fixedTables.Length}.");
 }
 
 var schemaVersion = DateTime.Now;
@@ -362,6 +362,7 @@ async Task ExecuteAsync(string sql)
 
 static bool IsApplicationTable(string table) =>
     !table.Contains("_bak_", StringComparison.OrdinalIgnoreCase)
+    && !table.Contains("_backup_", StringComparison.OrdinalIgnoreCase)
     && !table.Contains("_Pre", StringComparison.OrdinalIgnoreCase)
     && !table.Contains("_Tmp_", StringComparison.OrdinalIgnoreCase);
 
