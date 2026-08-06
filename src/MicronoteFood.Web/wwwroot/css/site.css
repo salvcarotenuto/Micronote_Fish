@@ -16654,3 +16654,260 @@ body.cash-movements-list-module .app-footer { display: none; }
   .cash-movements-list-grid-frame { overflow: visible; }
   .cash-movements-list-grid { min-width: 0; font-size: 8pt; }
 }
+/* Pagina di accesso Micronote: presentazione a sinistra, credenziali a destra. */
+body.app-login-page {
+  background: radial-gradient(circle at 14% 12%, #eef8ff 0, #dbeeff 34%, #f4f8fc 72%, #ffffff 100%) !important;
+  min-height: 100vh;
+  overflow: auto;
+}
+
+body.app-login-page .app-main {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  max-width: none;
+  min-height: 100vh;
+  padding: 24px;
+  width: 100%;
+}
+
+body.app-login-page .app-footer { display: none; }
+
+.micronote-welcome-shell {
+  background: #ffffff;
+  border: 1px solid rgba(72, 105, 146, 0.2);
+  border-radius: 30px;
+  box-shadow: 0 28px 70px rgba(20, 52, 91, 0.2);
+  display: grid;
+  grid-template-columns: minmax(560px, 1.08fr) minmax(500px, 0.92fr);
+  min-height: min(720px, calc(100vh - 48px));
+  overflow: hidden;
+  transform: translateX(-20px);
+  width: min(1500px, calc(100vw - 48px));
+}
+
+.micronote-welcome-brand {
+  background:
+    linear-gradient(180deg, rgba(246, 252, 255, 0.97) 0%, rgba(235, 248, 255, 0.91) 52%, rgba(15, 97, 174, 0.08) 75%),
+    url("../images/menu-background.jpg") center bottom / cover no-repeat;
+  color: #142a44;
+  min-height: min(720px, calc(100vh - 48px));
+  overflow: hidden;
+  padding: 38px 68px 120px;
+  position: relative;
+}
+
+.micronote-welcome-content { position: relative; text-align: center; z-index: 2; }
+
+.micronote-welcome-logo {
+  align-items: center;
+  display: inline-flex;
+  gap: 18px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.micronote-welcome-logo img {
+  background: #ffffff;
+  border: 1px solid rgba(31, 118, 196, 0.2);
+  border-radius: 50%;
+  box-shadow: 0 9px 24px rgba(16, 76, 137, 0.16);
+  height: 76px;
+  object-fit: contain;
+  padding: 12px;
+  width: 76px;
+}
+
+.micronote-welcome-logo span { color: #142a44; font-size: 43px; font-weight: 750; line-height: 1; }
+.micronote-welcome-logo strong,
+.micronote-welcome-brand h1 em { color: #087fc9; font-style: normal; }
+
+.micronote-welcome-brand h1 {
+  font-size: clamp(27px, 2.1vw, 36px);
+  font-weight: 750;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.micronote-welcome-separator {
+  align-items: center;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1fr 40px 1fr;
+  margin: 20px auto 14px;
+  max-width: 440px;
+}
+
+.micronote-welcome-separator span { background: linear-gradient(90deg, transparent, #1397d6); height: 2px; }
+.micronote-welcome-separator span:last-child { background: linear-gradient(90deg, #1397d6, transparent); }
+.micronote-welcome-separator img { height: 34px; object-fit: contain; width: 40px; }
+
+.micronote-welcome-subtitle { color: #45627f; font-size: 16px; line-height: 1.48; margin: 0; }
+
+.micronote-welcome-features {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 26px auto 0;
+  max-width: 620px;
+}
+
+.micronote-welcome-feature { display: grid; gap: 9px; justify-items: center; }
+.micronote-welcome-feature span {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(35, 132, 201, 0.16);
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(19, 81, 140, 0.13);
+  color: #087fc9;
+  display: inline-flex;
+  height: 52px;
+  justify-content: center;
+  width: 52px;
+}
+.micronote-welcome-feature svg { fill: none; height: 27px; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.9; width: 27px; }
+.micronote-welcome-feature strong { color: #19344f; font-size: 13px; line-height: 1.25; }
+
+.micronote-welcome-band {
+  align-items: center;
+  background: linear-gradient(135deg, #07599b 0%, #119bd7 100%);
+  bottom: 0;
+  color: #ffffff;
+  display: flex;
+  gap: 22px;
+  height: 112px;
+  left: 0;
+  padding: 20px 68px;
+  position: absolute;
+  right: 0;
+}
+.micronote-welcome-band::before { background: rgba(255, 255, 255, 0.17); border-radius: 50% 50% 0 0; content: ""; height: 55px; left: -8%; position: absolute; right: -8%; top: -31px; }
+.micronote-welcome-band img {
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.78)) drop-shadow(0 5px 7px rgba(3, 46, 88, 0.3));
+  height: 92px;
+  object-fit: contain;
+  position: relative;
+  width: 112px;
+}
+.micronote-welcome-band p { font-size: 18px; line-height: 1.38; margin: 0; position: relative; }
+
+.micronote-welcome-login {
+  align-items: center;
+  background: linear-gradient(145deg, #ffffff 0%, #f5f9fd 100%);
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  padding: 44px 64px;
+  position: relative;
+}
+
+.micronote-welcome-login .system-admin-dialog {
+  box-shadow: 0 18px 48px rgba(30, 64, 103, 0.12);
+  margin: 0;
+  max-width: 570px;
+  position: relative;
+  transform: none;
+  width: 100%;
+}
+
+.micronote-welcome-login .app-user-login-backdrop {
+  align-items: center;
+  background: rgba(232, 240, 250, 0.38);
+  display: flex;
+  inset: 0 !important;
+  justify-content: center;
+  padding: 44px 64px;
+  position: absolute !important;
+  z-index: 30;
+}
+
+.micronote-welcome-login .app-user-login-dialog {
+  inset: auto !important;
+  position: relative !important;
+  transform: translate(10px, 240px);
+}
+.micronote-welcome-login .app-login-frame { width: 100%; }
+
+.micronote-welcome-login .app-login-dialog {
+  transform: translate(-25px, -80px);
+}
+
+body.app-login-page .micronote-welcome-login .app-login-brand {
+  padding-bottom: 3px;
+  padding-top: 3px;
+}
+
+body.app-login-page .micronote-welcome-login .system-admin-body {
+  margin-top: 10px;
+  padding-bottom: 10px;
+  padding-top: 12px;
+}
+
+body.app-login-page .micronote-welcome-login .app-login-grid-vertical {
+  row-gap: 6px;
+}
+
+body.app-login-page .micronote-welcome-login .system-admin-actions,
+body.app-login-page .micronote-welcome-login .app-user-login-actions {
+  margin-top: 4px;
+  padding-bottom: 12px;
+  padding-top: 8px;
+}
+
+body.app-login-page .micronote-welcome-login .app-login-grid-vertical {
+  grid-template-columns: minmax(0, 1fr) !important;
+  width: 100% !important;
+}
+
+body.app-login-page .micronote-welcome-login .app-login-grid-vertical .field {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr) !important;
+  max-width: 100%;
+  justify-self: stretch;
+  width: auto !important;
+}
+
+body.app-login-page .micronote-welcome-login .app-login-grid-vertical .field > input,
+body.app-login-page .micronote-welcome-login .app-login-grid-vertical .field > select,
+body.app-login-page .micronote-welcome-login .settings-password-control {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+  width: 100% !important;
+}
+
+body.app-login-page .micronote-welcome-login .settings-password-control input {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100% !important;
+}
+
+@media (max-width: 1120px) {
+  .micronote-welcome-shell { grid-template-columns: minmax(430px, 0.92fr) minmax(440px, 1.08fr); }
+  .micronote-welcome-brand { padding-left: 36px; padding-right: 36px; }
+  .micronote-welcome-login { padding: 34px; }
+  .micronote-welcome-logo span { font-size: 36px; }
+}
+
+@media (max-width: 900px) {
+  body.app-login-page .app-main { align-items: stretch; padding: 12px; }
+  .micronote-welcome-shell { border-radius: 20px; display: block; min-height: 0; transform: none; width: 100%; }
+  .micronote-welcome-brand { min-height: 470px; padding: 28px 24px 110px; }
+  .micronote-welcome-features { gap: 12px; }
+  .micronote-welcome-login { min-height: 540px; padding: 32px 20px; }
+  .micronote-welcome-login .app-login-dialog { transform: none; }
+  .micronote-welcome-login .app-user-login-backdrop { padding: 32px 20px; }
+  .micronote-welcome-login .app-user-login-dialog { transform: none; }
+  .micronote-welcome-band { height: 92px; padding: 16px 30px; }
+  .micronote-welcome-band img { height: 76px; width: 92px; }
+}
+
+@media (max-width: 560px) {
+  .micronote-welcome-brand { min-height: 520px; }
+  .micronote-welcome-logo { gap: 12px; }
+  .micronote-welcome-logo img { height: 58px; width: 58px; }
+  .micronote-welcome-logo span { font-size: 30px; }
+  .micronote-welcome-features { grid-template-columns: repeat(2, 1fr); }
+  .micronote-welcome-login { padding: 24px 12px; }
+}
