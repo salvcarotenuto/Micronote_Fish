@@ -72,7 +72,7 @@ public sealed class ArticleAccountRepository(MicronoteDb database)
         const string sql = """
             SELECT COALESCE(Codice, '') AS Codice,
                    COALESCE(Descrizione, '') AS Descrizione,
-                   COALESCE(GiacIn, 0) AS GiacIn,
+                   COALESCE(GiacinP, 0) AS GiacIn,
                    COALESCE(CostoStd, 0) AS CostoStd
             FROM Articoli
             WHERE Codice = @articleCode

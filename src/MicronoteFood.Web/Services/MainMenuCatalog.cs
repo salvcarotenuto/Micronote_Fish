@@ -39,17 +39,16 @@ public static class MainMenuCatalog
                     new MenuItemDefinition("Punti vendita", "/PuntiVendita/Index")),
                 Group(
                     "Contabili",
-                    new MenuItemDefinition("Causali contabili", "/CausaliContabili/Index"),
                     new MenuItemDefinition("Causali movimenti di cassa", "/CausaliCassa/Index"),
-                    new MenuItemDefinition("Mastri di conto", "/Mastri/Index"),
+                    new MenuItemDefinition("Causali contabili", "/CausaliContabili/Index"),
                     new MenuItemDefinition("Aliquote IVA", "/AliquoteIva/Index"),
-                    new MenuItemDefinition("Piano dei conti", "/PianoConti/Index"),
-                    new MenuItemDefinition("Codici di pagamento", "/CodiciPagamento/Index")),
+                    new MenuItemDefinition("Mastri di conto", "/Mastri/Index"),
+                    new MenuItemDefinition("Codici di pagamento", "/CodiciPagamento/Index"),
+                    new MenuItemDefinition("Piano dei conti", "/PianoConti/Index")),
                 Group(
                     "Territorio",
                     new MenuItemDefinition("Comuni", "/Comuni/Index"),
-                    new MenuItemDefinition("Nazioni", "/Nazioni/Index")),
-                Group("Manutenzione", "Allineamento tabelle")
+                    new MenuItemDefinition("Nazioni", "/Nazioni/Index"))
             ]),
         new(
             "magazzino",
@@ -67,7 +66,8 @@ public static class MainMenuCatalog
                     "Controlli",
                     new MenuItemDefinition("Giacenza iniziale articoli", "/GiacenzaInizialeArticoli/Index"),
                     new MenuItemDefinition("Estratto conto articolo", "/EstrattoContoArticolo/Index"),
-                    new MenuItemDefinition("Lista movimenti di magazzino", "/MovimentiMagazzino/Index")),
+                    new MenuItemDefinition("Lista movimenti di magazzino", "/MovimentiMagazzino/Index"),
+                    new MenuItemDefinition("Acquisti del giorno", "/AcquistiGiorno/Index")),
                 Group(
                     "Statistiche",
                     new MenuItemDefinition("Acquisti per articolo", "/AcquistiPerArticolo/Index"),

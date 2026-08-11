@@ -158,6 +158,16 @@
                 form.querySelector('button[type="submit"]')?.click();
             });
         });
+        @if (!Model.ShowUserLogin && !Model.ShowDatabaseUpdatePrompt && Model.ErrorMessage is null)
+        {
+            <text>
+            window.addEventListener('load', () => {
+                const companyName = document.getElementById('CompanyName');
+                companyName?.focus();
+                companyName?.select?.();
+            });
+            </text>
+        }
         @if (Model.ShowDatabaseUpdatePrompt)
         {
             <text>

@@ -65,7 +65,7 @@ public sealed class StockMovementRepository(MicronoteDb database)
                 cancellationToken),
             Categories = await ListLookupAsync(connection, "categorie", cancellationToken),
             Groups = await ListLookupAsync(connection, "gruppi", cancellationToken),
-            Subgroups = await ListLookupAsync(connection, "sottogruppi", cancellationToken),
+            Subgroups = await ListLookupAsync(connection, "specie", cancellationToken),
             Customers = await ListCustomersAsync(connection, cancellationToken),
             Suppliers = await ListSuppliersAsync(connection, cancellationToken)
         };
@@ -97,6 +97,7 @@ public sealed class StockMovementRepository(MicronoteDb database)
                    COALESCE(Articoli.Descrizione, '') AS ArticoloDescrizione,
                    COALESCE(M.TipoMov, '') AS TipoMov,
                    COALESCE(Articoli.Uma, '') AS Ums,
+                   COALESCE(M.Colli, 0) AS Colli,
                    COALESCE(M.Quantita, 0) AS Quantita,
                    COALESCE(M.Prezzo, 0) AS Prezzo,
                    COALESCE(M.Importo, 0) AS Importo,
@@ -130,7 +131,7 @@ public sealed class StockMovementRepository(MicronoteDb database)
               AND (@articleCode = '' OR M.Articolo = @articleCode)
               AND (@categoryCode IS NULL OR Articoli.Categoria = @categoryCode)
               AND (@groupCode IS NULL OR Articoli.Gruppo = @groupCode)
-              AND (@subgroupCode IS NULL OR Articoli.Sottogruppo = @subgroupCode)
+              AND (@subgroupCode IS NULL OR Articoli.Specie = @subgroupCode)
               AND (@movementFilter = '' OR M.TipoMov = @movementFilter)
               AND (@movementFilter <> 'X')
               AND (@customerCode IS NULL OR (M.CliFor = 'C' AND M.Ditta = @customerCode))
@@ -161,6 +162,7 @@ public sealed class StockMovementRepository(MicronoteDb database)
                 Convert.ToString(reader["ArticoloDescrizione"]) ?? "",
                 Convert.ToString(reader["TipoMov"]) ?? "",
                 Convert.ToString(reader["Ums"]) ?? "",
+                Convert.ToInt32(reader["Colli"]),
                 Decimal(reader["Quantita"]),
                 Decimal(reader["Prezzo"]),
                 Decimal(reader["Importo"]),
@@ -185,23 +187,22 @@ public sealed class StockMovementRepository(MicronoteDb database)
         int? subgroupCode,
         CancellationToken cancellationToken)
     {
-        var initialQuantity = await ScalarDecimalAsync(
-            connection,
-            """
-            SELECT COALESCE(SUM(Articoli.GiacIn), 0)
+        const string initialSql = """
+            SELECT COALESCE(SUM(Articoli.GiacinC), 0) AS Colli,
+                   COALESCE(SUM(Articoli.GiacinP), 0) AS Peso
             FROM Articoli
             WHERE (@articleCode = '' OR Articoli.Codice = @articleCode)
               AND (@categoryCode IS NULL OR Articoli.Categoria = @categoryCode)
               AND (@groupCode IS NULL OR Articoli.Gruppo = @groupCode)
-              AND (@subgroupCode IS NULL OR Articoli.Sottogruppo = @subgroupCode);
-            """,
-            dateFrom,
-            dateTo,
-            articleCode,
-            categoryCode,
-            groupCode,
-            subgroupCode,
-            cancellationToken);
+              AND (@subgroupCode IS NULL OR Articoli.Specie = @subgroupCode);
+            """;
+        await using var initialCommand = new MySqlCommand(initialSql, connection);
+        AddFilterParameters(initialCommand, dateFrom, dateTo, articleCode, categoryCode, groupCode, subgroupCode);
+        await using var initialReader = await initialCommand.ExecuteReaderAsync(cancellationToken);
+        await initialReader.ReadAsync(cancellationToken);
+        var initialPackages = Convert.ToInt32(initialReader["Colli"]);
+        var initialQuantity = Decimal(initialReader["Peso"]);
+        await initialReader.DisposeAsync();
         var load = await MovementTotalAsync(
             connection,
             "C",
@@ -222,23 +223,29 @@ public sealed class StockMovementRepository(MicronoteDb database)
             groupCode,
             subgroupCode,
             cancellationToken);
+        var inventoryDate = await InventoryDateAsync(connection, cancellationToken);
         var averageCost = load.Quantity == 0 ? 0 : load.Value / load.Quantity;
+        var stockPackages = initialPackages + load.Packages - unload.Packages;
         var stockQuantity = initialQuantity + load.Quantity - unload.Quantity;
 
         return new StockMovementTotals
         {
+            InitialPackages = initialPackages,
             InitialQuantity = initialQuantity,
-            InitialValue = initialQuantity * averageCost,
+            InventoryDate = inventoryDate,
+            LoadPackages = load.Packages,
             LoadQuantity = load.Quantity,
             LoadValue = load.Value,
+            UnloadPackages = unload.Packages,
             UnloadQuantity = unload.Quantity,
             UnloadValue = unload.Value,
+            StockPackages = stockPackages,
             StockQuantity = stockQuantity,
             StockValue = stockQuantity * averageCost
         };
     }
 
-    private static async Task<(decimal Quantity, decimal Value)> MovementTotalAsync(
+    private static async Task<(int Packages, decimal Quantity, decimal Value)> MovementTotalAsync(
         MySqlConnection connection,
         string movementType,
         DateOnly dateFrom,
@@ -250,7 +257,8 @@ public sealed class StockMovementRepository(MicronoteDb database)
         CancellationToken cancellationToken)
     {
         const string sql = """
-            SELECT COALESCE(SUM(Movimenti.Quantita), 0) AS Quantita,
+            SELECT COALESCE(SUM(Movimenti.Colli), 0) AS Colli,
+                   COALESCE(SUM(Movimenti.Quantita), 0) AS Quantita,
                    COALESCE(SUM(Movimenti.Importo), 0) AS Valore
             FROM Movimenti
             LEFT JOIN Articoli ON Articoli.Codice = Movimenti.Articolo
@@ -259,7 +267,7 @@ public sealed class StockMovementRepository(MicronoteDb database)
               AND (@articleCode = '' OR Movimenti.Articolo = @articleCode)
               AND (@categoryCode IS NULL OR Articoli.Categoria = @categoryCode)
               AND (@groupCode IS NULL OR Articoli.Gruppo = @groupCode)
-              AND (@subgroupCode IS NULL OR Articoli.Sottogruppo = @subgroupCode);
+              AND (@subgroupCode IS NULL OR Articoli.Specie = @subgroupCode);
             """;
 
         await using var command = new MySqlCommand(sql, connection);
@@ -269,10 +277,29 @@ public sealed class StockMovementRepository(MicronoteDb database)
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         if (!await reader.ReadAsync(cancellationToken))
         {
-            return (0, 0);
+            return (0, 0, 0);
         }
 
-        return (Decimal(reader["Quantita"]), Decimal(reader["Valore"]));
+        return (Convert.ToInt32(reader["Colli"]), Decimal(reader["Quantita"]), Decimal(reader["Valore"]));
+    }
+
+    private static async Task<DateOnly?> InventoryDateAsync(
+        MySqlConnection connection,
+        CancellationToken cancellationToken)
+    {
+        await using var command = new MySqlCommand(
+            "SELECT Valore FROM Opzioni WHERE Chiave = 'DataInventario' LIMIT 1;",
+            connection);
+        var value = Convert.ToString(await command.ExecuteScalarAsync(cancellationToken))?.Trim();
+        string[] formats = ["yyyy-MM-dd", "dd/MM/yyyy", "dd-MM-yyyy", "yyyyMMdd"];
+        return DateOnly.TryParseExact(
+            value,
+            formats,
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None,
+            out var date)
+            ? date
+            : null;
     }
 
     private static async Task<decimal> ScalarDecimalAsync(
@@ -300,7 +327,7 @@ public sealed class StockMovementRepository(MicronoteDb database)
         {
             "categorie" => "SELECT Codice, COALESCE(Descrizione, '') AS Descrizione FROM Categorie ORDER BY Descrizione, Codice;",
             "gruppi" => "SELECT Codice, COALESCE(Descrizione, '') AS Descrizione FROM Gruppi ORDER BY Descrizione, Codice;",
-            "sottogruppi" => "SELECT Codice, COALESCE(Descrizione, '') AS Descrizione FROM Sottogruppi ORDER BY Descrizione, Codice;",
+            "specie" => "SELECT Codice, COALESCE(Descrizione, '') AS Descrizione FROM Specie ORDER BY Descrizione, Codice;",
             _ => throw new ArgumentOutOfRangeException(nameof(table))
         };
 

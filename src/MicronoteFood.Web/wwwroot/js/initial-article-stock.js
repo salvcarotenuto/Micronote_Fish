@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const page = document.querySelector("[data-initial-article-stock]");
   const form = page?.querySelector("[data-initial-stock-form]");
   const payload = form?.querySelector("[data-initial-stock-payload]");
+  const inventoryDate = page?.querySelector("[data-initial-stock-date]");
   const grid = page?.querySelector(".initial-article-stock-grid-frame");
   const table = grid?.querySelector("table");
   const tableBody = table?.querySelector("tbody");
@@ -11,6 +12,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentSortKey = "";
   let currentSortDirection = "asc";
   let modified = false;
+  const packagesSelector = "[data-initial-stock-packages]";
+  const quantitySelector = "[data-initial-stock-quantity]";
 
   if (!page || !form || !payload || !grid || !table || !tableBody) {
     return;
@@ -65,6 +68,10 @@ document.addEventListener("DOMContentLoaded", () => {
       : text.replace(/[.,]/g, "").slice(0, 7);
   };
 
+  const cleanPackages = (input) => {
+    input.value = String(input.value ?? "").replace(/\D/g, "").slice(0, 7);
+  };
+
   const selectedRow = () => table.querySelector("[data-initial-stock-row].selected-row");
   const visibleRows = () => rows.filter((row) => !row.hidden);
 
@@ -115,8 +122,8 @@ document.addEventListener("DOMContentLoaded", () => {
     ensureVisible(row, direction);
   };
 
-  const focusQuantity = (row, direction = 0) => {
-    const input = row?.querySelector("[data-initial-stock-quantity]");
+  const focusField = (row, selector = packagesSelector, direction = 0) => {
+    const input = row?.querySelector(selector);
     if (!input) {
       return;
     }
@@ -165,13 +172,20 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    focusQuantity(delta > 0 ? currentRows[0] : currentRows[currentRows.length - 1]);
+    selectRow(delta > 0 ? currentRows[0] : currentRows[currentRows.length - 1]);
   };
 
   const updateRowQuantitySort = (input) => {
     const row = input.closest("[data-initial-stock-row]");
     if (row) {
       row.dataset.sortQuantity = String(parseDecimal(input.value));
+    }
+  };
+
+  const updateRowPackagesSort = (input) => {
+    const row = input.closest("[data-initial-stock-row]");
+    if (row) {
+      row.dataset.sortPackages = String(Number.parseInt(input.value, 10) || 0);
     }
   };
 
@@ -223,7 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
     applySort(key, currentSortDirection, header.dataset.sortType);
   };
 
-  const moveSelection = (row, offset) => {
+  const moveSelection = (row, offset, selector) => {
     const currentRows = visibleRows();
     const index = currentRows.indexOf(row);
     if (index < 0) {
@@ -232,51 +246,72 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const nextIndex = Math.max(Math.min(index + offset, currentRows.length - 1), 0);
     const direction = Math.sign(offset);
-    focusQuantity(currentRows[nextIndex], direction);
+    focusField(currentRows[nextIndex], selector, direction);
     return true;
   };
 
-  const navigateRows = (event, row) => {
+  const moveFocusLikeTab = (current, backwards = false) => {
+    const controls = Array.from(form.querySelectorAll(
+      "input:not([type='hidden']):not([disabled]), button:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href]"
+    )).filter((control) => control.tabIndex >= 0 && control.getClientRects().length > 0);
+    const index = controls.indexOf(current);
+    const nextIndex = index + (backwards ? -1 : 1);
+
+    if (index < 0 || nextIndex < 0 || nextIndex >= controls.length) {
+      return false;
+    }
+
+    const next = controls[nextIndex];
+    next.focus({ preventScroll: true });
+    next.select?.();
+    next.closest("[data-initial-stock-row]") && selectRow(
+      next.closest("[data-initial-stock-row]"),
+      backwards ? -1 : 1
+    );
+    return true;
+  };
+
+  const navigateRows = (event, row, selector = packagesSelector) => {
     if (!visibleRows().includes(row)) {
       return false;
     }
 
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      moveSelection(row, 1);
+      moveSelection(row, 1, selector);
       return true;
     }
 
     if (event.key === "ArrowUp") {
       event.preventDefault();
-      moveSelection(row, -1);
+      moveSelection(row, -1, selector);
       return true;
     }
 
     if (event.key === "PageDown") {
       event.preventDefault();
       const visibleCount = Math.max(Math.floor((grid.clientHeight - (table.tHead?.offsetHeight ?? 0)) / (row.offsetHeight || 27)) - 1, 1);
-      moveSelection(row, visibleCount);
+      moveSelection(row, visibleCount, selector);
       return true;
     }
 
     if (event.key === "PageUp") {
       event.preventDefault();
       const visibleCount = Math.max(Math.floor((grid.clientHeight - (table.tHead?.offsetHeight ?? 0)) / (row.offsetHeight || 27)) - 1, 1);
-      moveSelection(row, -visibleCount);
+      moveSelection(row, -visibleCount, selector);
       return true;
     }
 
     if (event.key === "Home") {
       event.preventDefault();
-      focusQuantity(visibleRows()[0], -1);
+      focusField(visibleRows()[0], selector, -1);
       return true;
     }
 
     if (event.key === "End") {
       event.preventDefault();
       const currentRows = visibleRows();
-      focusQuantity(currentRows[currentRows.length - 1], 1);
+      focusField(currentRows[currentRows.length - 1], selector, 1);
       return true;
     }
 
@@ -286,6 +321,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const buildPayload = () => {
     payload.value = JSON.stringify(rows.map((row) => ({
       code: row.dataset.code ?? "",
+      packages: Number.parseInt(row.querySelector(packagesSelector)?.value, 10) || 0,
       quantity: parseDecimal(row.querySelector("[data-initial-stock-quantity]")?.value)
     })));
   };
@@ -308,54 +344,86 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   rows.forEach((row) => {
-    const input = row.querySelector("[data-initial-stock-quantity]");
+    const packagesInput = row.querySelector(packagesSelector);
+    const quantityInput = row.querySelector(quantitySelector);
 
-    row.addEventListener("click", () => focusQuantity(row));
-    row.addEventListener("dblclick", () => focusQuantity(row));
-    row.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        focusQuantity(row);
+    row.addEventListener("click", (event) => {
+      if (event.target === packagesInput) {
+        focusField(row, packagesSelector);
         return;
       }
 
-      navigateRows(event, row);
+      if (event.target === quantityInput) {
+        focusField(row, quantitySelector);
+        return;
+      }
+
+      focusField(row, packagesSelector);
     });
 
-    input?.addEventListener("focus", () => {
+    packagesInput?.addEventListener("focus", () => {
       selectRow(row);
-      input.value = formatForEdit(parseDecimal(input.value));
-      input.select();
+      packagesInput.select();
     });
-    input?.addEventListener("input", () => {
-      cleanQuantity(input);
-      updateRowQuantitySort(input);
+    packagesInput?.addEventListener("input", () => {
+      cleanPackages(packagesInput);
+      updateRowPackagesSort(packagesInput);
       modified = true;
     });
-    input?.addEventListener("blur", () => {
-      commitQuantity(input);
-    });
-    input?.addEventListener("keydown", (event) => {
+    packagesInput?.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
         event.preventDefault();
         event.stopPropagation();
-        commitQuantity(input);
-        const currentRows = visibleRows();
-        const next = currentRows[Math.min(currentRows.indexOf(row) + 1, currentRows.length - 1)];
-        focusQuantity(next, 1);
+        moveFocusLikeTab(packagesInput, event.shiftKey);
         return;
       }
 
       if (event.key === "Delete") {
         event.preventDefault();
         event.stopPropagation();
-        input.value = "";
-        updateRowQuantitySort(input);
+        packagesInput.value = "";
+        updateRowPackagesSort(packagesInput);
         modified = true;
         return;
       }
 
-      if (navigateRows(event, row)) {
+      if (navigateRows(event, row, packagesSelector)) {
+        event.stopPropagation();
+      }
+    });
+
+    quantityInput?.addEventListener("focus", () => {
+      selectRow(row);
+      quantityInput.value = formatForEdit(parseDecimal(quantityInput.value));
+      quantityInput.select();
+    });
+    quantityInput?.addEventListener("input", () => {
+      cleanQuantity(quantityInput);
+      updateRowQuantitySort(quantityInput);
+      modified = true;
+    });
+    quantityInput?.addEventListener("blur", () => {
+      commitQuantity(quantityInput);
+    });
+    quantityInput?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        event.stopPropagation();
+        commitQuantity(quantityInput);
+        moveFocusLikeTab(quantityInput, event.shiftKey);
+        return;
+      }
+
+      if (event.key === "Delete") {
+        event.preventDefault();
+        event.stopPropagation();
+        quantityInput.value = "";
+        updateRowQuantitySort(quantityInput);
+        modified = true;
+        return;
+      }
+
+      if (navigateRows(event, row, quantitySelector)) {
         event.stopPropagation();
       }
     });
@@ -414,6 +482,10 @@ document.addEventListener("DOMContentLoaded", () => {
     modified = false;
   });
 
+  inventoryDate?.addEventListener("change", () => {
+    modified = true;
+  });
+
   exitLink?.addEventListener("click", (event) => {
     event.preventDefault();
     confirmExit(exitLink.href || "/");
@@ -429,6 +501,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   if (rows.length > 0) {
-    focusQuantity(rows[0]);
+    focusField(rows[0]);
   }
 });

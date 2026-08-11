@@ -183,10 +183,10 @@ public sealed class StockUnloadRepository(
     private static async Task<decimal> StockAsync(MySqlConnection c, string article, int excludeId, CancellationToken ct)
     {
         const string sql = """
-          SELECT COALESCE(a.GiacIn,0)+COALESCE(SUM(CASE WHEN m.TipoMov='C' THEN m.Quantita WHEN m.TipoMov='S' THEN -m.Quantita ELSE 0 END),0)
+          SELECT COALESCE(a.GiacinP,0)+COALESCE(SUM(CASE WHEN m.TipoMov='C' THEN m.Quantita WHEN m.TipoMov='S' THEN -m.Quantita ELSE 0 END),0)
           FROM Articoli a LEFT JOIN Movimenti m ON m.Articolo=a.Codice
             AND m.ID<>@id
-          WHERE a.Codice=@article GROUP BY a.Codice,a.GiacIn;
+          WHERE a.Codice=@article GROUP BY a.Codice,a.GiacinP;
           """;
         await using var command = new MySqlCommand(sql, c);
         command.Parameters.AddWithValue("@id", excludeId);

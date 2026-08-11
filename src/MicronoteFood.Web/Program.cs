@@ -46,6 +46,7 @@ builder.Services.AddScoped<CashStatementRepository>();
 builder.Services.AddScoped<CashMovementListRepository>();
 builder.Services.AddScoped<CashCauseRepository>();
 builder.Services.AddScoped<DailySalesRepository>();
+builder.Services.AddScoped<DailyPurchasesRepository>();
 builder.Services.AddScoped<ChartAccountRepository>();
 builder.Services.AddScoped<ComuniRepository>();
 builder.Services.AddScoped<CustomerRepository>();

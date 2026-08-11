@@ -60,6 +60,7 @@ public sealed record StockMovementListItem(
     string ArticleDescription,
     string MovementType,
     string UnitMeasure,
+    int Packages,
     decimal Quantity,
     decimal Price,
     decimal Amount,
@@ -75,17 +76,25 @@ public sealed record StockMovementListItem(
 
 public sealed class StockMovementTotals
 {
+    public int InitialPackages { get; set; }
+
     public decimal InitialQuantity { get; set; }
 
-    public decimal InitialValue { get; set; }
+    public DateOnly? InventoryDate { get; set; }
+
+    public int LoadPackages { get; set; }
 
     public decimal LoadQuantity { get; set; }
 
     public decimal LoadValue { get; set; }
 
+    public int UnloadPackages { get; set; }
+
     public decimal UnloadQuantity { get; set; }
 
     public decimal UnloadValue { get; set; }
+
+    public int StockPackages { get; set; }
 
     public decimal StockQuantity { get; set; }
 

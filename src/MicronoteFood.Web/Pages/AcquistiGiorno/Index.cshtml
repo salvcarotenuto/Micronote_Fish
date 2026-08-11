@@ -1,0 +1,165 @@
+@page
+@model MicronoteFood.Web.Pages.AcquistiGiorno.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Acquisti del giorno";
+    ViewData["BodyClass"] = "daily-purchases-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    var r = Model.Report;
+    string Quantity(decimal value) => value == 0 ? "" : value.ToString("N3", it);
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string BalanceMoney(decimal value) => value.ToString("N2", it);
+    var supplierBalance = Model.SupplierBalance;
+}
+
+<section class="module-page daily-purchases-page supplier-form-page data-form-skin"
+         data-daily-purchases data-daily-sales>
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div>
+                <h1>Acquisti del giorno</h1>
+                <p>Lista acquisti del giorno con raggruppamento per fornitore e articolo</p>
+            </div>
+        </div>
+        <div class="top-actions daily-purchases-actions">
+            @if (!string.IsNullOrWhiteSpace(r.SelectedKey))
+            {
+                var selected = r.Purchases.FirstOrDefault(x => x.Key == r.SelectedKey);
+                if (selected?.Id > 0)
+                {
+                    <a class="button button-primary primary"
+                       asp-page="/CaricoAcquisti/Edit"
+                       asp-route-id="@selected.Id"
+                       asp-route-returnTo="list"
+                       asp-route-returnUrl="@(Request.Path + Request.QueryString)">Modifica</a>
+                }
+            }
+            <button class="button button-secondary secondary" type="button"
+                    data-daily-purchases-balance-open
+                    disabled="@(supplierBalance is null)">Vedi saldo</button>
+            <button class="button button-primary primary" type="button" onclick="window.print()">Stampa lista</button>
+            <a class="button button-secondary secondary" asp-page="/Index">Esci</a>
+        </div>
+    </header>
+
+    <form class="daily-purchases-filter" method="get" data-daily-sales-form data-progress-disabled="true">
+        <fieldset class="form-frame">
+            <div class="field daily-purchases-date-field">
+                <label>Data</label>
+                <span class="micronote-date-control" data-date-control>
+                    <input type="hidden" name="purchaseDate"
+                           value="@r.PurchaseDate.ToString("yyyy-MM-dd")"
+                           data-daily-sales-date-hidden />
+                    <input class="micronote-date-input" type="text" inputmode="numeric"
+                           maxlength="10" autocomplete="off"
+                           value="@r.PurchaseDate.ToString("dd/MM/yyyy", it)"
+                           data-daily-sales-date-display />
+                    <button class="micronote-date-button" type="button" tabindex="-1"
+                            aria-label="Seleziona data acquisti" data-date-picker-button></button>
+                </span>
+            </div>
+        </fieldset>
+    </form>
+
+    <div class="daily-purchases-upper">
+        <fieldset class="form-frame daily-purchases-list-panel">
+            <div class="daily-purchases-panel-title">Lista acquisti</div>
+            <div class="list-grid-frame daily-purchases-grid-frame" tabindex="0">
+                <table class="list-grid daily-purchases-list-grid">
+                    <thead><tr><th>Partita</th><th>Fornitore</th><th>Nome</th><th>Merce</th><th>I.v.a.</th><th>Importo</th></tr></thead>
+                    <tbody>
+                    @foreach (var row in r.Purchases)
+                    {
+                        var url = Url.Page("./Index", new { purchaseDate = r.PurchaseDate.ToString("yyyy-MM-dd"), selectedKey = row.Key });
+                        <tr class="@(row.Key == r.SelectedKey ? "selected-row" : "")"
+                            tabindex="0" data-daily-purchase-row data-url="@url"
+                            data-id="@row.Id" data-year="@row.Year" data-code="@row.Code">
+                            <td>@row.Code.ToString("000000")</td><td>@row.SupplierCode.ToString("00000")</td>
+                            <td>@row.SupplierName</td><td>@Money(row.Goods)</td><td>@Money(row.Vat)</td>
+                            <td>@Money(row.Total)</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </fieldset>
+
+        <fieldset class="form-frame daily-purchases-articles-panel">
+            <div class="daily-purchases-panel-title">Articoli acquistati</div>
+            <div class="list-grid-frame daily-purchases-grid-frame">
+                <table class="list-grid daily-purchases-articles-grid">
+                    <thead><tr><th>Articolo</th><th>Descrizione</th><th>Quantità</th><th>Importo</th></tr></thead>
+                    <tbody>@foreach (var row in r.Articles) { <tr><td>@row.ArticleCode</td><td>@row.Description</td><td>@Quantity(row.Quantity)</td><td>@Money(row.Amount)</td></tr> }</tbody>
+                </table>
+            </div>
+        </fieldset>
+    </div>
+
+    <div class="daily-purchases-lower">
+        <fieldset class="form-frame daily-purchases-detail-panel">
+            <div class="daily-purchases-panel-title">Dettaglio acquisti</div>
+            <div class="list-grid-frame daily-purchases-detail-frame">
+                <table class="list-grid daily-purchases-detail-grid">
+                    <thead><tr><th>Articolo</th><th>Descrizione</th><th>U.m.</th><th>Colli</th><th>Quantità</th><th>Prezzo</th><th>Iva</th><th>Prz. ivato</th><th>Importo</th></tr></thead>
+                    <tbody>@foreach (var row in r.Details) { <tr><td>@row.ArticleCode</td><td>@row.Description</td><td>@row.UnitMeasure</td><td>@(row.Packages == 0 ? "" : row.Packages)</td><td>@Quantity(row.Quantity)</td><td>@Money(row.Price)</td><td>@Money(row.VatRate)</td><td>@Money(row.VatIncludedPrice)</td><td>@Money(row.Amount)</td></tr> }</tbody>
+                </table>
+            </div>
+        </fieldset>
+
+        <aside class="daily-purchases-totals" aria-label="Totali acquisti">
+            <div><label>Merce</label><input value="@Money(r.Totals.Goods)" readonly tabindex="-1" /></div>
+            <div><label>I.v.a.</label><input value="@Money(r.Totals.Vat)" readonly tabindex="-1" /></div>
+            <div class="daily-purchases-grand-total"><label>Acquisti</label><input value="@Money(r.Totals.Purchases)" readonly tabindex="-1" /></div>
+        </aside>
+    </div>
+
+</section>
+
+@if (supplierBalance is not null)
+{
+    <div class="daily-purchases-balance-overlay" data-daily-purchases-balance-modal hidden>
+        <section class="daily-purchases-balance-dialog" role="dialog" aria-modal="true"
+                 aria-labelledby="dailyPurchasesBalanceTitle" tabindex="-1">
+            <div class="daily-purchases-balance-title" id="dailyPurchasesBalanceTitle">Saldo contabile fornitore</div>
+            <div class="daily-purchases-balance-party">
+                <span>Fornitore</span>
+                <strong>@supplierBalance.SupplierCode.ToString("00000")</strong>
+                <strong>@supplierBalance.SupplierName</strong>
+            </div>
+            <div class="daily-purchases-balance-grid-frame">
+                <table class="list-grid daily-purchases-balance-grid">
+                    <thead><tr><th>Data</th><th>Num. doc.</th><th>Causale</th><th>Acquisti</th><th>Pagamenti</th></tr></thead>
+                    <tbody>
+                    @foreach (var row in supplierBalance.Rows)
+                    {
+                        <tr tabindex="0">
+                            <td>@row.MovementDate.ToString("dd-MM-yyyy", it)</td>
+                            <td>@row.DocumentNumber</td>
+                            <td>@row.CauseDescription</td>
+                            <td>@Money(row.Purchases)</td>
+                            <td>@Money(row.Payments)</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+            <div class="daily-purchases-balance-footer">
+                <div class="daily-purchases-balance-totals">
+                    <label>Acquisti</label><input value="@BalanceMoney(supplierBalance.TotalPurchases)" readonly tabindex="-1" />
+                    <label>Saldo iniziale</label><input value="@BalanceMoney(supplierBalance.OpeningBalance)" readonly tabindex="-1" />
+                    <label>Pagamenti</label><input value="@BalanceMoney(supplierBalance.TotalPayments)" readonly tabindex="-1" />
+                    <label>Saldo finale</label><input value="@BalanceMoney(supplierBalance.FinalBalance)" readonly tabindex="-1" />
+                </div>
+                <button class="button button-secondary secondary" type="button" data-daily-purchases-balance-close>Chiudi</button>
+            </div>
+        </section>
+    </div>
+}
+
+@section Scripts {
+    <script src="~/js/daily-sales.js" asp-append-version="true"></script>
+    <script src="~/js/daily-purchases.js" asp-append-version="true"></script>
+}
