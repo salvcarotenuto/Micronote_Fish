@@ -1,0 +1,78 @@
+@page
+@model MicronoteFood.Web.Pages.AcquistiVenditeGiorno.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Acquisti e vendite del giorno";
+    ViewData["BodyClass"] = "daily-trading-module";
+    var r = Model.Report;
+    var t = r.Totals;
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Quantity(decimal value) => value == 0 ? "" : value.ToString("N3", it);
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Total(decimal value) => value.ToString("N2", it);
+}
+
+<section class="module-page daily-trading-page supplier-form-page data-form-skin" data-daily-sales>
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale"><img src="~/images/micronote-logo.jpeg" alt="" /></a>
+            <div><h1>Acquisti e vendite del giorno</h1><p>Riepilogo degli articoli acquistati e venduti nel giorno con relativa rimanenza</p></div>
+        </div>
+        <div class="top-actions daily-trading-actions">
+            <button class="button button-primary primary" type="button" onclick="window.print()">Stampa</button>
+            <a class="button button-secondary secondary" asp-page="/Index">Esci</a>
+        </div>
+    </header>
+
+    <form class="daily-trading-filter" method="get" data-daily-sales-form data-progress-disabled="true">
+        <fieldset class="form-frame">
+            <div class="field daily-trading-date-field">
+                <label>Data</label>
+                <span class="micronote-date-control" data-date-control>
+                    <input type="hidden" name="movementDate" value="@r.MovementDate.ToString("yyyy-MM-dd")" data-daily-sales-date-hidden />
+                    <input class="micronote-date-input" type="text" inputmode="numeric" maxlength="10" autocomplete="off"
+                           value="@r.MovementDate.ToString("dd/MM/yyyy", it)" data-daily-sales-date-display />
+                    <button class="micronote-date-button" type="button" tabindex="-1" aria-label="Seleziona data" data-date-picker-button></button>
+                </span>
+            </div>
+            <div class="field daily-trading-group-field">
+                <label>Raggruppamento</label>
+                <select name="grouping" onchange="this.form.submit()">
+                    <option value="" selected="@(r.Grouping == "")"></option>
+                    <option value="categoria" selected="@(r.Grouping == "categoria")">Categoria</option>
+                    <option value="gruppo" selected="@(r.Grouping == "gruppo")">Gruppo</option>
+                    <option value="specie" selected="@(r.Grouping == "specie")">Specie</option>
+                    <option value="provenienza" selected="@(r.Grouping == "provenienza")">Provenienza</option>
+                </select>
+            </div>
+        </fieldset>
+    </form>
+
+    <div class="daily-trading-content">
+        <fieldset class="form-frame daily-trading-list-panel">
+            <div class="daily-purchases-panel-title">Lista articoli acquistati e venduti</div>
+            <div class="list-grid-frame daily-trading-grid-frame">
+                <table class="list-grid daily-trading-grid">
+                    <thead><tr><th>Articolo</th><th>Descrizione</th><th>Qnt. acquisti</th><th>Val. acquisti</th><th>Cst. medio</th><th>Qnt. vendite</th><th>Val. vendite</th><th>Prz. medio</th><th>Saldo qnt.</th><th>Rimanenza</th></tr></thead>
+                    <tbody>
+                    @foreach (var row in r.Rows)
+                    {
+                        <tr tabindex="0"><td>@row.Code</td><td>@row.Description</td><td>@Quantity(row.PurchasedQuantity)</td><td>@Money(row.PurchasedValue)</td><td>@Money(row.AverageCost)</td><td>@Quantity(row.SoldQuantity)</td><td>@Money(row.SoldValue)</td><td>@Money(row.AveragePrice)</td><td>@Quantity(row.QuantityBalance)</td><td>@Quantity(row.RemainingQuantity)</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </fieldset>
+
+        <aside class="daily-trading-summary" aria-label="Riepilogo acquisti e vendite">
+            <section><h2>Acquisti</h2><div><label>Totale</label><label>Pagato</label><input value="@Total(t.Purchases)" readonly tabindex="-1" /><input value="@Total(t.PurchasesPaid)" readonly tabindex="-1" /></div></section>
+            <section><h2>Vendite</h2><div><label>Totale</label><label>Pagato</label><input value="@Total(t.Sales)" readonly tabindex="-1" /><input value="@Total(t.SalesPaid)" readonly tabindex="-1" /></div></section>
+            <section><h2>Saldo</h2><div><label>Acquisti/Vendite</label><label>Cassa</label><input value="@Total(t.TradingBalance)" readonly tabindex="-1" /><input value="@Total(t.CashBalance)" readonly tabindex="-1" /></div></section>
+        </aside>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/daily-sales.js" asp-append-version="true"></script>
+    <script src="~/js/daily-trading.js" asp-append-version="true"></script>
+}

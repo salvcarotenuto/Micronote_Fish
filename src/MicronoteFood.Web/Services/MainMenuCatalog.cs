@@ -67,7 +67,9 @@ public static class MainMenuCatalog
                     new MenuItemDefinition("Giacenza iniziale articoli", "/GiacenzaInizialeArticoli/Index"),
                     new MenuItemDefinition("Estratto conto articolo", "/EstrattoContoArticolo/Index"),
                     new MenuItemDefinition("Lista movimenti di magazzino", "/MovimentiMagazzino/Index"),
-                    new MenuItemDefinition("Acquisti del giorno", "/AcquistiGiorno/Index")),
+                    new MenuItemDefinition("Acquisti del giorno", "/AcquistiGiorno/Index"),
+                    new MenuItemDefinition("Acquisti e vendite del giorno", "/AcquistiVenditeGiorno/Index"),
+                    new MenuItemDefinition("Movimenti del giorno", "/MovimentiGiorno/Index")),
                 Group(
                     "Statistiche",
                     new MenuItemDefinition("Acquisti per articolo", "/AcquistiPerArticolo/Index"),

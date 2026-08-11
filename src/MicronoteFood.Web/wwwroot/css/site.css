@@ -15049,6 +15049,152 @@ body.customer-supplier-balances-module .app-footer {
   .daily-purchases-page { height: auto; grid-template-rows: auto auto auto; }
 }
 
+/* Acquisti e vendite del giorno */
+.daily-trading-module .page-container { box-sizing: border-box; max-width: none !important; padding: 0 8px; width: 100% !important; }
+.daily-trading-module .app-footer { display: none; }
+.daily-trading-page {
+  display: grid; gap: 8px; grid-template-rows: 70px 48px minmax(0, 1fr);
+  height: calc(100vh - 8px); min-width: 1240px;
+}
+.daily-trading-page .module-header { height: 70px; min-height: 70px; margin: 0; padding: 5px 18px; }
+.daily-trading-page .module-title-logo img { height: 56px; width: auto; }
+.daily-trading-actions { flex-wrap: nowrap; gap: 6px; }
+.daily-trading-actions .button { min-height: 36px !important; min-width: 112px !important; width: auto !important; }
+.daily-trading-filter { height: 48px; margin: 0; }
+.daily-trading-filter .form-frame {
+  align-items: center; box-sizing: border-box; display: flex; gap: 46px;
+  height: 48px; margin: 0; padding: 8px;
+}
+.daily-trading-date-field, .daily-trading-group-field { align-items: center; display: grid; gap: 6px; width: max-content; }
+.daily-trading-date-field { grid-template-columns: 78px 230px; }
+.daily-trading-group-field { grid-template-columns: 152px 220px; }
+.supplier-form-page.data-form-skin .daily-trading-date-field > label,
+.supplier-form-page.data-form-skin .daily-trading-group-field > label {
+  align-items: center; background: #b8cbe0; border: 1px solid #8a8f98; box-sizing: border-box;
+  display: flex; height: 28px; margin: 0; padding: 0 8px;
+}
+.daily-trading-date-field .micronote-date-control,
+.daily-trading-date-field .micronote-date-input { height: 28px; min-height: 28px; width: 230px; }
+.daily-trading-date-field .micronote-date-button { height: 28px; min-height: 28px; }
+.daily-trading-group-field select { box-sizing: border-box; height: 28px; min-height: 28px; width: 220px; }
+.daily-trading-content {
+  display: grid !important; gap: 12px; grid-template-columns: minmax(0, 1fr) 248px !important;
+  grid-template-rows: minmax(0, 1fr); min-height: 0; width: 100%;
+}
+.daily-trading-content > .daily-trading-list-panel {
+  grid-column: 1 !important; grid-row: 1 !important; min-width: 0; width: auto;
+}
+.daily-trading-content > .daily-trading-summary {
+  align-self: start; grid-column: 2 !important; grid-row: 1 !important; min-width: 0; width: auto;
+}
+.daily-trading-list-panel {
+  display: grid; grid-template-rows: 24px minmax(0, 1fr); margin: 0; min-height: 0; padding: 3px;
+}
+.daily-trading-grid-frame { border-radius: 0; height: 100%; min-height: 0; overflow: auto; }
+.daily-trading-grid { min-width: 1080px; table-layout: fixed; }
+.daily-trading-grid th, .daily-trading-grid td {
+  font-family: "Microsoft Sans Serif", "Segoe UI", Arial, sans-serif; font-size: 13px; height: 25px; padding: 2px 6px;
+}
+.daily-trading-grid tbody tr { cursor: default; }
+.daily-trading-grid tbody tr.selected-row td, .daily-trading-grid tbody tr:focus td { background: #b8d2ee; color: #102b49; }
+.daily-trading-grid th:nth-child(1), .daily-trading-grid td:nth-child(1) { width: 90px; }
+.daily-trading-grid th:nth-child(2), .daily-trading-grid td:nth-child(2) { width: 230px; }
+.daily-trading-grid th:nth-child(n+3), .daily-trading-grid td:nth-child(n+3) { text-align: right; width: 92px; }
+.daily-trading-grid th:nth-child(10), .daily-trading-grid td:nth-child(10) { padding-right: 20px; width: 112px; }
+.daily-trading-summary {
+  align-content: start; background: #e9eafb; border: 1px solid #818897;
+  display: grid; gap: 10px; padding: 8px;
+}
+.daily-trading-summary section { border: 1px solid #818897; padding: 3px; }
+.daily-trading-summary h2 {
+  background: #abc3dd; box-sizing: border-box; font-size: 14px; font-weight: 600;
+  height: 24px; margin: 0 0 3px; padding: 3px 6px; text-align: center;
+}
+.daily-trading-summary section > div { display: grid; gap: 3px; grid-template-columns: 1fr 1fr; }
+.daily-trading-summary label { background: #b8cbe0; border: 1px solid #8a8f98; padding: 3px 4px; text-align: center; }
+.daily-trading-summary input {
+  background: #eeeeff; border: 1px solid #8a8f98; box-sizing: border-box;
+  font-weight: 600; height: 25px; min-height: 25px; padding: 2px 7px; text-align: right; width: 100%;
+}
+@media print {
+  .daily-trading-page .module-title-logo, .daily-trading-page .top-actions, .daily-trading-filter { display: none !important; }
+  .daily-trading-page { display: block; height: auto; min-width: 0; }
+  .daily-trading-content { grid-template-columns: 1fr 220px; }
+  .daily-trading-grid-frame { overflow: visible; }
+}
+
+/* Movimenti del giorno */
+.daily-movements-module .page-container { box-sizing: border-box; max-width: none !important; padding: 0 8px; width: 100% !important; }
+.daily-movements-module .app-footer { display: none; }
+.daily-movements-page { display: grid; column-gap: 0; row-gap: 8px; grid-template-rows: 70px 78px minmax(0, 1fr); height: calc(100vh - 8px); min-width: 1240px; }
+.daily-movements-page .module-header { height: 70px; min-height: 70px; margin: 0; padding: 5px 18px; }
+.daily-movements-page .module-title-logo img { height: 56px; width: auto; }
+.daily-movements-actions { flex-wrap: nowrap; gap: 6px; }
+.daily-movements-actions .button { min-height: 36px !important; min-width: 112px !important; width: auto !important; }
+.daily-movements-filter { height: 80px; margin: 0; }
+.daily-movements-filter .form-frame { align-items: start; box-sizing: border-box; display: flex; gap: 36px; height: 80px; margin: 0; padding: 6px 8px; }
+.daily-movements-dates, .daily-movements-selection { display: grid; gap: 6px; }
+.daily-movements-selection { min-width: 760px; }
+.daily-movements-switch-row { display: flex; gap: 18px; min-width: 0; }
+.daily-movements-filter .field { align-items: center; display: grid; gap: 6px; margin: 0; }
+.daily-movements-dates .field { grid-template-columns: 90px 210px; }
+.daily-movements-filter .daily-movements-type { grid-template-columns: 180px 180px !important; }
+.supplier-form-page.data-form-skin .daily-movements-filter .daily-movements-type > label { width: 180px; }
+.daily-movements-combo { grid-template-columns: 120px 250px !important; }
+.daily-movements-combo select { width: 250px; }
+.daily-movements-combo select:disabled { background: rgb(230, 230, 240) !important; color: #4f5965; opacity: 1; }
+.daily-movements-filter .daily-movements-value {
+  grid-template-columns: 86px 140px 450px 30px 30px !important;
+  width: max-content;
+}
+.daily-movements-filter .daily-movements-article-code {
+  box-sizing: border-box; grid-column: 2; max-width: 140px !important; min-width: 140px !important; width: 140px !important;
+}
+.daily-movements-filter .daily-movements-article-code[readonly] { background: rgb(230, 230, 240) !important; }
+.daily-movements-filter .daily-movements-article-description {
+  background: rgb(230, 230, 240) !important; box-sizing: border-box; grid-column: 3;
+  max-width: 450px !important; min-width: 450px !important; width: 450px !important;
+}
+.daily-movements-article-lookup { grid-column: 4; }
+.daily-movements-article-clear { grid-column: 5; }
+.daily-movements-article-lookup, .daily-movements-article-clear { height: 28px !important; min-height: 28px !important; width: 30px; }
+.supplier-form-page.data-form-skin .daily-movements-filter label {
+  align-items: center; background: #b8cbe0; border: 1px solid #8a8f98; box-sizing: border-box;
+  display: flex; height: 28px; margin: 0; padding: 0 8px;
+}
+.daily-movements-filter input, .daily-movements-filter select,
+.daily-movements-filter .micronote-date-control, .daily-movements-filter .micronote-date-input,
+.daily-movements-filter .micronote-date-button { box-sizing: border-box; height: 28px; min-height: 28px; }
+.daily-movements-dates .micronote-date-control, .daily-movements-dates .micronote-date-input { width: 210px; }
+.daily-movements-content { display: grid !important; gap: 12px; grid-template-columns: minmax(0, 1fr) 258px !important; min-height: 0; width: 100%; }
+.daily-movements-list-panel { display: grid; grid-column: 1 !important; grid-row: 1 !important; grid-template-rows: 24px minmax(0, 1fr); margin: 0; min-height: 0; min-width: 0; padding: 3px; }
+.daily-movements-grid-frame { border-radius: 0; height: 100%; min-height: 0; overflow: auto; }
+.daily-movements-grid { min-width: 1020px; table-layout: fixed; }
+.daily-movements-grid th, .daily-movements-grid td { font-family: "Microsoft Sans Serif", "Segoe UI", Arial, sans-serif; font-size: 13px; height: 25px; padding: 2px 6px; }
+.daily-movements-grid th:nth-child(1), .daily-movements-grid td:nth-child(1) { text-align: center; width: 76px; }
+.daily-movements-grid th:nth-child(2), .daily-movements-grid td:nth-child(2) { width: 120px; }
+.daily-movements-grid th:nth-child(3), .daily-movements-grid td:nth-child(3) { width: 90px; }
+.daily-movements-grid th:nth-child(4), .daily-movements-grid td:nth-child(4) { width: 180px; }
+.daily-movements-grid th:nth-child(5), .daily-movements-grid td:nth-child(5) { text-align: center; width: 70px; }
+.daily-movements-grid th:nth-child(6), .daily-movements-grid td:nth-child(6) { width: 180px; }
+.daily-movements-grid th:nth-child(n+7), .daily-movements-grid td:nth-child(n+7) { text-align: right; width: 79px; }
+.daily-movements-grid th:nth-child(10), .daily-movements-grid td:nth-child(10) { padding-right: 20px; width: 99px; }
+.daily-movements-grid tbody tr.selected-row td { background: #b8d2ee; color: #102b49; }
+.daily-movements-grid .daily-movements-section td { background: #dce2e8; font-weight: 700; }
+.daily-movements-grid .daily-movements-spacer td { background: #fff; height: 18px; }
+.daily-movements-summary { align-content: start; align-self: start; background: #e9eafb; border: 1px solid #818897; display: grid; gap: 10px; grid-column: 2 !important; grid-row: 1 !important; padding: 6px; }
+.daily-movements-summary section { border: 0; padding: 0; }
+.daily-movements-summary h2 { background: #abc3dd; box-sizing: border-box; font-size: 14px; font-weight: 600; height: 24px; margin: 0 0 3px; padding: 3px 6px; text-align: center; }
+.daily-movements-summary section > div { display: grid; gap: 3px; grid-template-columns: 1fr 110px; }
+.daily-movements-summary label { background: #b8cbe0; border: 1px solid #8a8f98; padding: 3px 5px; text-align: center; }
+.daily-movements-summary input { background: #eeeeff; border: 1px solid #8a8f98; box-sizing: border-box; font-weight: 600; height: 25px; min-height: 25px; padding: 2px 7px; text-align: right; width: 100%; }
+@media print {
+  .daily-movements-page .module-title-logo, .daily-movements-page .top-actions, .daily-movements-filter { display: none !important; }
+  .daily-movements-page { display: block; height: auto; min-width: 0; }
+  .daily-movements-content { grid-template-columns: 1fr 220px !important; }
+  .daily-movements-grid-frame { overflow: visible; }
+}
+
 .report-preview-backdrop {
   position: fixed;
   inset: 0;
