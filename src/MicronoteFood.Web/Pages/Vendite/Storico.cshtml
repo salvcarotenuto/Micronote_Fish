@@ -125,6 +125,7 @@
                                 <th data-sort-key="vat" data-sort-type="number">Iva</th>
                                 <th data-sort-key="total" data-sort-type="number">Totale</th>
                                 <th data-sort-key="discount" data-sort-type="number">Abbuono</th>
+                                <th data-sort-key="netSales" data-sort-type="number">Netto vend.</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -143,7 +144,8 @@
                                     data-sort-merchandise="@SortNumber(sale.Merchandise)"
                                     data-sort-vat="@SortNumber(sale.Vat)"
                                     data-sort-total="@SortNumber(sale.Total)"
-                                    data-sort-discount="@SortNumber(sale.Discount)">
+                                    data-sort-discount="@SortNumber(sale.Discount)"
+                                    data-sort-net-sales="@SortNumber(sale.Total - sale.Discount)">
                                     <td>@sale.Year</td>
                                     <td>@sale.Code.ToString("000000")</td>
                                     <td>@sale.DocumentNumber.ToString("000000")</td>
@@ -154,6 +156,7 @@
                                     <td>@Money(sale.Vat)</td>
                                     <td>@Money(sale.Total)</td>
                                     <td>@Money(sale.Discount)</td>
+                                    <td>@Money(sale.Total - sale.Discount)</td>
                                 </tr>
                             }
                         </tbody>

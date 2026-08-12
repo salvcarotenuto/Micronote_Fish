@@ -281,7 +281,7 @@ public sealed class CustomerNoteRepository(MicronoteDb database)
                        ELSE COALESCE(vr.Colli, 0)
                    END AS Quantita,
                    COALESCE(vr.Prezzo, 0) AS Prezzo,
-                   COALESCE(vr.Iva, 0) AS Iva,
+                   COALESCE(vr.AliqIva, 0) AS Iva,
                    COALESCE(vr.Importo, 0) AS Importo
             FROM Vendite v
             INNER JOIN VenditeRg vr ON vr.ID = v.ID

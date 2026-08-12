@@ -15,13 +15,6 @@ public sealed class SalesHistoryRepository(MicronoteDb database)
         await using var connection = await database.OpenConnectionAsync(cancellationToken);
         var years = await ListYearsAsync(connection, year, cancellationToken);
         var stores = await ListStoresAsync(connection, cancellationToken);
-        var sales = await ListSalesAsync(
-            connection,
-            year,
-            Math.Clamp(month, 0, 12),
-            Math.Max(customerCode, 0),
-            Math.Max(storeCode, 0),
-            cancellationToken);
         var customerName = customerCode > 0
             ? await LoadCustomerNameAsync(connection, customerCode, cancellationToken)
             : "";
@@ -35,9 +28,15 @@ public sealed class SalesHistoryRepository(MicronoteDb database)
             StoreCode = Math.Max(storeCode, 0),
             Years = years,
             Stores = stores,
-            Sales = sales,
-            Totals = TotalsFrom(sales)
+            Sales = [],
+            Totals = SalesHistoryTotals.Empty
         };
+    }
+
+    public async Task<IReadOnlyList<SalesHistoryListItem>> ListPageAsync(int year, int month, int customerCode, int storeCode, int offset, int limit, CancellationToken cancellationToken = default)
+    {
+        await using var connection = await database.OpenConnectionAsync(cancellationToken);
+        return await ListSalesAsync(connection, year, Math.Clamp(month, 0, 12), Math.Max(customerCode, 0), Math.Max(storeCode, 0), Math.Max(offset, 0), Math.Clamp(limit, 1, 250), cancellationToken);
     }
 
     private static async Task<IReadOnlyList<SalesEntryStoreRow>> ListStoresAsync(
@@ -96,7 +95,7 @@ public sealed class SalesHistoryRepository(MicronoteDb database)
         int year,
         int month,
         int customerCode,
-        int storeCode,
+        int storeCode, int offset, int limit,
         CancellationToken cancellationToken)
     {
         const string sql = """
@@ -113,7 +112,8 @@ public sealed class SalesHistoryRepository(MicronoteDb database)
               AND (@month = 0 OR MONTH(v.DataDoc) = @month)
               AND (@customer = 0 OR v.Cliente = @customer)
               AND (@store = 0 OR v.PuntoV = @store)
-            ORDER BY v.DataDoc DESC, v.NumDoc DESC, v.Codice DESC;
+            ORDER BY v.DataDoc DESC, v.NumDoc DESC, v.Codice DESC
+            LIMIT @limit OFFSET @offset;
             """;
         var rows = new List<SalesHistoryListItem>();
         await using var command = new MySqlCommand(sql, connection);
@@ -121,6 +121,8 @@ public sealed class SalesHistoryRepository(MicronoteDb database)
         command.Parameters.AddWithValue("@month", month);
         command.Parameters.AddWithValue("@customer", customerCode);
         command.Parameters.AddWithValue("@store", storeCode);
+        command.Parameters.AddWithValue("@offset", offset);
+        command.Parameters.AddWithValue("@limit", limit);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
@@ -154,8 +156,8 @@ public sealed class SalesHistoryRepository(MicronoteDb database)
                    COALESCE(vr.Tara, 0) AS Tara,
                    COALESCE(vr.Quantita, 0) AS Quantita,
                    COALESCE(vr.Prezzo, 0) AS Prezzo,
-                   COALESCE(vr.Iva, 0) AS Iva,
-                   ROUND(COALESCE(vr.Prezzo, 0) * (1 + COALESCE(vr.Iva, 0) / 100), 2) AS PrezzoIvato,
+                   COALESCE(vr.AliqIva, 0) AS Iva,
+                   ROUND(COALESCE(vr.Prezzo, 0) * (1 + COALESCE(vr.AliqIva, 0) / 100), 2) AS PrezzoIvato,
                    COALESCE(vr.Importo, 0) AS Importo
             FROM VenditeRg vr
             LEFT JOIN Articoli a ON a.Codice = vr.Articolo

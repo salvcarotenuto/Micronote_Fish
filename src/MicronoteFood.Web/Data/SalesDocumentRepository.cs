@@ -60,7 +60,7 @@ public sealed class SalesDocumentRepository(MicronoteDb database)
 
         const string rowsSql = """
             SELECT vr.Riga, vr.Articolo, COALESCE(a.Descrizione, '') AS Descrizione,
-                   vr.Ums, vr.Colli, vr.Tara, vr.Quantita, vr.Prezzo, vr.Iva, vr.Importo
+                   vr.Ums, vr.Colli, vr.Tara, vr.Quantita, vr.Prezzo, vr.AliqIva AS Iva, vr.Importo
             FROM VenditeRg vr
             LEFT JOIN Articoli a ON a.Codice = vr.Articolo
             WHERE vr.ID = @id
@@ -325,7 +325,7 @@ public sealed class SalesDocumentRepository(MicronoteDb database)
     {
         await using var command = new MySqlCommand("""
             INSERT INTO VenditeRg
-                (ID,Riga,Articolo,Ums,Colli,Tara,Quantita,Prezzo,Iva,Importo)
+                (ID,Riga,Articolo,Ums,Colli,Tara,Quantita,Prezzo,AliqIva,Importo)
             VALUES
                 (@id,@row,@article,@unit,@packages,@tare,@quantity,@price,@vat,@amount);
             """, connection, transaction);

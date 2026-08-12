@@ -3737,11 +3737,11 @@ body.stock-purchase-stats-module .app-footer {
 .fish-sales-history-grid th:nth-child(5),
 .fish-sales-history-grid td:nth-child(5) { width: 80px; text-align: center; }
 .fish-sales-history-grid th:nth-child(6),
-.fish-sales-history-grid td:nth-child(6) { width: 290px; text-align: left; }
+.fish-sales-history-grid td:nth-child(6) { width: 270px; text-align: left; }
 .fish-sales-history-grid th:nth-child(n+7),
 .fish-sales-history-grid td:nth-child(n+7) { width: 92px; text-align: right; }
 .fish-sales-history-grid th:last-child,
-.fish-sales-history-grid td:last-child { width: 100px; padding-right: 10px; }
+.fish-sales-history-grid td:last-child { width: 120px; padding-right: 20px; }
 
 .fish-sales-history-detail-grid {
   min-width: 1080px;
@@ -3754,23 +3754,27 @@ body.stock-purchase-stats-module .app-footer {
 .fish-sales-history-detail-grid th:nth-child(1),
 .fish-sales-history-detail-grid td:nth-child(1) { width: 100px; text-align: left; }
 .fish-sales-history-detail-grid th:nth-child(2),
-.fish-sales-history-detail-grid td:nth-child(2) { width: 300px; text-align: left; }
+.fish-sales-history-detail-grid td:nth-child(2) { width: 280px; text-align: left; }
 .fish-sales-history-detail-grid th:nth-child(3),
 .fish-sales-history-detail-grid td:nth-child(3) { width: 70px; text-align: center; }
 .fish-sales-history-detail-grid th:nth-child(4),
-.fish-sales-history-detail-grid td:nth-child(4) { width: 70px; }
+.fish-sales-history-detail-grid td:nth-child(4) { width: 70px; text-align: right; }
 .fish-sales-history-detail-grid th:nth-child(5),
-.fish-sales-history-detail-grid td:nth-child(5) { width: 80px; }
+.fish-sales-history-detail-grid td:nth-child(5) { width: 80px; text-align: right; }
 .fish-sales-history-detail-grid th:nth-child(6),
 .fish-sales-history-detail-grid td:nth-child(6),
 .fish-sales-history-detail-grid th:nth-child(7),
 .fish-sales-history-detail-grid td:nth-child(7),
 .fish-sales-history-detail-grid th:nth-child(9),
-.fish-sales-history-detail-grid td:nth-child(9) { width: 90px; }
+.fish-sales-history-detail-grid td:nth-child(9) { width: 90px; text-align: right; }
+.fish-sales-history-detail-grid th:nth-child(6),
+.fish-sales-history-detail-grid td:nth-child(6),
+.fish-sales-history-detail-grid th:nth-child(7),
+.fish-sales-history-detail-grid td:nth-child(7) { text-align: right; }
 .fish-sales-history-detail-grid th:nth-child(8),
-.fish-sales-history-detail-grid td:nth-child(8) { width: 70px; }
+.fish-sales-history-detail-grid td:nth-child(8) { width: 70px; text-align: center; }
 .fish-sales-history-detail-grid th:nth-child(10),
-.fish-sales-history-detail-grid td:nth-child(10) { width: 100px; padding-right: 10px; }
+.fish-sales-history-detail-grid td:nth-child(10) { width: 120px; padding-right: 20px; text-align: right; }
 
 .exercise-change-page {
   max-width: 940px;
@@ -15024,6 +15028,15 @@ body.customer-supplier-balances-module .app-footer {
 .daily-purchases-list-grid th:nth-child(n+4), .daily-purchases-list-grid td:nth-child(n+4) { text-align: right; width: 88px; }
 .daily-purchases-list-grid th:nth-child(5), .daily-purchases-list-grid td:nth-child(5) { width: 78px; }
 .daily-purchases-list-grid th:nth-child(6), .daily-purchases-list-grid td:nth-child(6) { padding-right: 20px; width: 108px; }
+.daily-sales-day-page .daily-purchases-list-grid { min-width: 834px; }
+.daily-sales-day-page .daily-purchases-list-grid th:nth-child(1), .daily-sales-day-page .daily-purchases-list-grid td:nth-child(1) { width: 80px; }
+.daily-sales-day-page .daily-purchases-list-grid th:nth-child(2), .daily-sales-day-page .daily-purchases-list-grid td:nth-child(2) { width: 70px; }
+.daily-sales-day-page .daily-purchases-list-grid th:nth-child(3), .daily-sales-day-page .daily-purchases-list-grid td:nth-child(3) { width: 240px; }
+.daily-sales-day-page .daily-purchases-list-grid th:nth-child(4), .daily-sales-day-page .daily-purchases-list-grid td:nth-child(4) { width: 88px; }
+.daily-sales-day-page .daily-purchases-list-grid th:nth-child(5), .daily-sales-day-page .daily-purchases-list-grid td:nth-child(5) { width: 80px; }
+.daily-sales-day-page .daily-purchases-list-grid th:nth-child(6), .daily-sales-day-page .daily-purchases-list-grid td:nth-child(6) { padding-right: 6px; width: 88px; }
+.daily-sales-day-page .daily-purchases-list-grid th:nth-child(7), .daily-sales-day-page .daily-purchases-list-grid td:nth-child(7) { width: 88px; }
+.daily-sales-day-page .daily-purchases-list-grid th:nth-child(8), .daily-sales-day-page .daily-purchases-list-grid td:nth-child(8) { padding-right: 20px; width: 100px; }
 .daily-purchases-articles-grid { min-width: 500px; table-layout: fixed; }
 .daily-purchases-articles-grid th:nth-child(1), .daily-purchases-articles-grid td:nth-child(1) { width: 110px; }
 .daily-purchases-articles-grid th:nth-child(2), .daily-purchases-articles-grid td:nth-child(2) { width: 245px; }
@@ -17045,7 +17058,7 @@ body.app-login-page .app-footer { display: none; }
   grid-template-columns: minmax(560px, 1.08fr) minmax(500px, 0.92fr);
   min-height: min(720px, calc(100vh - 48px));
   overflow: hidden;
-  transform: translateX(-50px);
+  transform: translateX(-70px);
   width: min(1500px, calc(100vw - 48px));
 }
 
@@ -17274,3 +17287,155 @@ body.app-login-page .micronote-welcome-login .settings-password-control input {
   .micronote-welcome-features { grid-template-columns: repeat(2, 1fr); }
   .micronote-welcome-login { padding: 24px 12px; }
 }
+
+body.warehouse-statistics-module {
+  overflow: auto;
+}
+
+body.warehouse-statistics-module .app-footer {
+  display: none;
+}
+
+.warehouse-statistics-module .page-container {
+  max-width: none;
+  padding: 0 12px 10px;
+}
+
+.warehouse-statistics-page.stock-movements-page {
+  gap: 8px;
+  max-width: none;
+  min-width: 1180px;
+}
+
+.warehouse-statistics-page > .module-header {
+  margin-bottom: 0;
+}
+
+.warehouse-statistics-page .warehouse-statistics-filters {
+  margin-top: 0;
+}
+
+.warehouse-statistics-filters .form-frame {
+  padding: 11px 8px;
+}
+
+.warehouse-statistics-filter-row {
+  align-items: end;
+  display: flex;
+  gap: 8px;
+}
+
+.warehouse-statistics-filter-row .field {
+  display: grid;
+  gap: 3px;
+}
+
+.warehouse-statistics-filter-row label {
+  min-width: 82px;
+}
+
+.warehouse-statistics-filter-row .warehouse-statistics-grouping-field label {
+  min-width: 140px;
+}
+
+.warehouse-statistics-filter-row .warehouse-statistics-grouping-field {
+  align-items: center;
+  grid-template-columns: 140px 145px;
+}
+
+.warehouse-statistics-filter-row input,
+.warehouse-statistics-filter-row select {
+  height: 28px;
+}
+
+.warehouse-statistics-filter-row input {
+  width: 102px;
+}
+
+.warehouse-statistics-filter-row select {
+  min-width: 145px;
+}
+
+.warehouse-statistics-layout {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(860px, 1fr) 470px;
+  min-height: 0;
+}
+
+.warehouse-statistics-main-panel,
+.warehouse-statistics-customers-panel {
+  border-color: #8799ad;
+  border-radius: 8px;
+  grid-template-rows: 22px minmax(0, 1fr);
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.warehouse-statistics-main-panel h2,
+.warehouse-statistics-customers-panel h2 {
+  background: #b8cbe0;
+  color: #061d45;
+  font-size: 13px;
+  font-weight: 520;
+  line-height: 22px;
+  margin: 0;
+  padding: 0 8px;
+}
+
+.warehouse-statistics-grid-frame,
+.warehouse-statistics-customers-frame {
+  border: 0;
+  border-radius: 0 0 8px 8px;
+  max-height: calc(100vh - 225px);
+  overflow: auto;
+}
+
+.warehouse-statistics-grid {
+  min-width: 1065px;
+}
+
+.warehouse-statistics-grid th,
+.warehouse-statistics-grid td,
+.warehouse-statistics-customers-grid th,
+.warehouse-statistics-customers-grid td {
+  white-space: nowrap;
+}
+
+.warehouse-statistics-grid th:nth-child(1), .warehouse-statistics-grid td:nth-child(1) { width: 76px; }
+.warehouse-statistics-grid th:nth-child(2), .warehouse-statistics-grid td:nth-child(2) { min-width: 180px; }
+.warehouse-statistics-grid th:nth-child(n+3), .warehouse-statistics-grid td:nth-child(n+3) { width: 82px; }
+.warehouse-statistics-grid th[data-sort-type] {
+  cursor: pointer;
+}
+
+.warehouse-statistics-grid th[data-sort-type][aria-sort="ascending"]::after,
+.warehouse-statistics-grid th[data-sort-type][aria-sort="descending"]::after {
+  color: #123d70;
+  font-size: 10px;
+  margin-left: 5px;
+}
+
+.warehouse-statistics-grid th[data-sort-type][aria-sort="ascending"]::after { content: "▲"; }
+.warehouse-statistics-grid th[data-sort-type][aria-sort="descending"]::after { content: "▼"; }
+.warehouse-statistics-grid th:nth-child(4), .warehouse-statistics-grid td:nth-child(4),
+.warehouse-statistics-grid th:nth-child(5), .warehouse-statistics-grid td:nth-child(5),
+.warehouse-statistics-grid th:nth-child(7), .warehouse-statistics-grid td:nth-child(7),
+.warehouse-statistics-grid th:nth-child(9), .warehouse-statistics-grid td:nth-child(9),
+.warehouse-statistics-grid th:nth-child(10), .warehouse-statistics-grid td:nth-child(10),
+.warehouse-statistics-customers-grid th:nth-child(4), .warehouse-statistics-customers-grid td:nth-child(4) { text-align: right; }
+.warehouse-statistics-grid th:nth-child(3), .warehouse-statistics-grid td:nth-child(3),
+.warehouse-statistics-grid th:nth-child(6), .warehouse-statistics-grid td:nth-child(6),
+.warehouse-statistics-grid th:nth-child(8), .warehouse-statistics-grid td:nth-child(8),
+.warehouse-statistics-customers-grid th:nth-child(3), .warehouse-statistics-customers-grid td:nth-child(3) { text-align: right; }
+.warehouse-statistics-grid th:nth-child(11), .warehouse-statistics-grid td:nth-child(11) { text-align: center; }
+.warehouse-statistics-grid td:nth-child(-n+2) { background: #fffbd0; font-weight: 700; }
+.warehouse-statistics-grid tbody tr.selected-row td { background: #b6cfe7; }
+.warehouse-statistics-grid tbody tr.selected-row td:nth-child(-n+2) { background: #a8c5df; }
+
+.warehouse-statistics-customers-grid { min-width: 430px; }
+.warehouse-statistics-customers-grid th:nth-child(1), .warehouse-statistics-customers-grid td:nth-child(1) { width: 78px; }
+.warehouse-statistics-customers-grid th:nth-child(2), .warehouse-statistics-customers-grid td:nth-child(2) { min-width: 185px; }
+.warehouse-statistics-customers-grid th:nth-child(3), .warehouse-statistics-customers-grid td:nth-child(3) { width: 86px; }
+.warehouse-statistics-customers-grid th:nth-child(4), .warehouse-statistics-customers-grid td:nth-child(4) { width: 92px; }

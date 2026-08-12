@@ -52,4 +52,10 @@ public class StoricoModel(
             })
         });
     }
+
+    public async Task<JsonResult> OnGetPageAsync(int year, int month, int customer, int store, int offset, CancellationToken cancellationToken)
+    {
+        var rows = await repository.ListPageAsync(year, month, customer, store, offset, 100, cancellationToken);
+        return new JsonResult(new { rows = rows.Select(s => new { s.Id, s.Year, s.Code, s.DocumentNumber, date = s.DocumentDate?.ToString("yyyy-MM-dd"), s.CustomerCode, s.CustomerName, s.Merchandise, s.Vat, s.Total, s.Discount }) });
+    }
 }

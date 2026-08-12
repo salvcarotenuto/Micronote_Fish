@@ -75,6 +75,8 @@ builder.Services.AddScoped<StockUnloadRepository>();
 builder.Services.AddScoped<StockMovementRepository>();
 builder.Services.AddScoped<StockPurchaseStatsRepository>();
 builder.Services.AddScoped<GroupPurchaseStatsRepository>();
+builder.Services.AddScoped<GroupSalesStatsRepository>();
+builder.Services.AddScoped<WarehouseStatisticsRepository>();
 builder.Services.AddScoped<StoreMovementSummaryRepository>();
 builder.Services.AddScoped<SupplierRepository>();
 builder.Services.AddScoped<SectorRepository>();

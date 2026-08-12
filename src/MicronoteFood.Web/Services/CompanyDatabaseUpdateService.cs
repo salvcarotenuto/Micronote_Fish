@@ -208,6 +208,23 @@ public sealed class CompanyDatabaseUpdateService(
             companyDatabase,
             template.TargetTable,
             cancellationToken);
+        if (string.Equals(template.TargetTable, "VenditeRg", StringComparison.OrdinalIgnoreCase)
+            && definitions.Any(definition => string.Equals(definition.Name, "AliqIva", StringComparison.OrdinalIgnoreCase))
+            && targetDefinitions.Any(definition => string.Equals(definition.Name, "Iva", StringComparison.OrdinalIgnoreCase))
+            && !targetDefinitions.Any(definition => string.Equals(definition.Name, "AliqIva", StringComparison.OrdinalIgnoreCase)))
+        {
+            var vatDefinition = definitions.First(definition => string.Equals(definition.Name, "AliqIva", StringComparison.OrdinalIgnoreCase));
+            await ExecuteAsync(
+                connection,
+                $"ALTER TABLE {Q(companyDatabase)}.{Q(template.TargetTable)} " +
+                $"CHANGE COLUMN `Iva` `AliqIva` {vatDefinition.Definition};",
+                cancellationToken);
+            targetDefinitions = await ReadColumnDefinitionsAsync(
+                connection,
+                companyDatabase,
+                template.TargetTable,
+                cancellationToken);
+        }
         if (string.Equals(template.TargetTable, "MovCassa", StringComparison.OrdinalIgnoreCase)
             && definitions.Any(definition => string.Equals(
                 definition.Name, "Annotazioni", StringComparison.OrdinalIgnoreCase))

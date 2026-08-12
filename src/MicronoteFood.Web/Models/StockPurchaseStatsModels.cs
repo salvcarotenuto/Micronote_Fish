@@ -51,20 +51,18 @@ public sealed class GroupPurchaseStatsPageModel
 {
     public DateOnly DateFrom { get; set; }
     public DateOnly DateTo { get; set; }
-    public string Grouping { get; set; } = "group";
+    public string Grouping { get; set; } = "category";
     public bool IsLoaded { get; set; }
-    public decimal TotalRevenue { get; set; }
     public IReadOnlyList<GroupPurchaseStatsStore> Stores { get; set; } = [];
     public IReadOnlyList<GroupPurchaseStatsRow> Rows { get; set; } = [];
 }
 
-public sealed record GroupPurchaseStatsStore(int Code, string Name, decimal Revenue);
+public sealed record GroupPurchaseStatsStore(int Code, string Name);
 
 public sealed record GroupPurchaseStatsCell(
     int StoreCode,
     decimal Amount,
-    decimal CostShare,
-    decimal RevenueShare);
+    decimal Share);
 
 public sealed record GroupPurchaseStatsRow(
     int Code,

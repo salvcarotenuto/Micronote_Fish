@@ -17,7 +17,7 @@ public sealed class CounterSaleRepository(MicronoteDb database)
         await using var connection = await database.OpenConnectionAsync(cancellationToken);
         await using var command = new MySqlCommand(
             """
-            SELECT vr.Prezzo, vr.Iva
+            SELECT vr.Prezzo, vr.AliqIva AS Iva
             FROM VenditeRg vr
             INNER JOIN Vendite v ON v.ID=vr.ID
             WHERE v.Cliente=@customer AND vr.Articolo=@article
@@ -118,7 +118,7 @@ public sealed class CounterSaleRepository(MicronoteDb database)
                     """
                     INSERT INTO VenditeRg
                         (ID, Riga, Articolo, Ums, Colli, Tara, Quantita,
-                         Prezzo, Iva, Importo)
+                         Prezzo, AliqIva, Importo)
                     VALUES
                         (@id, @row, @article, @unit, @packages, @tare, @quantity,
                          @price, @vat, @amount);

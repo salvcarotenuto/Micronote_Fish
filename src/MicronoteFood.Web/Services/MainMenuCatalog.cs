@@ -72,7 +72,8 @@ public static class MainMenuCatalog
                     new MenuItemDefinition("Movimenti del giorno", "/MovimentiGiorno/Index")),
                 Group(
                     "Statistiche",
-                    new MenuItemDefinition("Acquisti per articolo", "/AcquistiPerArticolo/Index"),
+                    new MenuItemDefinition("Statistica di magazzino", "/StatisticaMagazzino/Index"),
+                    new MenuItemDefinition("Prezzi di acquisto per articolo", "/AcquistiPerArticolo/Index"),
                     new MenuItemDefinition("Acquisti per gruppo", "/AcquistiPerGruppo/Index")),
                 Group("Ordini a fornitori", "Emissione ordine", "Evasione ordine")
             ]),
@@ -87,9 +88,13 @@ public static class MainMenuCatalog
                     new MenuItemDefinition("Vendita al banco", "/VenditaBanco/Index"),
                     new MenuItemDefinition("Vendita plurima"),
                     new MenuItemDefinition("Bolla di vendita", "/BollaVendita/Index"),
-                    new MenuItemDefinition("Nota cliente", "/NotaCliente/Index"),
-                    new MenuItemDefinition("Dettaglio vendite del giorno", "/VenditeGiorno/Index"),
-                    new MenuItemDefinition("Storico vendite", "/Vendite/Storico")),
+                    new MenuItemDefinition("Nota cliente", "/NotaCliente/Index")),
+                Group(
+                    "Controlli",
+                    new MenuItemDefinition("Vendite del giorno", "/VenditeGiorno/Index"),
+                    new MenuItemDefinition("Storico vendite", "/Vendite/Storico"),
+                    new MenuItemDefinition("Vendite per gruppo", "/VenditePerGruppo/Index"),
+                    new MenuItemDefinition("Statistica di magazzino", "/StatisticaMagazzino/Index")),
                 Group(
                     "Documenti di vendita",
                     new MenuItemDefinition("DDT"),
