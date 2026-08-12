@@ -1,6 +1,7 @@
 bin/
 obj/
 build-check/
+.build-check/
 publish/
 *.user
 *.suo
@@ -17,3 +18,8 @@ config/config.php
 *.temp
 *.log
 *.pid
+
+# Output temporanei degli strumenti di confronto/migrazione.
+tools/CompareLegacyArticles/*.exe
+tools/CompareLegacyArticles/*.tsv
+tools/*.exe

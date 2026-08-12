@@ -1,0 +1,85 @@
+@page
+@model MicronoteFood.Web.Pages.MovimentiCassa.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Movimenti di cassa";
+    ViewData["BodyClass"] = "cash-movements-list-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Total(decimal value) => value.ToString("N2", it);
+}
+
+<section class="module-page cash-movements-list-page supplier-form-page data-form-skin" data-cash-movements-list>
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale"><img src="~/images/micronote-logo.jpeg" alt="" /></a>
+            <div><h1>Movimenti di cassa</h1><p>Lista movimenti di cassa</p></div>
+        </div>
+        <div class="top-actions cash-movements-list-actions">
+            <span class="list-records-box"><strong>@Model.List.Rows.Count</strong><span>record</span></span>
+            <button class="button button-primary primary" type="button" data-cash-action="new">Nuovo</button>
+            <button class="button button-primary primary" type="button" data-cash-action="edit">Modifica</button>
+            <button class="button button-primary primary" type="button" data-cash-action="delete">Cancella</button>
+            <button class="button button-primary primary" type="button" data-cash-action="print">Stampa</button>
+            <a class="button button-secondary secondary" asp-page="/Index">Esci</a>
+        </div>
+    </header>
+
+    <form class="cash-movements-list-filters" method="get" data-cash-filters
+          data-progress-minimum-time="0"
+          data-progress-hide-text="true"
+          data-progress-wait-for-paint="true">
+        <input type="hidden" name="selectedId" value="@Model.List.SelectedId" data-cash-selected-id />
+        <fieldset class="form-frame">
+            <div class="cash-movements-list-filter-row">
+                <div class="field"><label>Anno</label><select name="year">
+                    @foreach (var year in Model.List.Years) { <option value="@year" selected="@(year == Model.List.Year ? "selected" : null)">@year</option> }
+                </select></div>
+                <div class="field"><label>Periodo</label><select name="period">
+                    <option value=""></option>
+                    @for (var month = 1; month <= 12; month++) { <option value="@month" selected="@(Model.List.Period == month.ToString() ? "selected" : null)">@it.DateTimeFormat.GetMonthName(month)</option> }
+                    <option value="current-week" selected="@(Model.List.Period == "current-week" ? "selected" : null)">Settimana attuale</option>
+                    <option value="previous-week" selected="@(Model.List.Period == "previous-week" ? "selected" : null)">Settimana precedente</option>
+                </select></div>
+                <div class="field"><label>Tipo mov.</label><select name="movementType">
+                    <option value=""></option><option value="E" selected="@(Model.List.MovementType == "E" ? "selected" : null)">Entrate</option><option value="U" selected="@(Model.List.MovementType == "U" ? "selected" : null)">Uscite</option>
+                </select></div>
+                <div class="field cash-movements-payment-filter"><label>Modo pag.</label><select name="paymentMethod">
+                    <option value=""></option><option value="0" selected="@(Model.List.PaymentMethod == 0 ? "selected" : null)">Contanti</option><option value="1" selected="@(Model.List.PaymentMethod == 1 ? "selected" : null)">Assegno</option><option value="2" selected="@(Model.List.PaymentMethod == 2 ? "selected" : null)">Bonifico</option>
+                </select></div>
+                <div class="field cash-movements-cause-filter"><label>Causale</label><select name="causeCode">
+                    <option value=""></option>@foreach (var cause in Model.List.Causes) { <option value="@cause.Code" selected="@(Model.List.CauseCode == cause.Code ? "selected" : null)">@cause.Code.ToString("000") - @cause.Description</option> }
+                </select></div>
+                <div class="field cash-movements-store-filter"><label>Punto ven.</label><select name="storeCode">
+                    <option value=""></option>@foreach (var store in Model.List.Stores) { <option value="@store.Code" selected="@(Model.List.StoreCode == store.Code ? "selected" : null)">@store.Code.ToString("000") - @store.Description</option> }
+                </select></div>
+            </div>
+        </fieldset>
+    </form>
+
+    <section class="cash-movements-list-panel">
+        <div class="list-grid-frame cash-movements-list-grid-frame">
+            <table class="list-grid cash-movements-list-grid">
+                <thead><tr><th>Partita</th><th>Data</th><th>Causale</th><th>Desc. causale</th><th>Cli/For</th><th>Ditta</th><th>Nome</th><th>Punto v.</th><th>Entrata</th><th>Uscita</th><th>Pagamento</th><th>Annotazioni</th></tr></thead>
+                <tbody>
+                @foreach (var row in Model.List.Rows)
+                {
+                    <tr class="@(Model.List.SelectedId == row.Id ? "selected selected-row" : "")" tabindex="0"
+                        data-cash-row data-id="@row.Id" data-year="@row.Year" data-sector="@row.Sector" data-code="@row.Code" data-subject-type="@row.SubjectType">
+                        <td>@row.Code.ToString("000000") / @row.Year</td><td>@row.MovementDate.ToString("dd-MM-yyyy", it)</td><td>@row.CauseCode.ToString("000")</td><td>@row.CauseDescription</td><td>@row.SubjectType</td><td>@(row.SubjectCode > 0 ? row.SubjectCode.ToString("00000") : "")</td><td>@row.SubjectName</td><td>@row.StoreName</td><td>@Money(row.Income)</td><td>@Money(row.Expense)</td><td>@row.PaymentDescription</td><td>@row.Description</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+            @if (Model.List.Rows.Count == 0) { <div class="sales-history-empty">Nessun movimento trovato.</div> }
+        </div>
+    </section>
+
+    <div class="cash-movements-list-totals"><span>Totale entrate</span><strong>@Total(Model.List.TotalIncome)</strong><span>Totale uscite</span><strong>@Total(Model.List.TotalExpense)</strong><span>Saldo</span><strong class="@(Model.List.Balance < 0 ? "negative" : "")">@Total(Model.List.Balance)</strong></div>
+
+    <form method="post" asp-page-handler="Delete" data-cash-delete-form>
+        <input type="hidden" name="id" /><input type="hidden" name="year" value="@Model.List.Year" /><input type="hidden" name="period" value="@Model.List.Period" /><input type="hidden" name="movementType" value="@Model.List.MovementType" /><input type="hidden" name="paymentMethod" value="@Model.List.PaymentMethod" /><input type="hidden" name="causeCode" value="@Model.List.CauseCode" /><input type="hidden" name="storeCode" value="@Model.List.StoreCode" />
+    </form>
+</section>
+
+@section Scripts { <script src="~/js/cash-movements-list.js" asp-append-version="true"></script> }

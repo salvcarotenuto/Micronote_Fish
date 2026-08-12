@@ -35,8 +35,10 @@ public class IndexModel(
 
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
-        var selectedYear = Year.GetValueOrDefault(applicationState.Esercizio);
         var rows = ParsePayload();
+        var selectedYear = Year.GetValueOrDefault(applicationState.Esercizio);
+        if (selectedYear <= 0)
+            ModelState.AddModelError(nameof(Year), "Indicare l'anno del saldo iniziale.");
         if (!ModelState.IsValid)
         {
             await LoadAsync(cancellationToken);
@@ -44,14 +46,16 @@ public class IndexModel(
         }
 
         await repository.SaveAsync(selectedYear, rows, cancellationToken);
-        SavedMessage = $"Saldi iniziali clienti e fornitori salvati correttamente per l'esercizio {selectedYear}.";
+        SavedMessage = $"Saldi iniziali clienti e fornitori salvati alla data del 01/01/{selectedYear}.";
         return RedirectToPage(new { year = selectedYear });
     }
 
     private async Task LoadAsync(CancellationToken cancellationToken)
     {
-        var selectedYear = Year.GetValueOrDefault(applicationState.Esercizio);
-        List = await repository.ListAsync(selectedYear, applicationState.Esercizio, cancellationToken);
+        List = await repository.ListAsync(
+            Year,
+            applicationState.Esercizio,
+            cancellationToken);
         Year = List.Year;
     }
 

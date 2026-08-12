@@ -2,25 +2,26 @@ namespace MicronoteFood.Web.Models;
 
 public sealed class DailySalesPageModel
 {
-    public DateOnly MovementDate { get; set; }
-    public int Code { get; set; }
-    public decimal VatRate { get; set; }
-    public IReadOnlyList<DailySalesRow> Rows { get; set; } = [];
-    public DailySalesTotals Totals { get; set; } = DailySalesTotals.Empty;
+    public DateOnly SaleDate { get; set; }
+    public int StoreCode { get; set; }
+    public string SelectedKey { get; set; } = "";
+    public IReadOnlyList<DailySaleItem> Sales { get; set; } = [];
+    public IReadOnlyList<DailySoldArticle> Articles { get; set; } = [];
+    public IReadOnlyList<DailySaleDetail> Details { get; set; } = [];
+    public DailySaleTotals Totals { get; set; } = new();
+    public IReadOnlyList<DailySaleStore> Stores { get; set; } = [];
 }
 
-public sealed record DailySalesRow(
-    int StoreCode, string StoreName, decimal TaxableGross, decimal Exempt,
-    decimal Net, decimal Vat, decimal Total, decimal Cash, decimal Card,
-    decimal Tickets, decimal Checks, decimal Other, decimal Suspended, decimal Losses);
+public sealed record DailySaleItem(string Key, int Id, int Year, int Code, int CustomerCode, string CustomerName, decimal Goods, decimal Vat, decimal Total, decimal Paid, decimal Cash);
+public sealed record DailySoldArticle(string ArticleCode, string Description, decimal Quantity, decimal Amount);
+public sealed record DailySaleDetail(int RowNumber, string ArticleCode, string Description, string UnitMeasure, int Packages, decimal Quantity, decimal Price, decimal VatRate, decimal VatIncludedPrice, decimal Amount);
+public sealed record DailySaleStore(int Code, string Name);
 
-public sealed record DailySalesTotals(
-    decimal TaxableGross, decimal Exempt, decimal Net, decimal Vat, decimal Total,
-    decimal Cash, decimal Card, decimal Tickets, decimal Checks, decimal Other,
-    decimal Suspended, decimal Losses)
+public sealed class DailySaleTotals
 {
-    public decimal TotalCash => Cash + Other;
-    public decimal NetReceipts => TotalCash + Card + Tickets + Checks;
-    public decimal Balance => NetReceipts + Suspended + Losses - Total;
-    public static DailySalesTotals Empty { get; } = new(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    public decimal Goods { get; set; }
+    public decimal Vat { get; set; }
+    public decimal Sales { get; set; }
+    public decimal Paid { get; set; }
+    public decimal CashIn { get; set; }
 }

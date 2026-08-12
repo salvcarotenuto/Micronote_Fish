@@ -8,29 +8,66 @@ public sealed class SalesHistoryRepository(MicronoteDb database)
     public async Task<SalesHistoryPageModel> GetAsync(
         int year,
         int month,
-        DateOnly dateFrom,
-        DateOnly dateTo,
+        int customerCode,
+        int storeCode,
         CancellationToken cancellationToken = default)
     {
         await using var connection = await database.OpenConnectionAsync(cancellationToken);
         var years = await ListYearsAsync(connection, year, cancellationToken);
-
-        var sales = await ListSalesAsync(
-            connection,
-            dateFrom,
-            dateTo,
-            cancellationToken);
+        var stores = await ListStoresAsync(connection, cancellationToken);
+        var customerName = customerCode > 0
+            ? await LoadCustomerNameAsync(connection, customerCode, cancellationToken)
+            : "";
 
         return new SalesHistoryPageModel
         {
             Year = year,
             Month = Math.Clamp(month, 0, 12),
-            DateFrom = dateFrom,
-            DateTo = dateTo,
+            CustomerCode = Math.Max(customerCode, 0),
+            CustomerName = customerName,
+            StoreCode = Math.Max(storeCode, 0),
             Years = years,
-            Sales = sales,
-            Totals = TotalsFrom(sales)
+            Stores = stores,
+            Sales = [],
+            Totals = SalesHistoryTotals.Empty
         };
+    }
+
+    public async Task<IReadOnlyList<SalesHistoryListItem>> ListPageAsync(int year, int month, int customerCode, int storeCode, int offset, int limit, CancellationToken cancellationToken = default)
+    {
+        await using var connection = await database.OpenConnectionAsync(cancellationToken);
+        return await ListSalesAsync(connection, year, Math.Clamp(month, 0, 12), Math.Max(customerCode, 0), Math.Max(storeCode, 0), Math.Max(offset, 0), Math.Clamp(limit, 1, 250), cancellationToken);
+    }
+
+    private static async Task<IReadOnlyList<SalesEntryStoreRow>> ListStoresAsync(
+        MySqlConnection connection,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT Codice, COALESCE(Nome, '') AS Nome
+            FROM PuntiVendita
+            ORDER BY Nome, Codice;
+            """;
+        var stores = new List<SalesEntryStoreRow>();
+        await using var command = new MySqlCommand(sql, connection);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            stores.Add(new(
+                Convert.ToInt32(reader["Codice"]),
+                Convert.ToString(reader["Nome"]) ?? ""));
+        return stores;
+    }
+
+    private static async Task<string> LoadCustomerNameAsync(
+        MySqlConnection connection,
+        int customerCode,
+        CancellationToken cancellationToken)
+    {
+        await using var command = new MySqlCommand(
+            "SELECT COALESCE(Nome, '') FROM Clienti WHERE Codice = @code LIMIT 1;",
+            connection);
+        command.Parameters.AddWithValue("@code", customerCode);
+        return Convert.ToString(await command.ExecuteScalarAsync(cancellationToken)) ?? "";
     }
 
     private static async Task<IReadOnlyList<int>> ListYearsAsync(
@@ -41,237 +78,126 @@ public sealed class SalesHistoryRepository(MicronoteDb database)
         const string sql = """
             SELECT DISTINCT Anno
             FROM Vendite
-            WHERE Anno IS NOT NULL
             ORDER BY Anno DESC;
             """;
-
         var years = new List<int>();
         await using var command = new MySqlCommand(sql, connection);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
-        {
             years.Add(Convert.ToInt32(reader["Anno"]));
-        }
-
         if (!years.Contains(currentYear))
-        {
             years.Insert(0, currentYear);
-        }
-
         return years;
     }
 
     private static async Task<IReadOnlyList<SalesHistoryListItem>> ListSalesAsync(
         MySqlConnection connection,
-        DateOnly dateFrom,
-        DateOnly dateTo,
+        int year,
+        int month,
+        int customerCode,
+        int storeCode, int offset, int limit,
         CancellationToken cancellationToken)
     {
-        var rows = new List<SalesHistoryListItem>();
-        var vatTotals = await ListVatTotalsAsync(connection, cancellationToken);
         const string sql = """
-            SELECT v.ID, v.Anno, v.Codice, v.DataMov,
-                   COALESCE(vr.Contanti, 0) AS Contanti, COALESCE(vr.Carta, 0) AS Carta,
-                   COALESCE(vr.Tickets, 0) AS Tickets, COALESCE(vr.Assegni, 0) AS Assegni,
-                   COALESCE(vr.Altro, 0) AS Altro, COALESCE(vr.Sospesi, 0) AS Sospesi,
-                   COALESCE(vr.Perdite, 0) AS Perdite,
-                   mc.ID AS AccountingMovementId
+            SELECT v.ID, v.Anno, v.Codice, v.NumDoc, v.DataDoc,
+                   v.Cliente, COALESCE(c.Nome, '') AS ClienteNome,
+                   COALESCE(v.Merce, 0) AS Merce,
+                   COALESCE(v.Iva, 0) AS Iva,
+                   COALESCE(v.Totale, 0) AS Totale,
+                   COALESCE(v.Abbuono, 0) AS Abbuono,
+                   COALESCE(v.PuntoV, 0) AS PuntoV
             FROM Vendite v
-            LEFT JOIN (
-                SELECT ID, SUM(Contanti) AS Contanti, SUM(Carta) AS Carta,
-                       SUM(Tickets) AS Tickets, SUM(Assegni) AS Assegni,
-                       SUM(Altro) AS Altro, SUM(Sospesi) AS Sospesi, SUM(Perdite) AS Perdite
-                FROM VenditeRg
-                GROUP BY ID
-            ) vr ON vr.ID = v.ID
-            LEFT JOIN MovCont mc ON mc.Settore = 20 AND mc.Documento = v.ID
-            WHERE v.DataMov BETWEEN @dateFrom AND @dateTo
-            ORDER BY v.DataMov DESC, v.Codice DESC;
+            LEFT JOIN Clienti c ON c.Codice = v.Cliente
+            WHERE v.Anno = @year
+              AND (@month = 0 OR MONTH(v.DataDoc) = @month)
+              AND (@customer = 0 OR v.Cliente = @customer)
+              AND (@store = 0 OR v.PuntoV = @store)
+            ORDER BY v.DataDoc DESC, v.NumDoc DESC, v.Codice DESC
+            LIMIT @limit OFFSET @offset;
             """;
-
+        var rows = new List<SalesHistoryListItem>();
         await using var command = new MySqlCommand(sql, connection);
-        AddDateParameters(command, dateFrom, dateTo);
-
+        command.Parameters.AddWithValue("@year", year);
+        command.Parameters.AddWithValue("@month", month);
+        command.Parameters.AddWithValue("@customer", customerCode);
+        command.Parameters.AddWithValue("@store", storeCode);
+        command.Parameters.AddWithValue("@offset", offset);
+        command.Parameters.AddWithValue("@limit", limit);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
-            var rowYear = Convert.ToInt32(reader["Anno"]);
-            var rowCode = Convert.ToInt32(reader["Codice"]);
-            var fiscal = vatTotals.GetValueOrDefault((rowYear, rowCode), VatTotals.Empty);
             rows.Add(new SalesHistoryListItem(
                 Convert.ToInt32(reader["ID"]),
-                reader["AccountingMovementId"] is DBNull ? null : Convert.ToInt32(reader["AccountingMovementId"]),
-                rowYear,
-                rowCode,
-                DateOnly.FromDateTime(Convert.ToDateTime(reader["DataMov"])),
-                fiscal.Net,
-                fiscal.NonTaxable,
-                fiscal.Vat,
-                fiscal.Total,
-                Money(reader["Contanti"]),
-                Money(reader["Carta"]),
-                Money(reader["Tickets"]),
-                Money(reader["Assegni"]),
-                Money(reader["Altro"]),
-                Money(reader["Sospesi"]),
-                Money(reader["Perdite"])));
+                Convert.ToInt32(reader["Anno"]),
+                Convert.ToInt32(reader["Codice"]),
+                Convert.ToInt32(reader["NumDoc"]),
+                reader["DataDoc"] is DBNull
+                    ? null
+                    : DateOnly.FromDateTime(Convert.ToDateTime(reader["DataDoc"])),
+                Convert.ToInt32(reader["Cliente"]),
+                Convert.ToString(reader["ClienteNome"]) ?? "",
+                Money(reader["Merce"]),
+                Money(reader["Iva"]),
+                Money(reader["Totale"]),
+                Money(reader["Abbuono"]),
+                Convert.ToInt32(reader["PuntoV"])));
         }
-
         return rows;
     }
 
     public async Task<IReadOnlyList<SalesHistoryDetailItem>> ListDetailsAsync(
-        int year,
-        int code,
+        int saleId,
         CancellationToken cancellationToken = default)
     {
         await using var connection = await database.OpenConnectionAsync(cancellationToken);
-        return await ListDetailsAsync(connection, year, code, cancellationToken);
-    }
-
-    private static async Task<IReadOnlyList<SalesHistoryDetailItem>> ListDetailsAsync(
-        MySqlConnection connection,
-        int year,
-        int code,
-        CancellationToken cancellationToken)
-    {
-        var vatTotals = await ListVatDetailsAsync(connection, year, code, cancellationToken);
         const string sql = """
-            SELECT vr.PuntoV, COALESCE(pv.Nome, '') AS Nome,
-                   vr.Contanti, vr.Carta, vr.Tickets, vr.Assegni, vr.Altro, vr.Sospesi, vr.Perdite
+            SELECT vr.Riga, vr.Articolo, COALESCE(a.Descrizione, '') AS Descrizione,
+                   COALESCE(vr.Ums, '') AS Ums, COALESCE(vr.Colli, 0) AS Colli,
+                   COALESCE(vr.Tara, 0) AS Tara,
+                   COALESCE(vr.Quantita, 0) AS Quantita,
+                   COALESCE(vr.Prezzo, 0) AS Prezzo,
+                   COALESCE(vr.AliqIva, 0) AS Iva,
+                   ROUND(COALESCE(vr.Prezzo, 0) * (1 + COALESCE(vr.AliqIva, 0) / 100), 2) AS PrezzoIvato,
+                   COALESCE(vr.Importo, 0) AS Importo
             FROM VenditeRg vr
-            LEFT JOIN PuntiVendita pv ON pv.Codice = vr.PuntoV
-            WHERE vr.Anno = @year
-              AND vr.Codice = @code
-            ORDER BY vr.PuntoV;
+            LEFT JOIN Articoli a ON a.Codice = vr.Articolo
+            WHERE vr.ID = @saleId
+            ORDER BY vr.Riga;
             """;
-
-        await using var command = new MySqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@year", year);
-        command.Parameters.AddWithValue("@code", code);
-
         var rows = new List<SalesHistoryDetailItem>();
+        await using var command = new MySqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@saleId", saleId);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
-            var storeCode = Convert.ToInt32(reader["PuntoV"]);
-            var fiscal = vatTotals.GetValueOrDefault(storeCode, VatTotals.Empty);
             rows.Add(new SalesHistoryDetailItem(
-                storeCode,
-                Convert.ToString(reader["Nome"]) ?? "",
-                fiscal.Net,
-                fiscal.NonTaxable,
-                fiscal.Vat,
-                fiscal.Total,
-                Money(reader["Contanti"]),
-                Money(reader["Carta"]),
-                Money(reader["Tickets"]),
-                Money(reader["Assegni"]),
-                Money(reader["Altro"]),
-                Money(reader["Sospesi"]),
-                Money(reader["Perdite"])));
+                Convert.ToInt32(reader["Riga"]),
+                Convert.ToString(reader["Articolo"]) ?? "",
+                Convert.ToString(reader["Descrizione"]) ?? "",
+                Convert.ToString(reader["Ums"]) ?? "",
+                Convert.ToInt32(reader["Colli"]),
+                Quantity(reader["Tara"]),
+                Quantity(reader["Quantita"]),
+                Quantity(reader["Prezzo"]),
+                Money(reader["Iva"]),
+                Money(reader["PrezzoIvato"]),
+                Money(reader["Importo"])));
         }
-
         return rows;
     }
 
-    private static async Task<Dictionary<(int Year, int Code), VatTotals>> ListVatTotalsAsync(
-        MySqlConnection connection,
-        CancellationToken cancellationToken)
+    private static SalesHistoryTotals TotalsFrom(IReadOnlyList<SalesHistoryListItem> rows)
     {
-        const string sql = """
-            SELECT mv.Anno, mv.Codice,
-                   SUM(CASE WHEN COALESCE(r.AliqIva, 0) <> 0 THEN COALESCE(r.Imponibile, 0) ELSE 0 END) AS Imponibile,
-                   SUM(CASE WHEN COALESCE(r.AliqIva, 0) = 0 THEN COALESCE(r.Imponibile, 0) ELSE 0 END) AS NonImponibile,
-                   SUM(COALESCE(r.Iva, 0)) AS Iva
-            FROM MovIva mv
-            INNER JOIN MovIvaRg r ON r.ID = mv.ID AND r.Settore = 20
-            WHERE mv.Settore = 20
-            GROUP BY mv.Anno, mv.Codice;
-            """;
-
-        var totals = new Dictionary<(int Year, int Code), VatTotals>();
-        await using var command = new MySqlCommand(sql, connection);
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-        while (await reader.ReadAsync(cancellationToken))
-        {
-            totals[(Convert.ToInt32(reader["Anno"]), Convert.ToInt32(reader["Codice"]))] =
-                VatTotals.From(
-                    Money(reader["Imponibile"]),
-                    Money(reader["NonImponibile"]),
-                    Money(reader["Iva"]));
-        }
-
-        return totals;
-    }
-
-    private static async Task<Dictionary<int, VatTotals>> ListVatDetailsAsync(
-        MySqlConnection connection,
-        int year,
-        int code,
-        CancellationToken cancellationToken)
-    {
-        const string sql = """
-            SELECT r.PuntoV,
-                   SUM(CASE WHEN COALESCE(r.AliqIva, 0) <> 0 THEN COALESCE(r.Imponibile, 0) ELSE 0 END) AS Imponibile,
-                   SUM(CASE WHEN COALESCE(r.AliqIva, 0) = 0 THEN COALESCE(r.Imponibile, 0) ELSE 0 END) AS NonImponibile,
-                   SUM(COALESCE(r.Iva, 0)) AS Iva
-            FROM MovIva mv
-            INNER JOIN MovIvaRg r ON r.ID = mv.ID AND r.Settore = 20
-            WHERE mv.Settore = 20
-              AND mv.Anno = @year
-              AND mv.Codice = @code
-            GROUP BY r.PuntoV;
-            """;
-
-        var totals = new Dictionary<int, VatTotals>();
-        await using var command = new MySqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@year", year);
-        command.Parameters.AddWithValue("@code", code);
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-        while (await reader.ReadAsync(cancellationToken))
-        {
-            totals[Convert.ToInt32(reader["PuntoV"])] =
-                VatTotals.From(
-                    Money(reader["Imponibile"]),
-                    Money(reader["NonImponibile"]),
-                    Money(reader["Iva"]));
-        }
-
-        return totals;
-    }
-
-    private sealed record VatTotals(decimal Net, decimal NonTaxable, decimal Vat, decimal Total)
-    {
-        public static VatTotals Empty { get; } = new(0, 0, 0, 0);
-
-        public static VatTotals From(decimal net, decimal nonTaxable, decimal vat) =>
-            new(net, nonTaxable, vat, net + nonTaxable + vat);
-    }
-
-    private static SalesHistoryTotals TotalsFrom(IReadOnlyList<SalesHistoryListItem> rows) =>
-        new(
-            rows.Sum(row => row.Net),
-            rows.Sum(row => row.NonTaxable),
+        return new(
+            rows.Sum(row => row.Merchandise),
             rows.Sum(row => row.Vat),
             rows.Sum(row => row.Total),
-            rows.Sum(row => row.Cash),
-            rows.Sum(row => row.Card),
-            rows.Sum(row => row.Tickets),
-            rows.Sum(row => row.Checks),
-            rows.Sum(row => row.Other),
-            rows.Sum(row => row.Suspended),
-            rows.Sum(row => row.Losses));
-
-    private static void AddDateParameters(
-        MySqlCommand command,
-        DateOnly dateFrom,
-        DateOnly dateTo)
-    {
-        command.Parameters.AddWithValue("@dateFrom", dateFrom.ToDateTime(TimeOnly.MinValue));
-        command.Parameters.AddWithValue("@dateTo", dateTo.ToDateTime(TimeOnly.MinValue));
+            rows.Sum(row => row.Discount));
     }
 
     private static decimal Money(object value) =>
+        value is null || value == DBNull.Value ? 0 : Convert.ToDecimal(value);
+
+    private static decimal Quantity(object value) =>
         value is null || value == DBNull.Value ? 0 : Convert.ToDecimal(value);
 }

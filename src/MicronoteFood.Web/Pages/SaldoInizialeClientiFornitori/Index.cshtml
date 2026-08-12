@@ -21,17 +21,21 @@
         </a>
         <div class="list-title-actions initial-cf-balance-actions">
             <span class="list-records-box article-records-box initial-cf-balance-records">
-                <strong>@(Model.List.Customers.Count + Model.List.Suppliers.Count)</strong>
-                <span>record</span>
+                <span>Clienti</span>
+                <strong>@Model.List.Customers.Count</strong>
+            </span>
+            <span class="list-records-box article-records-box initial-cf-balance-records">
+                <span>Fornitori</span>
+                <strong>@Model.List.Suppliers.Count</strong>
             </span>
             <button class="list-title-button" type="submit" form="initial-cf-balance-form">Salva</button>
+            <button class="list-title-button initial-cf-clear-button" type="button" data-initial-cf-clear>Azzera tutto</button>
             <a class="list-title-button" asp-page="/Index" data-initial-cf-exit>Esci</a>
         </div>
     </header>
 
     <form id="initial-cf-balance-form"
           method="post"
-          data-progress-disabled="true"
           data-initial-cf-form
           data-enter-navigation>
         <input asp-for="Payload" type="hidden" data-initial-cf-payload />
@@ -41,15 +45,14 @@
             <div class="initial-cf-filter-grid">
                 <div class="initial-cf-filter-left">
                     <div class="field initial-cf-year-field">
-                        <label>Esercizio contabile</label>
+                        <label>Saldo iniziale al</label>
                         <select name="year" data-initial-cf-year>
                             @foreach (var year in Model.List.Years)
                             {
-                                <option value="@year" selected="@(year == Model.List.Year)">@year</option>
+                                <option value="@year" selected="@(year == Model.List.Year)">01/01/@year</option>
                             }
                         </select>
                     </div>
-                    <button class="button button-primary primary initial-cf-clear-button" type="button" data-initial-cf-clear>Azzera tutto</button>
                 </div>
                 <div class="initial-cf-note">
                     <strong>NOTE:</strong>
@@ -89,7 +92,10 @@
                                     <td>@row.City</td>
                                     <td>@row.VatNumber</td>
                                     <td>
-                                        <input type="text" inputmode="decimal" autocomplete="off" value="@Money(row.Balance)" data-initial-cf-balance-input />
+                                        <input type="text" inputmode="decimal" autocomplete="off"
+                                               value="@Money(row.Balance)"
+                                               data-initial-value="@row.Balance.ToString(CultureInfo.InvariantCulture)"
+                                               data-initial-cf-balance-input />
                                     </td>
                                 </tr>
                             }
@@ -131,7 +137,10 @@
                                     <td>@row.City</td>
                                     <td>@row.VatNumber</td>
                                     <td>
-                                        <input type="text" inputmode="decimal" autocomplete="off" value="@Money(row.Balance)" data-initial-cf-balance-input />
+                                        <input type="text" inputmode="decimal" autocomplete="off"
+                                               value="@Money(row.Balance)"
+                                               data-initial-value="@row.Balance.ToString(CultureInfo.InvariantCulture)"
+                                               data-initial-cf-balance-input />
                                     </td>
                                 </tr>
                             }

@@ -5,10 +5,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>a94bd8c3-bca3-4bcb-95ba-7fc2aaa47c70</UserSecretsId>
-    <Version>1.26.7.24</Version>
-    <AssemblyVersion>1.26.7.24</AssemblyVersion>
-    <FileVersion>1.26.7.24</FileVersion>
-    <InformationalVersion>1.26.07.24</InformationalVersion>
+    <Version>1.26.8.5</Version>
+    <AssemblyVersion>1.26.8.5</AssemblyVersion>
+    <FileVersion>1.26.8.5</FileVersion>
+    <InformationalVersion>1.26.08.05</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 

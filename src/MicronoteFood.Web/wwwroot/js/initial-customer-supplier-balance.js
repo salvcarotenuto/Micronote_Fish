@@ -51,11 +51,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return formatted || "0,00";
   };
 
-  const formatForEdit = (value) => {
-    const number = Number(value || 0);
-    return number === 0 ? "" : String(Math.round(number * 100) / 100).replace(".", ",");
-  };
-
   const cleanBalance = (input) => {
     const original = String(input.value ?? "").trim();
     const sign = original.startsWith("-") ? "-" : "";
@@ -329,7 +324,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     input?.addEventListener("focus", () => {
       selectRow(row);
-      input.value = formatForEdit(parseDecimal(input.value));
       input.select();
     });
     input?.addEventListener("input", () => {
@@ -431,7 +425,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (modified) {
       window.MicronoteMessageBox?.show({
         title: "Saldo iniziale clienti e fornitori",
-        message: "Cambiare esercizio senza salvare le modifiche?",
+        message: "Cambiare anno senza salvare le modifiche?",
         mode: "confirm",
         okText: "Cambia",
         onConfirm: () => {
@@ -440,7 +434,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       return;
     }
-
     window.location.href = `${window.location.pathname}?year=${encodeURIComponent(yearSelect.value)}`;
   });
 
@@ -452,6 +445,18 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
     buildPayload();
+    modified = false;
+  });
+
+  form.addEventListener("formdata", (event) => {
+    rows.forEach((row) => {
+      const input = row.querySelector("[data-initial-cf-balance-input]");
+      if (input) {
+        commitBalance(input);
+      }
+    });
+    buildPayload();
+    event.formData.set("Payload", payload.value);
     modified = false;
   });
 
@@ -469,8 +474,21 @@ document.addEventListener("DOMContentLoaded", () => {
     confirmExit("/");
   });
 
+  rows.forEach((row) => {
+    const input = row.querySelector("[data-initial-cf-balance-input]");
+    if (input) {
+      const initialValue = Number.parseFloat(input.dataset.initialValue ?? "0");
+      input.value = formatMoney(Number.isFinite(initialValue) ? initialValue : 0);
+      updateRowBalanceSort(input);
+    }
+  });
   updateTotals();
   if (rows.length > 0) {
     focusBalance(rows[0]);
+    const firstInput = rows[0].querySelector("[data-initial-cf-balance-input]");
+    if (firstInput) {
+      commitBalance(firstInput);
+      firstInput.select();
+    }
   }
 });

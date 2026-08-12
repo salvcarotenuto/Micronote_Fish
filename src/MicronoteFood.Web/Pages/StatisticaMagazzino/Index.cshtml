@@ -1,0 +1,35 @@
+@page
+@model MicronoteFood.Web.Pages.StatisticaMagazzino.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Statistica di magazzino";
+    ViewData["BodyClass"] = "warehouse-statistics-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    var months = it.DateTimeFormat.MonthNames.Take(12).Select((name, index) => new { Value = index + 1, Name = char.ToUpper(name[0]) + name[1..] });
+    string Number(decimal value) => value == 0 ? "" : value.ToString("N3", it);
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Percentage(decimal value) => value == 0 ? "" : value.ToString("N0", it) + " %";
+}
+
+<section class="module-page stock-movements-page warehouse-statistics-page supplier-form-page data-form-skin" data-warehouse-statistics>
+    <header class="module-header">
+        <div class="module-title-identity"><a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale"><img src="~/images/micronote-logo.jpeg" alt="" /></a><div><h1>Statistica di magazzino</h1><p>Acquisti, vendite, ricavi e margine di redditività per articolo o raggruppamento</p></div></div>
+        <div class="top-actions group-purchase-actions"><span class="list-records-box group-purchase-records"><strong>@Model.Report.Rows.Count</strong><span>record</span></span><button class="button button-primary primary" type="submit" form="warehouse-statistics-filters">Elabora</button></div>
+    </header>
+
+    <form id="warehouse-statistics-filters" class="stock-movements-filters warehouse-statistics-filters" method="get">
+        <input type="hidden" name="run" value="true" />
+        <fieldset class="form-frame"><div class="warehouse-statistics-filter-row">
+            <div class="field"><label>Anno</label><select name="year">@foreach (var item in Model.Years) { <option value="@item" selected="@(Model.Report.Year == item)">@item</option> }</select></div>
+            <div class="field"><label>Mese</label><select name="month"><option value="0" selected="@(Model.Report.Month == 0)"></option>@foreach (var item in months) { <option value="@item.Value" selected="@(Model.Report.Month == item.Value)">@item.Name</option> }</select></div>
+            <div class="field warehouse-statistics-grouping-field"><label>Raggruppamento</label><select name="grouping"><option value="article" selected="@(Model.Report.Grouping == "article")">Articolo</option><option value="category" selected="@(Model.Report.Grouping == "category")">Categoria</option><option value="species" selected="@(Model.Report.Grouping == "species")">Specie</option><option value="origin" selected="@(Model.Report.Grouping == "origin")">Provenienza</option></select></div>
+        </div></fieldset>
+    </form>
+
+    <div class="warehouse-statistics-layout">
+        <section class="stock-movements-panel warehouse-statistics-main-panel"><h2>Lista articoli venduti</h2><div class="list-grid-frame stock-movements-grid-frame warehouse-statistics-grid-frame" data-warehouse-statistics-main-grid><table class="list-grid warehouse-statistics-grid"><thead><tr><th data-sort-type="number">Articolo</th><th data-sort-type="text">Descrizione</th><th data-sort-type="number">Acq. qtà</th><th data-sort-type="number">Acq. valore</th><th data-sort-type="number">Cst. medio</th><th data-sort-type="number">Vend. qtà</th><th data-sort-type="number">Vend. valore</th><th data-sort-type="number">Rimanenza</th><th data-sort-type="number">Prz. medio</th><th data-sort-type="number">Ricavo</th><th data-sort-type="number">Ricarico</th></tr></thead><tbody>@foreach (var row in Model.Report.Rows) { <tr tabindex="0" data-warehouse-statistics-row data-code="@row.Code"><td data-sort-value="@row.Code">@row.Code</td><td data-sort-value="@row.Description">@row.Description</td><td class="number" data-sort-value="@row.PurchasedQuantity.ToString(CultureInfo.InvariantCulture)">@Number(row.PurchasedQuantity)</td><td class="number" data-sort-value="@row.PurchasedAmount.ToString(CultureInfo.InvariantCulture)">@Money(row.PurchasedAmount)</td><td class="number" data-sort-value="@row.AverageCost.ToString(CultureInfo.InvariantCulture)">@Money(row.AverageCost)</td><td class="number" data-sort-value="@row.SoldQuantity.ToString(CultureInfo.InvariantCulture)">@Number(row.SoldQuantity)</td><td class="number" data-sort-value="@row.SoldAmount.ToString(CultureInfo.InvariantCulture)">@Money(row.SoldAmount)</td><td class="number" data-sort-value="@row.RemainingQuantity.ToString(CultureInfo.InvariantCulture)">@Number(row.RemainingQuantity)</td><td class="number" data-sort-value="@row.AveragePrice.ToString(CultureInfo.InvariantCulture)">@Money(row.AveragePrice)</td><td class="number" data-sort-value="@row.Revenue.ToString(CultureInfo.InvariantCulture)">@Money(row.Revenue)</td><td class="number" data-sort-value="@row.Markup.ToString(CultureInfo.InvariantCulture)">@Percentage(row.Markup)</td></tr>}</tbody></table></div></section>
+        <section class="stock-movements-panel warehouse-statistics-customers-panel"><h2>Dettaglio vendite per cliente</h2><div class="list-grid-frame warehouse-statistics-customers-frame" data-warehouse-statistics-customers-grid><table class="list-grid warehouse-statistics-customers-grid"><thead><tr><th>Cliente</th><th>Nome</th><th>Quantità</th><th>Importo</th></tr></thead><tbody data-warehouse-statistics-customers></tbody></table></div></section>
+    </div>
+</section>
+
+@section Scripts { <script src="~/js/warehouse-statistics.js" asp-append-version="true"></script> }

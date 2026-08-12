@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
     .get("returnTo")?.toLocaleLowerCase("it") ?? "";
   const stockLoadReturnToList = stockLoadReturnTarget === "list";
   const stockLoadReturnToPurchaseInvoice = stockLoadReturnTarget === "purchaseinvoice";
+  const stockLoadReturnUrl = formPage?.dataset.stockLoadReturnUrl || "/CaricoAcquisti/Index";
   const stockLoadId = document.querySelector("[data-stock-load-id]");
   const stockLoadYear = document.querySelector("[data-stock-load-year]");
   const stockLoadCode = document.querySelector("[data-stock-load-code]");
@@ -386,6 +387,54 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
+  const showMissingSupplierMessage = (result) => {
+    const supplier = result?.supplier ?? {};
+    const name = String(supplier.name ?? "").trim() || "(nome non disponibile)";
+    const vat = String(supplier.vat ?? "").trim() || "(partita IVA non disponibile)";
+    const fiscalCode = String(supplier.fiscalCode ?? "").trim();
+    const supplierParams = {
+      address: supplier.address,
+      city: supplier.city,
+      postalCode: supplier.postalCode,
+      province: supplier.province,
+      phone: supplier.phone,
+      email: supplier.email,
+      certifiedEmail: supplier.certifiedEmail
+    };
+
+    window.MicronoteMessageBox?.show({
+      title: "Fornitore non trovato",
+      message: `Il fornitore\n${name}\npartita iva: ${vat}\nnon e' presente in archivio\nvuoi inserirlo ora ?`,
+      mode: "confirm",
+      variant: "confirm",
+      okText: "Inserisci",
+      cancelText: "Annulla",
+      onConfirm: () => {
+        const supplierUrl = new URL("/Fornitori/Edit", window.location.origin);
+        const returnUrl = new URL(window.location.href);
+        if (selectedElectronicInvoiceFile?.fullPath) {
+          returnUrl.searchParams.set("importXml", selectedElectronicInvoiceFile.fullPath);
+        }
+
+        supplierUrl.searchParams.set("returnUrl", returnUrl.pathname + returnUrl.search);
+        supplierUrl.searchParams.set("name", name === "(nome non disponibile)" ? "" : name);
+        supplierUrl.searchParams.set("vat", vat === "(partita IVA non disponibile)" ? "" : vat);
+        if (fiscalCode) {
+          supplierUrl.searchParams.set("fiscalCode", fiscalCode);
+        }
+
+        Object.entries(supplierParams).forEach(([key, value]) => {
+          const normalized = String(value ?? "").trim();
+          if (normalized) {
+            supplierUrl.searchParams.set(key, normalized);
+          }
+        });
+
+        window.location.href = supplierUrl.toString();
+      }
+    });
+  };
+
   const requestVerificationToken = () =>
     document.querySelector("input[name='__RequestVerificationToken']")?.value ?? "";
 
@@ -475,11 +524,15 @@ document.addEventListener("DOMContentLoaded", () => {
     description: lineOverlay?.querySelector("[data-line-description]"),
     unit: lineOverlay?.querySelector("[data-line-unit]"),
     stock: lineOverlay?.querySelector("[data-line-stock]"),
+    tare: lineOverlay?.querySelector("[data-line-tare]"),
     lastPrice: lineOverlay?.querySelector("[data-line-last-price]"),
+    lastVat: lineOverlay?.querySelector("[data-line-last-vat]"),
+    packages: lineOverlay?.querySelector("[data-line-packages]"),
     quantity: lineOverlay?.querySelector("[data-line-quantity]"),
     price: lineOverlay?.querySelector("[data-line-price]"),
     discount: lineOverlay?.querySelector("[data-line-discount]"),
     vat: lineOverlay?.querySelector("[data-line-vat]"),
+    vatPrice: lineOverlay?.querySelector("[data-line-vat-price]"),
     amount: lineOverlay?.querySelector("[data-line-amount]")
   };
 
@@ -509,6 +562,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (lineFields.amount) {
       lineFields.amount.value = formatMoney(amount);
     }
+    if (lineFields.vatPrice) {
+      lineFields.vatPrice.value = formatMoney(netPrice * (1 + parsePercent(lineFields.vat?.value) / 100));
+    }
   };
 
   const findFirstFreeRow = () => {
@@ -521,8 +577,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const gridRows = () => Array.from(linesGrid?.querySelectorAll("tbody tr") ?? []);
 
+  const hasGridRowValues = (row) => gridLineInputs(row)
+    .some((input) => String(input.value ?? "").trim());
+
   const visibleGridRows = () => gridRows()
-    .filter((row) => String(row.querySelector("td:first-child input")?.value ?? "").trim());
+    .filter(hasGridRowValues);
 
   const selectedGridRow = () => linesGrid?.querySelector("tbody tr.selected") ?? null;
 
@@ -552,8 +611,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const selectGridRow = (row, focus = false, direction = 0) => {
-    const code = String(row?.querySelector("td:first-child input")?.value ?? "").trim();
-    if (!row || !code) {
+    if (!row || !hasGridRowValues(row)) {
       return;
     }
 
@@ -711,7 +769,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const values = rows
       .map((row) => ({
         cells: gridLineInputs(row).map((input) => input.value),
-        state: getGridRowState(row)
+        state: getGridRowState(row),
+        tare: row.dataset.tare || "0",
+        netPrice: row.dataset.netPrice || "0",
+        vatIncludedPrice: row.dataset.vatIncludedPrice || "0"
       }))
       .filter((source) => String(source.cells[0] ?? "").trim());
 
@@ -721,6 +782,9 @@ document.addEventListener("DOMContentLoaded", () => {
       inputs.forEach((input, cellIndex) => {
         input.value = source.cells[cellIndex] ?? "";
       });
+      row.dataset.tare = source.tare ?? "0";
+      row.dataset.netPrice = source.netPrice ?? "0";
+      row.dataset.vatIncludedPrice = source.vatIncludedPrice ?? "0";
       setGridRowState(row, source.state);
       refreshGridRowState(row);
       row.classList.remove("selected", "selected-row");
@@ -758,10 +822,13 @@ document.addEventListener("DOMContentLoaded", () => {
         description: String(values[1] ?? "").trim(),
         unitMeasure: String(values[2] ?? "").trim(),
         quantity: parseDecimal(values[3]),
-        price: parseMoney(values[4]),
+        price: parseDecimal(values[4]),
         discount: parsePercent(values[5]),
         amount: parseMoney(values[6]),
         vatRate: parsePercent(values[7]),
+        tare: parseDecimal(row.dataset.tare),
+        netPrice: parseDecimal(row.dataset.netPrice),
+        vatIncludedPrice: parseDecimal(row.dataset.vatIncludedPrice),
         hasValues: hasLineRowValues(values)
       };
     });
@@ -1060,12 +1127,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    if (saveResult?.editUrl) {
-      window.location.assign(saveResult.editUrl);
-      return;
-    }
-
-    window.location.reload();
+    hideStockLoadProgress(() => {
+      window.location.assign(stockLoadReturnUrl);
+    });
   };
 
   const setFieldValue = (field, value) => {
@@ -1149,6 +1213,14 @@ document.addEventListener("DOMContentLoaded", () => {
       inputs[5].value = line.discount ?? "";
       inputs[6].value = line.amount ?? "";
       inputs[7].value = line.vatRate ?? "";
+      const importedPrice = parseDecimal(line.price);
+      const importedDiscount = parsePercent(line.discount);
+      const importedVatRate = parsePercent(line.vatRate);
+      const importedNetPrice = importedPrice * (1 - importedDiscount / 100);
+      gridRows[index].dataset.tare = "0";
+      gridRows[index].dataset.netPrice = importedNetPrice.toFixed(3);
+      gridRows[index].dataset.vatIncludedPrice =
+        (importedNetPrice * (1 + importedVatRate / 100)).toFixed(3);
     });
 
     updateInvoiceTotal();
@@ -1569,6 +1641,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const result = await response.json();
       if (!result.success) {
+        if (result.reason === "supplierMissing") {
+          closeElectronicInvoiceDialog();
+          showMissingSupplierMessage(result);
+          return;
+        }
+
         showMessage(result.message || "Non e' stato possibile leggere la fattura elettronica.");
         return;
       }
@@ -2058,6 +2136,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     clearLineDialog();
+    const lineTitle = lineOverlay.querySelector("[data-line-title]");
+    if (lineTitle) {
+      lineTitle.textContent = "Inserimento articolo";
+    }
     lineOverlay.hidden = false;
     document.body.classList.add("lookup-open");
     window.setTimeout(() => lineFields.code?.focus(), 0);
@@ -2081,7 +2163,15 @@ document.addEventListener("DOMContentLoaded", () => {
     lineFields.amount.value = cells[6]?.value ?? "";
     lineFields.vat.value = cells[7]?.value ?? "";
     lineFields.stock.value = "";
+    lineFields.tare.value = "";
     lineFields.lastPrice.value = "";
+    lineFields.lastVat.value = "";
+    lineFields.packages.value = "";
+    lineFields.vatPrice.value = "";
+    const lineTitle = lineOverlay.querySelector("[data-line-title]");
+    if (lineTitle) {
+      lineTitle.textContent = "Modifica articolo";
+    }
     lineOverlay.hidden = false;
     document.body.classList.add("lookup-open");
     window.setTimeout(() => lineFields.quantity?.focus(), 0);
@@ -2116,9 +2206,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     lineFields.code.value = article.code ?? lineFields.code.value;
     lineFields.description.value = article.description ?? "";
-    lineFields.unit.value = article.unitMeasure ?? "";
+    lineFields.unit.value = article.purchaseUnitMeasure ?? article.unitMeasure ?? "";
     lineFields.stock.value = formatNumber(article.stock ?? 0, 3);
+    lineFields.tare.value = formatNumber(article.tare ?? 0, 3);
     lineFields.lastPrice.value = formatMoney(Number(article.lastPrice ?? 0));
+    lineFields.lastVat.value = "";
     lineFields.price.value = formatMoney(Number(article.price ?? 0));
     lineFields.vat.value = formatPercent(Number(article.vatRate ?? 0));
     calculateLineAmount();
@@ -2386,10 +2478,17 @@ document.addEventListener("DOMContentLoaded", () => {
     cells[1].value = lineFields.description.value.trim();
     cells[2].value = lineFields.unit.value.trim();
     cells[3].value = formatNumber(parseDecimal(lineFields.quantity.value), 3);
-    cells[4].value = formatMoney(parseMoney(lineFields.price.value));
+    const price = parseDecimal(lineFields.price.value);
+    const discount = parsePercent(lineFields.discount.value);
+    const vatRate = parsePercent(lineFields.vat.value);
+    const netPrice = price * (1 - discount / 100);
+    cells[4].value = formatNumber(price, 3);
     cells[5].value = formatPercent(parsePercent(lineFields.discount.value));
     cells[6].value = formatMoney(parseMoney(lineFields.amount.value));
     cells[7].value = formatPercent(parsePercent(lineFields.vat.value));
+    targetLineRow.dataset.netPrice = netPrice.toFixed(3);
+    targetLineRow.dataset.vatIncludedPrice = (netPrice * (1 + vatRate / 100)).toFixed(3);
+    targetLineRow.dataset.tare ||= "0";
     targetLineRow.dataset.articleFound = "true";
     setGridRowState(targetLineRow, stockLoadRowState.ok);
     updateInvoiceTotal();
@@ -2422,6 +2521,25 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     lineFields.quantity?.addEventListener("blur", () => {
       lineFields.quantity.value = formatNumber(parseDecimal(lineFields.quantity.value), 3);
+      calculateLineAmount();
+    });
+    lineFields.price?.addEventListener("input", () => {
+      const text = lineFields.price.value.replace(/[^\d.,]/g, "");
+      const separatorMatches = Array.from(text.matchAll(/[.,]/g));
+      const decimalIndex = separatorMatches.length > 1
+        ? separatorMatches[separatorMatches.length - 1].index
+        : (separatorMatches[0]?.index ?? -1);
+      lineFields.price.value = decimalIndex >= 0
+        ? `${text.slice(0, decimalIndex).replace(/[.,]/g, "").slice(0, 7)}.${text.slice(decimalIndex + 1).replace(/[.,]/g, "").slice(0, 3)}`
+        : text.replace(/[.,]/g, "").slice(0, 7);
+      calculateLineAmount();
+    });
+    lineFields.price?.addEventListener("focus", () => {
+      lineFields.price.value = parseDecimal(lineFields.price.value) || "";
+      lineFields.price.select?.();
+    });
+    lineFields.price?.addEventListener("blur", () => {
+      lineFields.price.value = formatNumber(parseDecimal(lineFields.price.value), 3);
       calculateLineAmount();
     });
 
@@ -2493,6 +2611,14 @@ document.addEventListener("DOMContentLoaded", () => {
     lineOverlay.querySelector("[data-line-cancel]")?.addEventListener("click", closeLineDialog);
     lineOverlay.querySelector("[data-line-confirm]")?.addEventListener("click", confirmLineDialog);
     lineFields.code?.addEventListener("change", loadArticle);
+    lineFields.code?.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") {
+        return;
+      }
+
+      event.preventDefault();
+      loadArticle().then(() => lineFields.quantity?.focus());
+    });
     [lineFields.quantity, lineFields.price, lineFields.discount, lineFields.vat].forEach((field) => {
       field?.addEventListener("blur", calculateLineAmount);
     });
@@ -2508,35 +2634,6 @@ document.addEventListener("DOMContentLoaded", () => {
         openArticleLookup();
       }
 
-      if (event.key === "Tab" || event.key === "Enter") {
-        const tabFields = [
-          lineFields.code,
-          lineOverlay.querySelector("[data-article-lookup-open]"),
-          lineFields.quantity,
-          lineFields.price,
-          lineFields.discount,
-          lineFields.vat,
-          lineOverlay.querySelector("[data-line-confirm]"),
-          lineOverlay.querySelector("[data-line-cancel]")
-        ].filter(Boolean);
-        const currentIndex = tabFields.indexOf(event.target);
-        if (currentIndex >= 0) {
-          if (event.key === "Enter" && event.target instanceof HTMLButtonElement) {
-            return;
-          }
-
-          event.preventDefault();
-          if (event.key === "Enter" && event.target === lineFields.code) {
-            loadArticle().then(() => lineFields.quantity?.focus());
-            return;
-          }
-
-          const nextIndex = event.shiftKey
-            ? (currentIndex - 1 + tabFields.length) % tabFields.length
-            : (currentIndex + 1) % tabFields.length;
-          tabFields[nextIndex].focus();
-        }
-      }
     });
 
     lineOverlay.querySelector("[data-article-lookup-open]")?.addEventListener("click", openArticleLookup);

@@ -45,7 +45,10 @@ public sealed class IndexModel(
             price = detail.Price,
             discount = detail.Discount,
             amount = detail.Amount,
-            vatRate = detail.VatRate
+            vatRate = detail.VatRate,
+            tare = detail.Tare,
+            netPrice = detail.NetPrice,
+            vatIncludedPrice = detail.VatIncludedPrice
         }));
     }
 }

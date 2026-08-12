@@ -65,7 +65,7 @@ public sealed class StockUnloadRepository(
     {
         await using var connection = await database.OpenConnectionAsync(ct);
         const string sql = """
-            SELECT m.*, COALESCE(a.Descrizione,'') Descrizione, COALESCE(a.Ums,'') Ums,
+            SELECT m.*, COALESCE(a.Descrizione,'') Descrizione, COALESCE(a.Uma,'') Ums,
                    COALESCE(f.Nome,'') FornitoreNome
             FROM Movimenti m LEFT JOIN Articoli a ON a.Codice=m.Articolo
             LEFT JOIN Fornitori f ON f.Codice=m.Ditta
@@ -183,10 +183,10 @@ public sealed class StockUnloadRepository(
     private static async Task<decimal> StockAsync(MySqlConnection c, string article, int excludeId, CancellationToken ct)
     {
         const string sql = """
-          SELECT COALESCE(a.GiacIn,0)+COALESCE(SUM(CASE WHEN m.TipoMov='C' THEN m.Quantita WHEN m.TipoMov='S' THEN -m.Quantita ELSE 0 END),0)
+          SELECT COALESCE(a.GiacinP,0)+COALESCE(SUM(CASE WHEN m.TipoMov='C' THEN m.Quantita WHEN m.TipoMov='S' THEN -m.Quantita ELSE 0 END),0)
           FROM Articoli a LEFT JOIN Movimenti m ON m.Articolo=a.Codice
             AND m.ID<>@id
-          WHERE a.Codice=@article GROUP BY a.Codice,a.GiacIn;
+          WHERE a.Codice=@article GROUP BY a.Codice,a.GiacinP;
           """;
         await using var command = new MySqlCommand(sql, c);
         command.Parameters.AddWithValue("@id", excludeId);
@@ -212,7 +212,7 @@ public sealed class StockUnloadRepository(
     private static async Task<IReadOnlyList<StockUnloadArticle>> ReadArticlesAsync(MySqlConnection c, CancellationToken ct)
     {
         var result = new List<StockUnloadArticle>();
-        await using var command = new MySqlCommand("SELECT Codice,COALESCE(Descrizione,''),COALESCE(Ums,'') FROM Articoli ORDER BY Descrizione;", c);
+        await using var command = new MySqlCommand("SELECT Codice,COALESCE(Descrizione,''),COALESCE(Uma,'') FROM Articoli ORDER BY Descrizione;", c);
         await using var r = await command.ExecuteReaderAsync(ct);
         while (await r.ReadAsync(ct)) result.Add(new(Convert.ToString(r[0]) ?? "", Convert.ToString(r[1]) ?? "", Convert.ToString(r[2]) ?? ""));
         return result;

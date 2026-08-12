@@ -27,10 +27,10 @@ public sealed class EditModel(
     public string DatabaseName { get; set; } = "";
 
     [BindProperty]
-    public string? CurrentDatabaseVersion { get; set; }
+    public DateTime? CurrentDatabaseVersion { get; set; }
 
     [BindProperty]
-    public string? RequiredDatabaseVersion { get; set; }
+    public DateTime? RequiredDatabaseVersion { get; set; }
 
     [BindProperty]
     public bool Active { get; set; } = true;
@@ -80,9 +80,6 @@ public sealed class EditModel(
         Name = Name?.Trim() ?? "";
         CompanySecret = CompanySecret?.Trim() ?? "";
         DatabaseName = databaseOptions.BuildCompanyDatabaseName(Code);
-        CurrentDatabaseVersion = CurrentDatabaseVersion?.Trim();
-        RequiredDatabaseVersion = RequiredDatabaseVersion?.Trim();
-
         var company = ToCompany();
         var errors = await repository.ValidateCompanyAsync(company, cancellationToken);
         foreach (var error in errors)

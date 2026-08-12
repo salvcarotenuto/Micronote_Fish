@@ -1,0 +1,43 @@
+@page
+@model MicronoteFood.Web.Pages.VenditePerGruppo.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Vendite per gruppo";
+    ViewData["BodyClass"] = "group-purchase-stats-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Percent(decimal value) => value == 0 ? "" : value.ToString("N2", it) + " %";
+    string Sort(decimal value) => value.ToString(CultureInfo.InvariantCulture);
+    var groupingLabel = Model.Report.Grouping switch { "category" => "Categoria", "subgroup" => "Sottogruppo", "species" => "Specie", _ => "Gruppo" };
+}
+
+<section class="module-page stock-movements-page group-purchase-stats-page supplier-form-page data-form-skin" data-group-purchase-stats>
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale"><img src="~/images/micronote-logo.jpeg" alt="" /></a>
+            <div><h1>Vendite per gruppo</h1><p>Statistica vendite di magazzino con raggruppamento per categorie, gruppi e sottogruppi</p></div>
+        </div>
+        <div class="top-actions group-purchase-actions">
+            <span class="list-records-box group-purchase-records"><strong>@Model.Report.Rows.Count</strong><span>record</span></span>
+            <button class="button button-primary primary" type="submit" form="group-purchase-filters">Elabora</button>
+        </div>
+    </header>
+
+    <form id="group-purchase-filters" class="stock-movements-filters group-purchase-filters" method="get" data-group-purchase-filters data-progress-message="Elaborazione statistica in corso...">
+        <input type="hidden" name="run" value="true" />
+        <fieldset class="form-frame"><div class="group-purchase-filter-row">
+            <div class="field"><label>Dalla data</label><span class="micronote-date-control" data-date-control><input type="hidden" name="dateFrom" value="@Model.Report.DateFrom.ToString("yyyy-MM-dd")" data-filter-date-hidden /><input class="micronote-date-input" type="text" inputmode="numeric" maxlength="10" autocomplete="off" value="@Model.Report.DateFrom.ToString("dd/MM/yyyy", it)" data-filter-date-display /><button class="micronote-date-button" type="button" tabindex="-1" aria-label="Seleziona data iniziale" data-date-picker-button></button></span></div>
+            <div class="field"><label>Alla data</label><span class="micronote-date-control" data-date-control><input type="hidden" name="dateTo" value="@Model.Report.DateTo.ToString("yyyy-MM-dd")" data-filter-date-hidden /><input class="micronote-date-input" type="text" inputmode="numeric" maxlength="10" autocomplete="off" value="@Model.Report.DateTo.ToString("dd/MM/yyyy", it)" data-filter-date-display /><button class="micronote-date-button" type="button" tabindex="-1" aria-label="Seleziona data finale" data-date-picker-button></button></span></div>
+            <div class="field group-purchase-grouping-field"><label>Raggruppamento</label><select name="grouping" data-group-purchase-grouping><option value="category" selected="@(Model.Report.Grouping == "category")">Categoria</option><option value="group" selected="@(Model.Report.Grouping == "group")">Gruppo</option><option value="subgroup" selected="@(Model.Report.Grouping == "subgroup")">Sottogruppo</option><option value="species" selected="@(Model.Report.Grouping == "species")">Specie</option></select></div>
+        </div></fieldset>
+    </form>
+
+    <section class="stock-movements-panel group-purchase-main-panel"><h2>Lista vendite per punto vendita</h2><div class="list-grid-frame stock-movements-grid-frame group-purchase-main-frame"><table class="list-grid group-purchase-main-grid"><colgroup><col class="group-purchase-col-code" /><col class="group-purchase-col-description" /><col class="group-purchase-col-amount" />@foreach (var store in Model.Report.Stores) { <col class="group-purchase-col-store-amount" /><col class="group-purchase-col-share" /> }</colgroup><thead><tr><th>@groupingLabel</th><th>Descrizione</th><th>Importo</th>@foreach (var store in Model.Report.Stores) { <th>@store.Name</th><th>Quota</th> }</tr></thead><tbody>@foreach (var row in Model.Report.Rows) { <tr tabindex="0" data-group-purchase-row data-code="@row.Code" data-description="@row.Description" data-sort-code="@row.Code" data-sort-description="@row.Description" data-sort-amount="@Sort(row.Amount)"><td>@row.Code.ToString("000")</td><td>@row.Description</td><td class="number">@Money(row.Amount)</td>@foreach (var store in Model.Report.Stores) { var cell = row.Stores.FirstOrDefault(item => item.StoreCode == store.Code); <td class="number">@Money(cell?.Amount ?? 0)</td><td class="number">@Percent(cell?.Share ?? 0)</td> }</tr>}</tbody></table></div></section>
+
+    <div class="group-purchase-detail-layout">
+        <section class="stock-movements-panel group-purchase-detail-panel"><h2>Dettaglio articoli della <span data-group-purchase-detail-kind>@groupingLabel.ToLowerInvariant()</span></h2><div class="list-grid-frame group-purchase-detail-frame"><table class="list-grid group-purchase-article-grid"><thead><tr><th>Codice</th><th>Descrizione</th><th>Importo</th></tr></thead><tbody data-group-purchase-articles></tbody></table></div></section>
+        <section class="stock-movements-panel group-purchase-detail-panel"><h2>Dettaglio vendite per cliente</h2><div class="list-grid-frame group-purchase-detail-frame"><table class="list-grid group-purchase-supplier-grid"><thead><tr><th>Cliente</th><th>Nome</th><th>Importo</th></tr></thead><tbody data-group-purchase-suppliers></tbody></table></div></section>
+    </div>
+</section>
+
+@section Scripts { <script src="~/js/filter-date-picker.js" asp-append-version="true"></script><script src="~/js/group-purchase-stats.js" asp-append-version="true"></script> }

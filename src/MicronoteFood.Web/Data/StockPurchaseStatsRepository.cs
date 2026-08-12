@@ -78,7 +78,7 @@ public sealed class StockPurchaseStatsRepository(MicronoteDb database)
         const string sql = """
             SELECT M.Articolo,
                    COALESCE(A.Descrizione, '') AS Descrizione,
-                   COALESCE(A.Ums, '') AS Ums,
+                   COALESCE(A.Uma, '') AS Ums,
                    COALESCE(SUM(M.Quantita), 0) AS Quantita,
                    COALESCE(SUM(M.Importo), 0) AS Importo,
                    COALESCE(A.CostoStd, 0) AS CostoStd,
@@ -89,7 +89,7 @@ public sealed class StockPurchaseStatsRepository(MicronoteDb database)
               AND M.DataMov BETWEEN @dateFrom AND @dateTo
               AND (@storeCode IS NULL OR M.PuntoV = @storeCode)
               AND (@search = '' OR A.Descrizione LIKE CONCAT('%', @search, '%') OR M.Articolo LIKE CONCAT('%', @search, '%'))
-            GROUP BY M.Articolo, A.Descrizione, A.Ums, A.CostoStd
+            GROUP BY M.Articolo, A.Descrizione, A.Uma, A.CostoStd
             ORDER BY M.Articolo;
             """;
 

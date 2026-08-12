@@ -25,6 +25,14 @@
         .settings-accounting-grid .settings-accounting-check-field > span:last-child {
             display: none;
         }
+
+        .settings-accounting-grid .settings-accounting-long-label {
+            grid-template-columns: 440px 180px;
+        }
+
+        .settings-accounting-grid .settings-accounting-long-label > label:first-child {
+            white-space: nowrap;
+        }
     </style>
 }
 <section class="module-page form-module-page supplier-form-page settings-page data-form-skin">
@@ -39,8 +47,8 @@
             </div>
         </div>
         <div class="top-actions">
-            <a class="button button-secondary secondary" asp-page="/Index">Annulla</a>
             <button class="button button-primary primary" type="submit" form="settings-form">Salva</button>
+            <a class="button button-secondary secondary" asp-page="/Index">Annulla</a>
         </div>
     </header>
 
@@ -282,19 +290,34 @@
                                 <span asp-validation-for="Settings.AliqIvaVendite"></span>
                             </div>
                             <div class="field">
+                                <label asp-for="Settings.DataInventario"></label>
+                                <input asp-for="Settings.DataInventario" type="date" readonly
+                                       aria-readonly="true"
+                                       title="Valore aggiornato dalla gestione delle giacenze iniziali" />
+                                <span asp-validation-for="Settings.DataInventario"></span>
+                            </div>
+                            <div class="field settings-accounting-long-label">
                                 <label asp-for="Settings.AliquotaRitenutaIrpef"></label>
                                 <input asp-for="Settings.AliquotaRitenutaIrpef" maxlength="10" autocomplete="off" inputmode="decimal" data-percent-field data-percent-integer-digits="3" />
                                 <span asp-validation-for="Settings.AliquotaRitenutaIrpef"></span>
                             </div>
-                            <div class="field">
-                                <label aria-hidden="true"></label>
-                                <input asp-for="Settings.AliquotaContributiInps" maxlength="10" autocomplete="off" inputmode="decimal" data-percent-field data-percent-integer-digits="3" />
-                                <span asp-validation-for="Settings.AliquotaContributiInps"></span>
+                            <div class="field settings-accounting-check-field settings-accounting-long-label">
+                                <label asp-for="Settings.AttivaImporto"></label>
+                                <label class="standard-check-button" aria-label="Abilita la casella Importo nella vendita al banco">
+                                    <input asp-for="Settings.AttivaImporto" type="checkbox" />
+                                    <span aria-hidden="true"></span>
+                                </label>
+                                <span asp-validation-for="Settings.AttivaImporto"></span>
                             </div>
-                            <div class="field">
-                                <label aria-hidden="true"></label>
-                                <input asp-for="Settings.QuotaAperturaContratto" maxlength="20" autocomplete="off" inputmode="decimal" data-money-field />
-                                <span asp-validation-for="Settings.QuotaAperturaContratto"></span>
+                            <div class="field settings-accounting-long-label">
+                                <label asp-for="Settings.RaggruppamentoVenditaBanco"></label>
+                                <select asp-for="Settings.RaggruppamentoVenditaBanco">
+                                    <option value="category">Categoria</option>
+                                    <option value="group">Gruppo</option>
+                                    <option value="species">Specie</option>
+                                    <option value="origin">Provenienza</option>
+                                </select>
+                                <span asp-validation-for="Settings.RaggruppamentoVenditaBanco"></span>
                             </div>
                             <div class="field">
                                 <label aria-hidden="true"></label>

@@ -8,7 +8,6 @@ namespace MicronoteFood.Web.Pages.Vendite;
 
 public class StoricoModel(
     SalesHistoryRepository repository,
-    SalesEntryRepository salesEntryRepository,
     ApplicationState applicationState) : PageModel
 {
     public SalesHistoryPageModel History { get; private set; } = new();
@@ -16,78 +15,47 @@ public class StoricoModel(
     public async Task OnGetAsync(
         int? year,
         int? month,
+        int? customer,
+        int? store,
         CancellationToken cancellationToken)
     {
         var filterYear = year ?? applicationState.Esercizio;
         var filterMonth = Math.Clamp(month ?? 0, 0, 12);
-        var (start, end) = PeriodFrom(filterYear, filterMonth);
-
         History = await repository.GetAsync(
             filterYear,
             filterMonth,
-            start,
-            end,
+            customer ?? 0,
+            store ?? 0,
             cancellationToken);
     }
 
-    public async Task<IActionResult> OnPostDeleteAsync(
-        int saleId,
-        int? year,
-        int? month,
-        CancellationToken cancellationToken)
-    {
-        await salesEntryRepository.DeleteByIdAsync(saleId, cancellationToken);
-        return RedirectToPage(
-            "./Storico",
-            new
-            {
-                year,
-                month
-            });
-    }
-
     public async Task<JsonResult> OnGetDetailsAsync(
-        int year,
-        int code,
+        int saleId,
         CancellationToken cancellationToken)
     {
-        var details = await repository.ListDetailsAsync(year, code, cancellationToken);
+        var details = await repository.ListDetailsAsync(saleId, cancellationToken);
         return new JsonResult(new
         {
             rows = details.Select(row => new
             {
-                storeCode = row.StoreCode,
-                storeName = row.StoreName,
-                net = row.Net,
-                nonTaxable = row.NonTaxable,
-                vat = row.Vat,
-                total = row.Total,
-                cash = row.Cash,
-                card = row.Card,
-                tickets = row.Tickets,
-                checks = row.Checks,
-                other = row.Other,
-                suspended = row.Suspended,
-                losses = row.Losses
+                rowNumber = row.RowNumber,
+                articleCode = row.ArticleCode,
+                description = row.Description,
+                unit = row.Unit,
+                packages = row.Packages,
+                tare = row.Tare,
+                quantity = row.Quantity,
+                price = row.Price,
+                vatRate = row.VatRate,
+                vatPrice = row.VatPrice,
+                amount = row.Amount
             })
         });
     }
 
-    private static (DateOnly Start, DateOnly End) PeriodFrom(int year, int month)
+    public async Task<JsonResult> OnGetPageAsync(int year, int month, int customer, int store, int offset, CancellationToken cancellationToken)
     {
-        if (month is >= 1 and <= 12)
-        {
-            return (
-                new DateOnly(year, month, 1),
-                new DateOnly(year, month, DateTime.DaysInMonth(year, month)));
-        }
-
-        return (new DateOnly(year, 1, 1), DefaultEndDate(year));
-    }
-
-    private static DateOnly DefaultEndDate(int year)
-    {
-        var today = DateOnly.FromDateTime(DateTime.Today);
-        return today.Year == year ? today : new DateOnly(year, 12, 31);
+        var rows = await repository.ListPageAsync(year, month, customer, store, offset, 100, cancellationToken);
+        return new JsonResult(new { rows = rows.Select(s => new { s.Id, s.Year, s.Code, s.DocumentNumber, date = s.DocumentDate?.ToString("yyyy-MM-dd"), s.CustomerCode, s.CustomerName, s.Merchandise, s.Vat, s.Total, s.Discount }) });
     }
 }

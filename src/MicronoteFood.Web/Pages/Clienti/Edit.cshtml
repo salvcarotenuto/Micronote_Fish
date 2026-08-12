@@ -3,14 +3,24 @@
 @model MicronoteFood.Web.Pages.Clienti.EditModel
 @{
     ViewData["Title"] = Model.IsNew ? "Nuovo cliente" : "Scheda cliente";
+    if (Model.IsModal) ViewData["BodyClass"] = "customer-card-modal-page";
 }
 
 <section class="module-page form-module-page supplier-form-page data-form-skin">
     <header class="module-header">
         <div class="module-title-identity">
-            <a class="module-title-logo" asp-page="./Index" aria-label="Esci dalla scheda">
-                <img src="~/images/micronote-logo.jpeg" alt="" />
-            </a>
+            @if (Model.IsModal)
+            {
+                <button class="module-title-logo" type="button" data-customer-modal-close aria-label="Chiudi la scheda">
+                    <img src="~/images/micronote-logo.jpeg" alt="" />
+                </button>
+            }
+            else
+            {
+                <a class="module-title-logo" asp-page="./Index" aria-label="Esci dalla scheda">
+                    <img src="~/images/micronote-logo.jpeg" alt="" />
+                </a>
+            }
             <div>
                 <h1>@(Model.IsNew ? "Nuovo cliente" : "Scheda cliente")</h1>
                 <p>
@@ -21,10 +31,15 @@
             </div>
         </div>
         <div class="top-actions">
-            <button class="button button-primary primary" type="button" data-customer-save>
-                Salva
-            </button>
-            <a class="button button-secondary secondary" asp-page="./Index">Annulla</a>
+            @if (Model.IsModal)
+            {
+                <button class="button button-secondary secondary" type="button" data-customer-modal-close>Chiudi</button>
+            }
+            else
+            {
+                <button class="button button-primary primary" type="button" data-customer-save>Salva</button>
+                <a class="button button-secondary secondary" asp-page="./Index">Annulla</a>
+            }
         </div>
     </header>
 
@@ -37,7 +52,7 @@
         <input asp-for="Azione" type="hidden" />
         <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
 
-        <fieldset class="form-frame compact-frame">
+        <fieldset class="form-frame compact-frame" disabled="@(Model.IsReadonly ? "disabled" : null)">
             <legend>Anagrafica</legend>
             <div class="form-grid form-grid-4 form-frame-grid">
                 <div class="field field-code">
@@ -120,7 +135,7 @@
             </div>
         </fieldset>
 
-        <fieldset class="form-frame compact-frame">
+        <fieldset class="form-frame compact-frame" disabled="@(Model.IsReadonly ? "disabled" : null)">
             <legend>Recapiti</legend>
             <div class="form-grid form-grid-4 form-frame-grid">
                 <div class="field field-span-2">
@@ -154,7 +169,7 @@
             </div>
         </fieldset>
 
-        <fieldset class="form-frame compact-frame">
+        <fieldset class="form-frame compact-frame" disabled="@(Model.IsReadonly ? "disabled" : null)">
             <legend>Dati gestionali</legend>
             <div class="form-grid form-grid-4 form-frame-grid">
                 <div class="field field-span-2">

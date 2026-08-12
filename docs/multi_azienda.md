@@ -23,13 +23,26 @@ Campi base:
 - `Attiva`: abilita/disabilita azienda.
 - `Bloccata`: blocco amministrativo.
 - `NomeDatabase`: database aziendale. Se vuoto viene calcolato da `Codice`, es. `mn_0001`.
-- `VersioneDbAttuale`: versione schema aziendale corrente.
-- `VersioneDbRichiesta`: versione schema richiesta dall'applicazione.
+- `VersioneDbAttuale`: data e ora della versione schema aziendale corrente.
+- `VersioneDbRichiesta`: data e ora della versione schema richiesta dall'applicazione.
 
 ### Parametri
 
 Parametri generali dell'applicazione, validi prima della scelta dell'azienda.
 Le `Opzioni` restano invece nel database aziendale.
+
+La chiave `VersioneSchemaDatabase` usa il campo omonimo di tipo `DATETIME` e
+contiene la versione globale dello stampo. Nell'interfaccia viene visualizzata
+nel formato `yyyy-MM-dd HH:mm:ss`.
+
+Quando cambia la struttura dello stampo:
+
+1. viene aggiornata `Parametri.VersioneSchemaDatabase`;
+2. tutte le aziende ricevono la stessa `VersioneDbRichiesta`;
+3. dopo l'aggiornamento riuscito di un database aziendale, la relativa
+   `VersioneDbAttuale` viene portata alla versione richiesta;
+4. un nuovo database aziendale nasce con versione attuale e richiesta uguali
+   alla versione globale.
 
 ## Credenziali
 

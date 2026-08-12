@@ -2,6 +2,22 @@
   const form = document.querySelector("#customer-form");
   const saveButton = document.querySelector("[data-customer-save]");
 
+  const modalCloseButtons = Array.from(document.querySelectorAll("[data-customer-modal-close]"));
+  const closeModal = () => {
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: "micronote-customer-card-close" }, window.location.origin);
+    }
+  };
+  modalCloseButtons.forEach(button => button.addEventListener("click", closeModal));
+  if (modalCloseButtons.length) {
+    document.addEventListener("keydown", event => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      closeModal();
+    }, true);
+  }
+
   if (!form || !saveButton) {
     return;
   }

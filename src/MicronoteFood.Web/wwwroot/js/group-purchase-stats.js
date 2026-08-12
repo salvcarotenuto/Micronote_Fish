@@ -55,10 +55,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  grouping?.addEventListener("change", () => form?.requestSubmit());
-  form?.querySelectorAll("[data-filter-date-hidden]").forEach((field) => {
-    field.addEventListener("change", () => form.requestSubmit());
-  });
   if (rows.length) {
     select(rows[0]);
   }

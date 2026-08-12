@@ -12,6 +12,7 @@
     {
         "category" => "Categoria",
         "subgroup" => "Sottogruppo",
+        "species" => "Specie",
         _ => "Gruppo"
     };
 }
@@ -42,6 +43,7 @@
           method="get"
           data-group-purchase-filters
           data-progress-message="Elaborazione statistica in corso...">
+        <input type="hidden" name="run" value="true" />
         <fieldset class="form-frame">
             <div class="group-purchase-filter-row">
                 <div class="field">
@@ -68,6 +70,7 @@
                         <option value="category" selected="@(Model.Report.Grouping == "category")">Categoria</option>
                         <option value="group" selected="@(Model.Report.Grouping == "group")">Gruppo</option>
                         <option value="subgroup" selected="@(Model.Report.Grouping == "subgroup")">Sottogruppo</option>
+                        <option value="species" selected="@(Model.Report.Grouping == "species")">Specie</option>
                     </select>
                 </div>
             </div>
@@ -86,7 +89,6 @@
                     {
                         <col class="group-purchase-col-store-amount" />
                         <col class="group-purchase-col-share" />
-                        <col class="group-purchase-col-share" />
                     }
                 </colgroup>
                 <thead>
@@ -97,24 +99,11 @@
                         @foreach (var store in Model.Report.Stores)
                         {
                             <th>@store.Name</th>
-                            <th>Quota cst.</th>
-                            <th>Quota ric.</th>
+                            <th>Quota</th>
                         }
                     </tr>
                 </thead>
                 <tbody>
-                    <tr class="group-purchase-revenue-row" aria-label="Vendite">
-                        <td></td>
-                        <td>Vendite</td>
-                        <td class="number">@Money(Model.Report.TotalRevenue)</td>
-                        @foreach (var store in Model.Report.Stores)
-                        {
-                            <td class="number">@Money(store.Revenue)</td>
-                            <td></td>
-                            <td class="number">@Percent(Model.Report.TotalRevenue == 0 ? 0 : store.Revenue * 100 / Model.Report.TotalRevenue)</td>
-                        }
-                    </tr>
-                    <tr class="group-purchase-separator"><td colspan="@(3 + Model.Report.Stores.Count * 3)"></td></tr>
                     @foreach (var row in Model.Report.Rows)
                     {
                         <tr tabindex="0"
@@ -131,8 +120,7 @@
                             {
                                 var cell = row.Stores.FirstOrDefault(item => item.StoreCode == store.Code);
                                 <td class="number">@Money(cell?.Amount ?? 0)</td>
-                                <td class="number">@Percent(cell?.CostShare ?? 0)</td>
-                                <td class="number">@Percent(cell?.RevenueShare ?? 0)</td>
+                                <td class="number">@Percent(cell?.Share ?? 0)</td>
                             }
                         </tr>
                     }

@@ -6,4 +6,6 @@ public sealed record LookupRow(
     string Label,
     string Detail,
     int? AccountCode = null,
-    int? StoreCode = null);
+    int? StoreCode = null,
+    string City = "",
+    string Category = "");

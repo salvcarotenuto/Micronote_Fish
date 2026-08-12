@@ -200,10 +200,70 @@ document.addEventListener("DOMContentLoaded", () => {
     return true;
   };
 
+  const selectedDatePart = (field) => {
+    const caret = field.selectionStart ?? 0;
+    if (caret <= 2) return "day";
+    if (caret <= 5) return "month";
+    return "year";
+  };
+
+  const selectDatePart = (field, part) => {
+    const ranges = { day: [0, 2], month: [3, 5], year: [6, 10] };
+    const [start, end] = ranges[part];
+    window.requestAnimationFrame(() => field.setSelectionRange(start, end));
+  };
+
+  const shiftDatePart = (field, direction) => {
+    const current = dateFromField(field);
+    if (!current) return;
+    const part = selectedDatePart(field);
+    const year = current.getFullYear();
+    const month = current.getMonth();
+    const day = current.getDate();
+    let shifted;
+
+    if (part === "day") {
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      shifted = new Date(year, month, Math.max(1, Math.min(day + direction, lastDay)));
+    } else if (part === "month") {
+      const targetMonth = new Date(year, month + direction, 1);
+      const lastDay = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0).getDate();
+      shifted = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), Math.min(day, lastDay));
+    } else {
+      const targetYear = year + direction;
+      const lastDay = new Date(targetYear, month + 1, 0).getDate();
+      shifted = new Date(targetYear, month, Math.min(day, lastDay));
+    }
+
+    field.value = formatDisplayDate(shifted);
+    syncDateHidden(field);
+    selectDatePart(field, part);
+  };
+
   document.querySelectorAll("[data-purchase-stats-date-display]").forEach((field) => {
     field.addEventListener("input", () => normalizeDateInput(field));
     field.addEventListener("blur", () => syncDateHidden(field));
+    field.addEventListener("focus", () => {
+      if (dateFromField(field)) selectDatePart(field, "day");
+    });
+    field.addEventListener("click", () => {
+      if (dateFromField(field)) selectDatePart(field, selectedDatePart(field));
+    });
     field.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+        event.preventDefault();
+        shiftDatePart(field, event.key === "ArrowUp" ? 1 : -1);
+        return;
+      }
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        const part = selectedDatePart(field);
+        const nextPart = event.key === "ArrowLeft"
+          ? part === "year" ? "month" : "day"
+          : part === "day" ? "month" : "year";
+        event.preventDefault();
+        selectDatePart(field, nextPart);
+        return;
+      }
       if (event.key === "Enter") {
         event.preventDefault();
         syncDateHidden(field);

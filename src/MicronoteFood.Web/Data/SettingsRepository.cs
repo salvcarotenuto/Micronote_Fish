@@ -7,9 +7,16 @@ namespace MicronoteFood.Web.Data;
 public sealed class SettingsRepository(MicronoteDb database)
 {
     private const string DefaultSalesVatRate = "10";
+    private const string DefaultCounterSaleGrouping = "category";
 
     private static readonly PropertyInfo[] SettingsProperties =
         typeof(SettingsEditModel).GetProperties(BindingFlags.Instance | BindingFlags.Public);
+
+    private static readonly HashSet<string> ReadOnlyOptionKeys =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            nameof(SettingsEditModel.DataInventario)
+        };
 
     public async Task<SettingsEditModel> GetAsync(CancellationToken cancellationToken = default)
     {
@@ -60,6 +67,11 @@ public sealed class SettingsRepository(MicronoteDb database)
         {
             foreach (var property in SettingsProperties)
             {
+                if (ReadOnlyOptionKeys.Contains(property.Name))
+                {
+                    continue;
+                }
+
                 var value = ConvertToStorage(property.GetValue(settings));
                 await SaveOptionAsync(connection, transaction, property.Name, value, cancellationToken);
             }
@@ -78,6 +90,11 @@ public sealed class SettingsRepository(MicronoteDb database)
         if (string.IsNullOrWhiteSpace(settings.AliqIvaVendite))
         {
             settings.AliqIvaVendite = DefaultSalesVatRate;
+        }
+
+        if (settings.RaggruppamentoVenditaBanco is not ("category" or "group" or "species" or "origin"))
+        {
+            settings.RaggruppamentoVenditaBanco = DefaultCounterSaleGrouping;
         }
     }
 
@@ -98,9 +115,37 @@ public sealed class SettingsRepository(MicronoteDb database)
             SET Valore = @defaultValue
             WHERE Chiave = 'AliqIvaVendite'
               AND (Valore IS NULL OR TRIM(Valore) = '');
+
+            INSERT INTO Opzioni (Chiave, Valore)
+            SELECT 'RaggruppamentoVenditaBanco', @defaultGrouping
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM Opzioni
+                WHERE Chiave = 'RaggruppamentoVenditaBanco'
+            );
+
+            UPDATE Opzioni
+            SET Valore = @defaultGrouping
+            WHERE Chiave = 'RaggruppamentoVenditaBanco'
+              AND (Valore IS NULL
+                   OR Valore NOT IN ('category', 'group', 'species', 'origin'));
+
+            INSERT INTO Opzioni (Chiave, Valore)
+            SELECT 'FormatoStampaNotaCliente', 'A4'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM Opzioni
+                WHERE Chiave = 'FormatoStampaNotaCliente'
+            );
+
+            UPDATE Opzioni
+            SET Valore = 'A4'
+            WHERE Chiave = 'FormatoStampaNotaCliente'
+              AND UPPER(COALESCE(Valore, '')) NOT IN ('A4', 'A5');
             """,
             connection);
         command.Parameters.AddWithValue("@defaultValue", DefaultSalesVatRate);
+        command.Parameters.AddWithValue("@defaultGrouping", DefaultCounterSaleGrouping);
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 

@@ -6,8 +6,14 @@ public sealed record InitialArticleStockRow(
     string UnitMeasure,
     string Category,
     string Group,
+    int Packages,
     decimal Quantity);
 
 public sealed record InitialArticleStockSaveRow(
     string Code,
+    int Packages,
     decimal Quantity);
+
+public sealed record InitialArticleStockData(
+    DateOnly? InventoryDate,
+    IReadOnlyList<InitialArticleStockRow> Rows);

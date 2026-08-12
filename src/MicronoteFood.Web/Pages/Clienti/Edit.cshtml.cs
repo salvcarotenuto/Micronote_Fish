@@ -16,6 +16,8 @@ public class EditModel(CustomerRepository repository) : PageModel
     public int Azione { get; set; } = FormAzione.Inserimento;
 
     public bool IsNew => FormAzione.IsInserimento(Azione);
+    public bool IsModal => FormAzione.IsModale(Azione);
+    public bool IsReadonly => FormAzione.IsReadonly(Azione);
 
     public int DisplayCode { get; private set; }
 

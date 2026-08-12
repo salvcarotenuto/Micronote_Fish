@@ -5,103 +5,117 @@
     ViewData["BodyClass"] = "system-admin-login-page app-login-page";
 }
 
-<div class="system-admin-login-background" aria-hidden="true">
-    <img src="~/images/micronote-bak.png" alt="" />
-</div>
+<main class="micronote-welcome-shell">
+    <section class="micronote-welcome-brand" aria-label="Presentazione Micronote Fish">
+        <div class="micronote-welcome-content">
+            <div class="micronote-welcome-logo">
+                <img src="~/images/micronote-fish.png" alt="" />
+                <span>Micronote <strong>Fish</strong></span>
+            </div>
 
-<div class="system-admin-overlay active">
-    <section class="system-admin-dialog app-login-dialog" role="dialog" aria-modal="true" aria-labelledby="app-login-title">
-        <div class="app-login-frame">
-            <header class="app-login-brand">
-                <img src="~/images/micronote-05.jpeg" alt="Micronote" />
-                <div>
-                    <h1 id="app-login-title">Micronote Fish</h1>
-                    <p>Accesso azienda</p>
+            <h1>La gestione completa<br />per la tua attività<br /><em>commerciale</em></h1>
+
+            <div class="micronote-welcome-separator" aria-hidden="true">
+                <span></span>
+                <img src="~/images/micronote-fish.png" alt="" />
+                <span></span>
+            </div>
+
+            <p class="micronote-welcome-subtitle">Organizza vendite, magazzino e contabilità<br />con un unico strumento semplice e affidabile.</p>
+
+            <div class="micronote-welcome-features">
+                <div class="micronote-welcome-feature">
+                    <span><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"></path></svg></span>
+                    <strong>Clienti e<br />fornitori</strong>
                 </div>
-            </header>
-
-            <div class="app-login-panel">
-                <header class="system-admin-title">Credenziali azienda</header>
-                <form method="post" novalidate autocomplete="off" data-form-type="other" data-progress-minimum-time="0">
-                    <div class="password-manager-decoys" aria-hidden="true">
-                        <input type="text" name="fake-company" autocomplete="username" tabindex="-1" />
-                        <input type="password" name="fake-company-password" autocomplete="current-password" tabindex="-1" />
-                    </div>
-                    <div class="system-admin-body data-form-skin">
-                        <div class="system-admin-form-grid app-login-grid app-login-grid-vertical">
-                            <div class="field">
-                                <label asp-for="CompanyName">Nome azienda</label>
-                                <input asp-for="CompanyName" maxlength="120" autocomplete="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" autofocus />
-                            </div>
-                            <div class="field">
-                                <label asp-for="CompanyPassword">Password azienda</label>
-                                <div class="settings-password-control">
-                                    <input asp-for="CompanyPassword" maxlength="255" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" data-form-type="other" type="password" />
-                                    <button class="settings-password-toggle" type="button" data-password-toggle="CompanyPassword" tabindex="-1" aria-label="Mostra password azienda" title="Mostra password azienda">
-                                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                            <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
-                                            <circle cx="12" cy="12" r="3"></circle>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <footer class="system-admin-actions">
-                        <a class="button secondary app-login-admin-button" asp-page="/Admin/Login" tabindex="-1">Admin</a>
-                        <button class="button button-primary" type="submit">Conferma</button>
-                    </footer>
-                </form>
+                <div class="micronote-welcome-feature">
+                    <span><svg viewBox="0 0 24 24"><path d="M3 7 12 3l9 4-9 4-9-4Z"></path><path d="M3 7v10l9 4 9-4V7M12 11v10"></path></svg></span>
+                    <strong>Magazzino<br />e articoli</strong>
+                </div>
+                <div class="micronote-welcome-feature">
+                    <span><svg viewBox="0 0 24 24"><path d="M4 19V5h16v14H4Z"></path><path d="M8 15l3-3 2 2 4-5"></path></svg></span>
+                    <strong>Vendite e<br />statistiche</strong>
+                </div>
+                <div class="micronote-welcome-feature">
+                    <span><svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13"></path><path d="M8 11h8M8 15h8M8 19h8"></path></svg></span>
+                    <strong>Contabilità<br />integrata</strong>
+                </div>
             </div>
         </div>
+
+        <div class="micronote-welcome-band">
+            <img src="~/images/micronote-fish-basket.png" alt="Prodotti ittici" />
+            <p>Più controllo sul lavoro.<br /><strong>Più tempo per la tua impresa.</strong></p>
+        </div>
     </section>
-</div>
 
-
-@if (Model.ShowUserLogin)
-{
-    <div class="app-user-login-backdrop active">
-        <section class="system-admin-dialog app-user-login-dialog" role="dialog" aria-modal="true" aria-labelledby="app-user-login-title">
-            <header class="system-admin-title" id="app-user-login-title">Credenziali utente</header>
-            <form method="post" asp-page-handler="User" novalidate autocomplete="off" data-form-type="other" data-progress-minimum-time="0">
-                <div class="password-manager-decoys" aria-hidden="true">
-                    <input type="text" name="fake-user" autocomplete="username" tabindex="-1" />
-                    <input type="password" name="fake-user-password" autocomplete="current-password" tabindex="-1" />
+    <section class="micronote-welcome-login" aria-label="Accesso Micronote Fish">
+        <section class="system-admin-dialog app-login-dialog" role="dialog" aria-labelledby="app-login-title">
+                <div class="app-login-frame">
+                    <header class="app-login-brand">
+                        <img src="~/images/micronote-05.jpeg" alt="Micronote" />
+                        <div><h1 id="app-login-title">Micronote Fish</h1><p>Accesso azienda</p></div>
+                    </header>
+                    <div class="app-login-panel">
+                        <header class="system-admin-title">Credenziali azienda</header>
+                        <form method="post" novalidate autocomplete="off" data-form-type="other" data-progress-minimum-time="0">
+                            <div class="password-manager-decoys" aria-hidden="true">
+                                <input type="text" name="fake-company" autocomplete="username" tabindex="-1" />
+                                <input type="password" name="fake-company-password" autocomplete="current-password" tabindex="-1" />
+                            </div>
+                            <div class="system-admin-body data-form-skin">
+                                <div class="system-admin-form-grid app-login-grid app-login-grid-vertical">
+                                    <div class="field"><label asp-for="CompanyName">Nome azienda</label><input asp-for="CompanyName" maxlength="120" autocomplete="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" autofocus /></div>
+                                    <div class="field">
+                                        <label asp-for="CompanyPassword">Password azienda</label>
+                                        <div class="settings-password-control">
+                                            <input asp-for="CompanyPassword" maxlength="255" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" data-form-type="other" type="password" />
+                                            <button class="settings-password-toggle" type="button" data-password-toggle="CompanyPassword" tabindex="-1" aria-label="Mostra password azienda" title="Mostra password azienda"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <footer class="system-admin-actions"><a class="button secondary app-login-admin-button" asp-page="/Admin/Login" tabindex="-1">Admin</a><button class="button button-primary" type="submit">Conferma</button></footer>
+                        </form>
+                    </div>
                 </div>
-                <div class="system-admin-body data-form-skin app-user-login-body">
-                    <div class="system-admin-form-grid app-login-grid app-login-grid-vertical">
-                        <div class="field">
-                            <label>Azienda</label>
-                            <input value="@Model.SelectedCompanyName" readonly tabindex="-1" />
-                        </div>
-                        <div class="field">
-                            <label asp-for="UserCode">Utente</label>
-                            <select asp-for="UserCode" asp-items="Model.UserOptions" autofocus>
-                                <option value="">Seleziona utente</option>
-                            </select>
-                        </div>
-                        <div class="field">
-                            <label asp-for="UserPassword">Password</label>
-                            <div class="settings-password-control">
-                                <input asp-for="UserPassword" maxlength="40" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" data-form-type="other" type="password" />
-                                <button class="settings-password-toggle" type="button" data-password-toggle="UserPassword" tabindex="-1" aria-label="Mostra password utente" title="Mostra password utente">
-                                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
-                                        <circle cx="12" cy="12" r="3"></circle>
-                                    </svg>
-                                </button>
+        </section>
+        @if (Model.ShowUserLogin)
+        {
+            <div class="app-user-login-backdrop active">
+            <section class="system-admin-dialog app-user-login-dialog active" role="dialog" aria-modal="true" aria-labelledby="app-user-login-title">
+                <header class="system-admin-title" id="app-user-login-title">Credenziali utente</header>
+                <form method="post" asp-page-handler="User" novalidate autocomplete="off" data-form-type="other" data-progress-minimum-time="0">
+                    <div class="password-manager-decoys" aria-hidden="true"><input type="text" name="fake-user" autocomplete="username" tabindex="-1" /><input type="password" name="fake-user-password" autocomplete="current-password" tabindex="-1" /></div>
+                    <div class="system-admin-body data-form-skin app-user-login-body">
+                        <div class="system-admin-form-grid app-login-grid app-login-grid-vertical">
+                            <div class="field"><label>Azienda</label><input value="@Model.SelectedCompanyName" readonly tabindex="-1" /></div>
+                            <div class="field"><label asp-for="UserCode">Utente</label><select asp-for="UserCode" asp-items="Model.UserOptions" autofocus><option value="">Seleziona utente</option></select></div>
+                            <div class="field">
+                                <label asp-for="UserPassword">Password</label>
+                                <div class="settings-password-control"><input asp-for="UserPassword" maxlength="40" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" data-form-type="other" type="password" /><button class="settings-password-toggle" type="button" data-password-toggle="UserPassword" tabindex="-1" aria-label="Mostra password utente" title="Mostra password utente"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="3"></circle></svg></button></div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <footer class="system-admin-actions app-user-login-actions">
-                    <a class="button secondary app-login-admin-button" asp-page="/Logout" tabindex="-1">Annulla</a>
-                    <button class="button button-primary" type="submit">Conferma</button>
-                </footer>
-            </form>
-        </section>
-    </div>
+                    <footer class="system-admin-actions app-user-login-actions"><a class="button secondary app-login-admin-button" asp-page="/Logout" tabindex="-1">Annulla</a><button class="button button-primary" type="submit">Conferma</button></footer>
+                </form>
+            </section>
+            </div>
+        }
+    </section>
+</main>
+
+@if (Model.ShowDatabaseUpdatePrompt)
+{
+    <form method="post"
+          asp-page-handler="UpdateDatabase"
+          data-database-update-form
+          data-progress-message="Backup e aggiornamento database in corso. Non chiudere la pagina..."
+          data-progress-minimum-time="800"></form>
+    <form method="post" asp-page-handler="CancelDatabaseUpdate" data-database-update-cancel-form></form>
 }
+
+
 @section Scripts {
     <script>
         document.querySelectorAll('[data-password-toggle]').forEach((button) => {
@@ -144,7 +158,50 @@
                 form.querySelector('button[type="submit"]')?.click();
             });
         });
-        @if (Model.ShowUserLogin && Model.ErrorMessage is null)
+        @if (!Model.ShowUserLogin && !Model.ShowDatabaseUpdatePrompt && Model.ErrorMessage is null)
+        {
+            <text>
+            window.addEventListener('load', () => {
+                const companyName = document.getElementById('CompanyName');
+                companyName?.focus();
+                companyName?.select?.();
+            });
+            </text>
+        }
+        @if (Model.ShowDatabaseUpdatePrompt)
+        {
+            <text>
+            window.addEventListener('load', () => {
+                window.MicronoteMessageBox?.show({
+                    title: 'Aggiornamento database aziendale',
+                    message: @Json.Serialize(Model.ErrorMessage ?? $"Il database di {Model.SelectedCompanyName} deve essere aggiornato prima dell'accesso."),
+                    detail: @Json.Serialize($"{(Model.ErrorDetail is null ? "" : Model.ErrorDetail + "\n\n")}Versione attuale: {Model.CurrentDatabaseVersion:yyyy-MM-dd HH:mm:ss}\nVersione richiesta: {Model.RequiredDatabaseVersion:yyyy-MM-dd HH:mm:ss}\nPrima dell'aggiornamento verrà creata una copia di sicurezza completa."),
+                    mode: 'confirm',
+                    variant: @Json.Serialize(Model.ErrorMessage is null ? "confirm" : "error"),
+                    okText: @Json.Serialize(Model.ErrorMessage is null ? "Aggiorna" : "Riprova"),
+                    cancelText: 'Annulla',
+                    onConfirm: () => document.querySelector('[data-database-update-form]')?.requestSubmit(),
+                    onCancel: () => document.querySelector('[data-database-update-cancel-form]')?.requestSubmit()
+                });
+            });
+            </text>
+        }
+        @if (Model.DatabaseUpdateSuccessMessage is not null)
+        {
+            <text>
+            window.addEventListener('load', () => {
+                window.MicronoteMessageBox?.show({
+                    title: 'Aggiornamento database aziendale',
+                    message: @Json.Serialize(Model.DatabaseUpdateSuccessMessage),
+                    detail: @Json.Serialize(Model.DatabaseUpdateSuccessDetail ?? ""),
+                    variant: 'success',
+                    okText: 'OK',
+                    onConfirm: () => document.getElementById('UserCode')?.focus()
+                });
+            });
+            </text>
+        }
+        @if (Model.ShowUserLogin && Model.ErrorMessage is null && Model.DatabaseUpdateSuccessMessage is null)
         {
             <text>
             window.addEventListener('load', () => {
@@ -152,7 +209,8 @@
                 userSelect?.focus();
             });
             </text>
-        }        @if (Model.ErrorMessage is not null)
+        }
+        @if (Model.ErrorMessage is not null && !Model.ShowDatabaseUpdatePrompt)
         {
             <text>
             window.addEventListener('load', () => {

@@ -16,15 +16,19 @@ public sealed class ArticleListPdfService
     private static readonly CultureInfo Italian = CultureInfo.GetCultureInfo("it-IT");
     private static readonly (string Title, double Width, Func<ArticleListItem, string> Value)[] Columns =
     [
-        ("Codice", 100, row => row.Code),
-        ("Descrizione", 160, row => row.Description),
-        ("Un. mis.", 38, row => row.UnitMeasureCode),
-        ("Categoria", 70, row => row.CategoryDescription),
-        ("Gruppo", 96, row => row.GroupDescription),
-        ("Sottogruppo", 96, row => row.SubgroupDescription),
-        ("Costo std", 58, row => row.StandardCost == 0 ? "" : row.StandardCost.ToString("N2", Italian)),
-        ("IVA", 42, row => row.VatRate == 0 ? "" : row.VatRate.ToString("N0", Italian) + " %"),
-        ("Fornitore", 93, row => row.SupplierName)
+        ("Codice", 70, row => row.Code),
+        ("Descrizione", 135, row => row.Description),
+        ("U.m.a.", 25, row => row.SalesUnitCode),
+        ("U.m.v.", 25, row => row.PurchaseUnitCode),
+        ("Categoria", 55, row => row.CategoryDescription),
+        ("Gruppo", 55, row => row.GroupDescription),
+        ("Specie", 55, row => row.SpeciesDescription),
+        ("Provenienza", 60, row => row.OriginDescription),
+        ("Costo", 45, row => row.StandardCost == 0 ? "" : row.StandardCost.ToString("N3", Italian)),
+        ("Prezzo", 45, row => row.StandardPrice == 0 ? "" : row.StandardPrice.ToString("N3", Italian)),
+        ("Ivato", 45, row => row.VatIncludedPrice == 0 ? "" : row.VatIncludedPrice.ToString("N2", Italian)),
+        ("IVA", 35, row => row.VatRate == 0 ? "" : row.VatRate.ToString("N0", Italian) + " %"),
+        ("Fornitore", 70, row => row.SupplierName)
     ];
 
     private const double Margin = 28;

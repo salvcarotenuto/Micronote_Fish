@@ -43,10 +43,18 @@ builder.Services.AddScoped<BankRepository>();
 builder.Services.AddScoped<CategoryRepository>();
 builder.Services.AddScoped<CustomerSupplierCategoryRepository>();
 builder.Services.AddScoped<CashStatementRepository>();
+builder.Services.AddScoped<CashMovementListRepository>();
+builder.Services.AddScoped<CashCauseRepository>();
 builder.Services.AddScoped<DailySalesRepository>();
+builder.Services.AddScoped<DailyPurchasesRepository>();
+builder.Services.AddScoped<DailyTradingRepository>();
+builder.Services.AddScoped<DailyMovementRepository>();
 builder.Services.AddScoped<ChartAccountRepository>();
 builder.Services.AddScoped<ComuniRepository>();
 builder.Services.AddScoped<CustomerRepository>();
+builder.Services.AddScoped<CustomerCashMovementRepository>();
+builder.Services.AddScoped<CustomerNoteRepository>();
+builder.Services.AddScoped<CounterSaleRepository>();
 builder.Services.AddScoped<CustomerSupplierBalanceSummaryRepository>();
 builder.Services.AddScoped<FishClassificationRepository>();
 builder.Services.AddScoped<GroupRepository>();
@@ -60,12 +68,15 @@ builder.Services.AddScoped<PaymentCodeRepository>();
 builder.Services.AddScoped<PurchaseInvoiceRepository>();
 builder.Services.AddScoped<SalesEntryRepository>();
 builder.Services.AddScoped<SalesHistoryRepository>();
+builder.Services.AddScoped<SalesDocumentRepository>();
 builder.Services.AddScoped<SettingsRepository>();
 builder.Services.AddScoped<StockLoadRepository>();
 builder.Services.AddScoped<StockUnloadRepository>();
 builder.Services.AddScoped<StockMovementRepository>();
 builder.Services.AddScoped<StockPurchaseStatsRepository>();
 builder.Services.AddScoped<GroupPurchaseStatsRepository>();
+builder.Services.AddScoped<GroupSalesStatsRepository>();
+builder.Services.AddScoped<WarehouseStatisticsRepository>();
 builder.Services.AddScoped<StoreMovementSummaryRepository>();
 builder.Services.AddScoped<SupplierRepository>();
 builder.Services.AddScoped<SectorRepository>();
@@ -78,6 +89,7 @@ builder.Services.AddScoped<SmtpConnectionTester>();
 builder.Services.AddScoped<MasterRepository>();
 builder.Services.AddScoped<SystemAdminAuthService>();
 builder.Services.AddScoped<ApplicationAuthService>();
+builder.Services.AddScoped<CompanyDatabaseUpdateService>();
 builder.Services.AddScoped<ActivityLogService>();
 
 var app = builder.Build();
@@ -172,10 +184,11 @@ app.MapGet(
             {
                 code = article.Code,
                 description = article.Description,
-                unitMeasure = article.UnitMeasureCode ?? "",
+                unitMeasure = article.SalesUnitCode ?? "",
+                tare = article.Tare ?? 0,
                 price = article.StandardCost ?? 0,
                 lastPrice = article.LastCost ?? 0,
-                stock = article.InitialStock ?? 0,
+                stock = article.InitialWeight ?? 0,
                 vatRate = article.VatRate ?? 0
             });
     });
@@ -200,16 +213,23 @@ app.MapGet(
             {
                 code = article.Code,
                 description = article.Description,
-                unitMeasure = article.UnitMeasureCode,
+                unitMeasure = article.SalesUnitCode,
+                purchaseUnitMeasure = article.SalesUnitCode,
+                salesUnitMeasure = article.PurchaseUnitCode,
+                tare = article.Tare,
                 categoryCode = article.CategoryCode,
                 category = article.CategoryDescription,
                 group = article.GroupDescription,
-                subgroup = article.SubgroupDescription,
+                subgroup = article.SpeciesDescription,
+                species = article.SpeciesDescription,
+                origin = article.OriginDescription,
                 supplierCode = article.SupplierCode,
                 supplier = article.SupplierName,
+                standardCost = article.StandardCost,
+                standardPrice = article.StandardPrice,
                 price = article.StandardCost,
                 lastPrice = article.StandardCost,
-                stock = 0,
+                stock = article.InitialWeight,
                 vatRate = article.VatRate
             })
             .ToArray();

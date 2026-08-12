@@ -39,16 +39,16 @@ public static class MainMenuCatalog
                     new MenuItemDefinition("Punti vendita", "/PuntiVendita/Index")),
                 Group(
                     "Contabili",
+                    new MenuItemDefinition("Causali movimenti di cassa", "/CausaliCassa/Index"),
                     new MenuItemDefinition("Causali contabili", "/CausaliContabili/Index"),
-                    new MenuItemDefinition("Mastri di conto", "/Mastri/Index"),
                     new MenuItemDefinition("Aliquote IVA", "/AliquoteIva/Index"),
-                    new MenuItemDefinition("Piano dei conti", "/PianoConti/Index"),
-                    new MenuItemDefinition("Codici di pagamento", "/CodiciPagamento/Index")),
+                    new MenuItemDefinition("Mastri di conto", "/Mastri/Index"),
+                    new MenuItemDefinition("Codici di pagamento", "/CodiciPagamento/Index"),
+                    new MenuItemDefinition("Piano dei conti", "/PianoConti/Index")),
                 Group(
                     "Territorio",
                     new MenuItemDefinition("Comuni", "/Comuni/Index"),
-                    new MenuItemDefinition("Nazioni", "/Nazioni/Index")),
-                Group("Manutenzione", "Allineamento tabelle")
+                    new MenuItemDefinition("Nazioni", "/Nazioni/Index"))
             ]),
         new(
             "magazzino",
@@ -59,17 +59,21 @@ public static class MainMenuCatalog
                 Group(
                     "Articoli e movimenti",
                     new MenuItemDefinition("Anagrafica articoli", "/Articoli/Index"),
-                    new MenuItemDefinition("Carico merce (colli e peso)", "/CaricoAcquisti/Edit"),
+                    new MenuItemDefinition("Carico per acquisti", "/CaricoAcquisti/Edit"),
                     new MenuItemDefinition("Scarico per perdite e resi", "/ScaricoPerditeResi/Index"),
                     new MenuItemDefinition("Lista documenti di carico", "/CaricoAcquisti/Index")),
                 Group(
                     "Controlli",
                     new MenuItemDefinition("Giacenza iniziale articoli", "/GiacenzaInizialeArticoli/Index"),
                     new MenuItemDefinition("Estratto conto articolo", "/EstrattoContoArticolo/Index"),
-                    new MenuItemDefinition("Lista movimenti di magazzino", "/MovimentiMagazzino/Index")),
+                    new MenuItemDefinition("Lista movimenti di magazzino", "/MovimentiMagazzino/Index"),
+                    new MenuItemDefinition("Acquisti del giorno", "/AcquistiGiorno/Index"),
+                    new MenuItemDefinition("Acquisti e vendite del giorno", "/AcquistiVenditeGiorno/Index"),
+                    new MenuItemDefinition("Movimenti del giorno", "/MovimentiGiorno/Index")),
                 Group(
                     "Statistiche",
-                    new MenuItemDefinition("Acquisti per articolo", "/AcquistiPerArticolo/Index"),
+                    new MenuItemDefinition("Statistica di magazzino", "/StatisticaMagazzino/Index"),
+                    new MenuItemDefinition("Prezzi di acquisto per articolo", "/AcquistiPerArticolo/Index"),
                     new MenuItemDefinition("Acquisti per gruppo", "/AcquistiPerGruppo/Index")),
                 Group("Ordini a fornitori", "Emissione ordine", "Evasione ordine")
             ]),
@@ -81,11 +85,16 @@ public static class MainMenuCatalog
             [
                 Group(
                     "Vendite operative",
-                    new MenuItemDefinition("Vendita al banco [Fish]"),
-                    new MenuItemDefinition("Vendita plurima [Fish]"),
-                    new MenuItemDefinition("Corrispettivi di vendita", "/Vendite/Index"),
-                    new MenuItemDefinition("Dettaglio vendite del giorno", "/VenditeGiorno/Index"),
-                    new MenuItemDefinition("Storico vendite", "/Vendite/Storico")),
+                    new MenuItemDefinition("Vendita al banco", "/VenditaBanco/Index"),
+                    new MenuItemDefinition("Vendita plurima"),
+                    new MenuItemDefinition("Bolla di vendita", "/BollaVendita/Index"),
+                    new MenuItemDefinition("Nota cliente", "/NotaCliente/Index")),
+                Group(
+                    "Controlli",
+                    new MenuItemDefinition("Vendite del giorno", "/VenditeGiorno/Index"),
+                    new MenuItemDefinition("Storico vendite", "/Vendite/Storico"),
+                    new MenuItemDefinition("Vendite per gruppo", "/VenditePerGruppo/Index"),
+                    new MenuItemDefinition("Statistica di magazzino", "/StatisticaMagazzino/Index")),
                 Group(
                     "Documenti di vendita",
                     new MenuItemDefinition("DDT"),
@@ -115,6 +124,8 @@ public static class MainMenuCatalog
                 Group(
                     "Prima nota contabile",
                     new MenuItemDefinition("Movimento di prima nota", "/PrimaNota/Edit", "menu"),
+                    new MenuItemDefinition("Movimento contabile cliente", "/MovimentoContabileCliente/Edit", "menu"),
+                    new MenuItemDefinition("Lista movimenti di cassa", "/MovimentiCassa/Index"),
                     new MenuItemDefinition("Lista movimenti di prima nota", "/PrimaNota/Index"),
                     new MenuItemDefinition("Lista movimenti di banca", "/MovimentiBanca/Index"),
                     new MenuItemDefinition("Pagamento scadenza passiva"),

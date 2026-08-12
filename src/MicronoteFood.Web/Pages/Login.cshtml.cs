@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using MicronoteFood.Web.Data;
 using MicronoteFood.Web.Models;
 using MicronoteFood.Web.Services;
@@ -10,7 +11,9 @@ namespace MicronoteFood.Web.Pages;
 public sealed class LoginModel(
     ApplicationAuthService auth,
     UserRepository userRepository,
-    ActivityLogService activityLog) : PageModel
+    ActivityLogService activityLog,
+    MasterRepository masterRepository,
+    CompanyDatabaseUpdateService companyDatabaseUpdate) : PageModel
 {
     [BindProperty]
     public string CompanyName { get; set; } = "";
@@ -33,6 +36,16 @@ public sealed class LoginModel(
     public string? ErrorMessage { get; private set; }
 
     public string? ErrorDetail { get; private set; }
+
+    public bool ShowDatabaseUpdatePrompt { get; private set; }
+
+    public DateTime? CurrentDatabaseVersion { get; private set; }
+
+    public DateTime? RequiredDatabaseVersion { get; private set; }
+
+    public string? DatabaseUpdateSuccessMessage { get; private set; }
+
+    public string? DatabaseUpdateSuccessDetail { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
     {
@@ -84,6 +97,12 @@ public sealed class LoginModel(
         CompanyPassword = "";
         if (result.Success)
         {
+            if (result.Company is not null && CompanyDatabaseUpdateService.RequiresUpdate(result.Company))
+            {
+                PrepareDatabaseUpdatePrompt(result.Company);
+                return Page();
+            }
+
             await PrepareUserLoginAsync(cancellationToken);
             return Page();
         }
@@ -91,6 +110,55 @@ public sealed class LoginModel(
         ErrorMessage = result.Message;
         ErrorDetail = result.Detail;
         return Page();
+    }
+
+    public async Task<IActionResult> OnPostUpdateDatabaseAsync(CancellationToken cancellationToken)
+    {
+        var companyCode = auth.SelectedCompanyCode;
+        if (!companyCode.HasValue)
+        {
+            return RedirectToPage("/Login");
+        }
+
+        var company = await masterRepository.FindCompanyByCodeAsync(companyCode.Value, cancellationToken);
+        if (company is null)
+        {
+            auth.Logout();
+            ErrorMessage = "Azienda non trovata.";
+            ErrorDetail = "Ripetere l'accesso azienda.";
+            return Page();
+        }
+
+        if (CompanyDatabaseUpdateService.RequiresUpdate(company))
+        {
+            var elapsed = Stopwatch.StartNew();
+            var result = await companyDatabaseUpdate.UpdateAsync(company, cancellationToken);
+            elapsed.Stop();
+            if (!result.Success)
+            {
+                ErrorMessage = "Aggiornamento database non completato.";
+                ErrorDetail = $"{result.Message}\nTempo trascorso: {elapsed.Elapsed.TotalSeconds:0.0} secondi.";
+                PrepareDatabaseUpdatePrompt(company);
+                return Page();
+            }
+
+            DatabaseUpdateSuccessMessage = "Aggiornamento del database completato con successo.";
+            DatabaseUpdateSuccessDetail =
+                $"Versione applicata: {company.RequiredDatabaseVersion:yyyy-MM-dd HH:mm:ss}." +
+                (string.IsNullOrWhiteSpace(result.BackupDatabase)
+                    ? ""
+                    : $"\nBackup creato: {result.BackupDatabase}.") +
+                $"\nTempo impiegato: {elapsed.Elapsed.TotalSeconds:0.0} secondi.";
+        }
+
+        await PrepareUserLoginAsync(cancellationToken);
+        return Page();
+    }
+
+    public IActionResult OnPostCancelDatabaseUpdate()
+    {
+        auth.Logout();
+        return RedirectToPage("/Login");
     }
 
     public async Task<IActionResult> OnPostUserAsync(CancellationToken cancellationToken)
@@ -136,6 +204,14 @@ public sealed class LoginModel(
             ErrorMessage = "Nessun utente attivo disponibile.";
             ErrorDetail = "Registrare almeno un utente attivo nell'azienda selezionata.";
         }
+    }
+
+    private void PrepareDatabaseUpdatePrompt(CompanyMasterRecord company)
+    {
+        ShowDatabaseUpdatePrompt = true;
+        SelectedCompanyName = company.Name;
+        CurrentDatabaseVersion = company.CurrentDatabaseVersion;
+        RequiredDatabaseVersion = company.RequiredDatabaseVersion;
     }
 }
 

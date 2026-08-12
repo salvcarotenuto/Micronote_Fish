@@ -5,23 +5,25 @@ namespace MicronoteFood.Web.Data;
 
 public sealed class InitialCustomerSupplierBalanceRepository(MicronoteDb database)
 {
+    private const string ReferenceYearKey = "AnnoSaldoIniCF";
+
     public async Task<InitialCustomerSupplierBalanceList> ListAsync(
-        int year,
+        int? selectedYear,
         int currentYear,
         CancellationToken cancellationToken = default)
     {
-        var customers = await ListRowsAsync("C", "Clienti", year, cancellationToken);
-        var suppliers = await ListRowsAsync("F", "Fornitori", year, cancellationToken);
-        var years = Enumerable.Range(currentYear - 4, 5)
-            .Reverse()
-            .ToArray();
-
-        if (!years.Contains(year))
-        {
-            years = years.Append(year).OrderDescending().ToArray();
-        }
-
-        return new InitialCustomerSupplierBalanceList(year, years, customers, suppliers);
+        await using var connection = await database.OpenConnectionAsync(cancellationToken);
+        var requestedYear = selectedYear.GetValueOrDefault();
+        var storedYear = requestedYear > 0
+            ? requestedYear
+            : await ReadReferenceYearAsync(connection, cancellationToken);
+        var years = Enumerable.Range(currentYear - 4, 5).Reverse().ToList();
+        if (!years.Contains(storedYear))
+            years.Add(storedYear);
+        years.Sort((left, right) => right.CompareTo(left));
+        var customers = await ListRowsAsync(connection, "C", "Clienti", cancellationToken);
+        var suppliers = await ListRowsAsync(connection, "F", "Fornitori", cancellationToken);
+        return new InitialCustomerSupplierBalanceList(storedYear, years, customers, suppliers);
     }
 
     public async Task SaveAsync(
@@ -32,42 +34,39 @@ public sealed class InitialCustomerSupplierBalanceRepository(MicronoteDb databas
         await using var connection = await database.OpenConnectionAsync(cancellationToken);
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
 
-        await using (var delete = new MySqlCommand(
-            "DELETE FROM SaldoIniCf WHERE Anno = @year;",
-            connection,
-            transaction))
+        foreach (var type in new[] { "C", "F" })
         {
-            delete.Parameters.Add("@year", MySqlDbType.Int32).Value = year;
-            await delete.ExecuteNonQueryAsync(cancellationToken);
+            var table = type == "C" ? "Clienti" : "Fornitori";
+            var sql = $"UPDATE {table} SET SaldoIni = @balance WHERE Codice = @code;";
+            await using var command = new MySqlCommand(sql, connection, transaction);
+            var balance = command.Parameters.Add("@balance", MySqlDbType.Decimal);
+            var code = command.Parameters.Add("@code", MySqlDbType.Int32);
+            foreach (var row in rows.Where(row => row.Type == type))
+            {
+                balance.Value = row.Balance;
+                code.Value = row.Code;
+                await command.ExecuteNonQueryAsync(cancellationToken);
+            }
         }
 
-        const string sql = """
-            INSERT INTO SaldoIniCf (Anno, CliFor, Ditta, Importo)
-            VALUES (@year, @type, @code, @balance);
+        const string optionSql = """
+            INSERT INTO Opzioni (Chiave, Valore) VALUES (@key, @value)
+            ON DUPLICATE KEY UPDATE Valore = @value;
             """;
-
-        await using var command = new MySqlCommand(sql, connection, transaction);
-        var yearParameter = command.Parameters.Add("@year", MySqlDbType.Int32);
-        var typeParameter = command.Parameters.Add("@type", MySqlDbType.VarChar);
-        var codeParameter = command.Parameters.Add("@code", MySqlDbType.Int32);
-        var balanceParameter = command.Parameters.Add("@balance", MySqlDbType.Decimal);
-
-        foreach (var row in rows.Where(row => row.Type is "C" or "F"))
+        await using (var option = new MySqlCommand(optionSql, connection, transaction))
         {
-            yearParameter.Value = year;
-            typeParameter.Value = row.Type;
-            codeParameter.Value = row.Code;
-            balanceParameter.Value = row.Balance;
-            await command.ExecuteNonQueryAsync(cancellationToken);
+            option.Parameters.AddWithValue("@key", ReferenceYearKey);
+            option.Parameters.AddWithValue("@value", year.ToString());
+            await option.ExecuteNonQueryAsync(cancellationToken);
         }
 
         await transaction.CommitAsync(cancellationToken);
     }
 
     private async Task<IReadOnlyList<InitialCustomerSupplierBalanceRow>> ListRowsAsync(
+        MySqlConnection connection,
         string type,
         string table,
-        int year,
         CancellationToken cancellationToken)
     {
         var sql = $"""
@@ -76,19 +75,12 @@ public sealed class InitialCustomerSupplierBalanceRepository(MicronoteDb databas
                 COALESCE(a.Nome, '') AS Nome,
                 COALESCE(a.Citta, '') AS Citta,
                 COALESCE(a.Piva, '') AS Piva,
-                COALESCE(s.Importo, 0) AS Importo
+                COALESCE(a.SaldoIni, 0) AS Importo
             FROM {table} a
-            LEFT JOIN SaldoIniCf s
-                ON s.Anno = @year
-               AND s.CliFor = @type
-               AND s.Ditta = a.Codice
             ORDER BY a.Codice;
             """;
 
-        await using var connection = await database.OpenConnectionAsync(cancellationToken);
         await using var command = new MySqlCommand(sql, connection);
-        command.Parameters.Add("@year", MySqlDbType.Int32).Value = year;
-        command.Parameters.Add("@type", MySqlDbType.VarChar).Value = type;
 
         var rows = new List<InitialCustomerSupplierBalanceRow>();
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
@@ -104,5 +96,16 @@ public sealed class InitialCustomerSupplierBalanceRepository(MicronoteDb databas
         }
 
         return rows;
+    }
+
+    private static async Task<int> ReadReferenceYearAsync(
+        MySqlConnection connection,
+        CancellationToken cancellationToken)
+    {
+        await using var command = new MySqlCommand(
+            "SELECT Valore FROM Opzioni WHERE Chiave = @key LIMIT 1;", connection);
+        command.Parameters.AddWithValue("@key", ReferenceYearKey);
+        var value = Convert.ToString(await command.ExecuteScalarAsync(cancellationToken));
+        return int.TryParse(value, out var year) && year > 0 ? year : 2000;
     }
 }

@@ -12,21 +12,29 @@ public sealed class ArticleRepository(MicronoteDb database)
             SELECT
                 a.Codice,
                 COALESCE(a.Descrizione, '') AS Descrizione,
-                COALESCE(a.Ums, '') AS Ums,
+                COALESCE(a.Uma, '') AS Uma,
+                COALESCE(a.Umv, '') AS Umv,
                 a.Categoria,
                 COALESCE(ct.Descrizione, '') AS CategoriaDescrizione,
                 a.Gruppo,
                 COALESCE(gr.Descrizione, '') AS GruppoDescrizione,
-                a.Sottogruppo,
-                COALESCE(sg.Descrizione, '') AS SottogruppoDescrizione,
+                a.Specie,
+                COALESCE(sp.Descrizione, '') AS SpecieDescrizione,
+                a.Provenienza,
+                COALESCE(pr.Descrizione, '') AS ProvenienzaDescrizione,
                 COALESCE(a.CostoStd, 0) AS CostoStd,
+                COALESCE(a.PrezzoStd, 0) AS PrezzoStd,
+                COALESCE(a.PrIvato, 0) AS PrIvato,
+                COALESCE(a.GiacinP, 0) AS GiacinP,
+                COALESCE(a.Tara, 0) AS Tara,
                 COALESCE(a.AliqIva, 0) AS AliqIva,
                 a.Fornitore,
                 COALESCE(fn.Nome, '') AS FornitoreNome
             FROM Articoli a
             LEFT JOIN Categorie ct ON ct.Codice = a.Categoria
             LEFT JOIN Gruppi gr ON gr.Codice = a.Gruppo
-            LEFT JOIN Sottogruppi sg ON sg.Codice = a.Sottogruppo
+            LEFT JOIN Specie sp ON sp.Codice = a.Specie
+            LEFT JOIN Provenienza pr ON pr.Codice = a.Provenienza
             LEFT JOIN fornitori fn ON fn.Codice = a.Fornitore
             ORDER BY a.Descrizione, a.Codice;
             """;
@@ -41,14 +49,21 @@ public sealed class ArticleRepository(MicronoteDb database)
             articles.Add(new ArticleListItem(
                 Text(reader, "Codice") ?? "",
                 Text(reader, "Descrizione") ?? "",
-                Text(reader, "Ums") ?? "",
+                Text(reader, "Uma") ?? "",
+                Text(reader, "Umv") ?? "",
                 Integer(reader, "Categoria"),
                 Text(reader, "CategoriaDescrizione") ?? "",
                 Integer(reader, "Gruppo"),
                 Text(reader, "GruppoDescrizione") ?? "",
-                Integer(reader, "Sottogruppo"),
-                Text(reader, "SottogruppoDescrizione") ?? "",
+                Integer(reader, "Specie"),
+                Text(reader, "SpecieDescrizione") ?? "",
+                Integer(reader, "Provenienza"),
+                Text(reader, "ProvenienzaDescrizione") ?? "",
                 Decimal(reader, "CostoStd") ?? 0,
+                Decimal(reader, "PrezzoStd") ?? 0,
+                Decimal(reader, "PrIvato") ?? 0,
+                Decimal(reader, "GiacinP") ?? 0,
+                Decimal(reader, "Tara") ?? 0,
                 Decimal(reader, "AliqIva") ?? 0,
                 Integer(reader, "Fornitore"),
                 Text(reader, "FornitoreNome") ?? ""));
@@ -86,17 +101,19 @@ public sealed class ArticleRepository(MicronoteDb database)
         {
             Code = Text(reader, "Codice") ?? "",
             Description = Text(reader, "Descrizione") ?? "",
-            UnitMeasureCode = Text(reader, "Ums"),
+            SalesUnitCode = Text(reader, "Uma"),
+            PurchaseUnitCode = Text(reader, "Umv"),
             CategoryCode = Integer(reader, "Categoria"),
             GroupCode = Integer(reader, "Gruppo"),
-            SubgroupCode = Integer(reader, "Sottogruppo"),
+            SpeciesCode = Integer(reader, "Specie"),
+            OriginCode = Integer(reader, "Provenienza"),
             VatRate = Decimal(reader, "AliqIva"),
-            NetWeight = Decimal(reader, "PesoNt"),
-            Pieces = Integer(reader, "Pezzi"),
+            Tare = Decimal(reader, "Tara"),
             StandardCost = standardCost,
             StandardPrice = Decimal(reader, "PrezzoStd"),
-            InitialStock = Decimal(reader, "GiacIn"),
-            DailyConsumption = Decimal(reader, "Consumo"),
+            InitialPackages = Integer(reader, "GiacinC"),
+            InitialWeight = Decimal(reader, "GiacinP"),
+            VatIncludedPrice = Decimal(reader, "PrIvato"),
             SupplierCode = Integer(reader, "Fornitore"),
             SupplierName = Text(reader, "FornitoreNome") ?? "",
             SupplierArticleCode = Text(reader, "CodiceFn"),
@@ -125,7 +142,11 @@ public sealed class ArticleRepository(MicronoteDb database)
                 cancellationToken),
             await LoadLookupAsync(
                 connection,
-                "SELECT Codice, Descrizione FROM Sottogruppi ORDER BY Descrizione, Codice",
+                "SELECT Codice, Descrizione FROM Specie ORDER BY Descrizione, Codice",
+                cancellationToken),
+            await LoadLookupAsync(
+                connection,
+                "SELECT Codice, Descrizione FROM Provenienza ORDER BY Descrizione, Codice",
                 cancellationToken),
             await LoadLookupAsync(
                 connection,
@@ -153,12 +174,14 @@ public sealed class ArticleRepository(MicronoteDb database)
 
         const string sql = """
             INSERT INTO Articoli
-                (Codice, Descrizione, Ums, Categoria, Gruppo, Sottogruppo, AliqIva,
-                 PesoNt, Pezzi, CostoStd, PrezzoStd, GiacIn, Consumo, Fornitore, CodiceFn)
+                (Codice, Descrizione, Uma, Umv, Categoria, Gruppo, Specie, Provenienza,
+                 AliqIva, Tara, GiacinC, GiacinP, CostoStd, PrezzoStd, PrIvato,
+                 Fornitore, CodiceFn)
             VALUES
-                (@code, @description, @unitMeasure, @category, @group, @subgroup, @vatRate,
-                 @netWeight, @pieces, @standardCost, @standardPrice, @initialStock,
-                 @dailyConsumption, @supplier, @supplierArticleCode);
+                (@code, @description, @salesUnit, @purchaseUnit, @category, @group,
+                 @species, @origin, @vatRate, @tare, @initialPackages, @initialWeight,
+                 @standardCost, @standardPrice, @vatIncludedPrice, @supplier,
+                 @supplierArticleCode);
             """;
 
         await using var command = new MySqlCommand(sql, connection);
@@ -177,17 +200,19 @@ public sealed class ArticleRepository(MicronoteDb database)
             UPDATE Articoli
             SET
                 Descrizione = @description,
-                Ums = @unitMeasure,
+                Uma = @salesUnit,
+                Umv = @purchaseUnit,
                 Categoria = @category,
                 Gruppo = @group,
-                Sottogruppo = @subgroup,
+                Specie = @species,
+                Provenienza = @origin,
                 AliqIva = @vatRate,
-                PesoNt = @netWeight,
-                Pezzi = @pieces,
+                Tara = @tare,
+                GiacinC = @initialPackages,
+                GiacinP = @initialWeight,
                 CostoStd = @standardCost,
                 PrezzoStd = @standardPrice,
-                GiacIn = @initialStock,
-                Consumo = @dailyConsumption,
+                PrIvato = @vatIncludedPrice,
                 Fornitore = @supplier,
                 CodiceFn = @supplierArticleCode
             WHERE Codice = @code;
@@ -262,17 +287,19 @@ public sealed class ArticleRepository(MicronoteDb database)
     {
         command.Parameters.AddWithValue("@code", article.Code.Trim());
         command.Parameters.AddWithValue("@description", article.Description.Trim());
-        command.Parameters.AddWithValue("@unitMeasure", DbText(article.UnitMeasureCode));
+        command.Parameters.AddWithValue("@salesUnit", DbText(article.SalesUnitCode));
+        command.Parameters.AddWithValue("@purchaseUnit", DbText(article.PurchaseUnitCode));
         command.Parameters.AddWithValue("@category", DbInt(article.CategoryCode));
         command.Parameters.AddWithValue("@group", DbInt(article.GroupCode));
-        command.Parameters.AddWithValue("@subgroup", DbInt(article.SubgroupCode));
+        command.Parameters.AddWithValue("@species", DbInt(article.SpeciesCode));
+        command.Parameters.AddWithValue("@origin", DbInt(article.OriginCode));
         command.Parameters.AddWithValue("@vatRate", article.VatRate ?? 0);
-        command.Parameters.AddWithValue("@netWeight", article.NetWeight ?? 0);
-        command.Parameters.AddWithValue("@pieces", article.Pieces ?? 0);
+        command.Parameters.AddWithValue("@tare", article.Tare ?? 0);
+        command.Parameters.AddWithValue("@initialPackages", article.InitialPackages ?? 0);
+        command.Parameters.AddWithValue("@initialWeight", article.InitialWeight ?? 0);
         command.Parameters.AddWithValue("@standardCost", article.StandardCost ?? 0);
         command.Parameters.AddWithValue("@standardPrice", article.StandardPrice ?? 0);
-        command.Parameters.AddWithValue("@initialStock", article.InitialStock ?? 0);
-        command.Parameters.AddWithValue("@dailyConsumption", article.DailyConsumption ?? 0);
+        command.Parameters.AddWithValue("@vatIncludedPrice", article.VatIncludedPrice ?? 0);
         command.Parameters.AddWithValue("@supplier", article.SupplierCode ?? 0);
         command.Parameters.AddWithValue("@supplierArticleCode", DbText(article.SupplierArticleCode));
     }

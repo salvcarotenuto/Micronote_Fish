@@ -13,6 +13,7 @@ public sealed class IndexModel(
     public GroupPurchaseStatsPageModel Report { get; private set; } = new();
 
     public async Task OnGetAsync(
+        bool run,
         DateOnly? dateFrom,
         DateOnly? dateTo,
         string? grouping,
@@ -26,7 +27,7 @@ public sealed class IndexModel(
             end = new DateOnly(year, 12, 31);
         }
 
-        Report = await repository.GetAsync(start, end, grouping, true, cancellationToken);
+        Report = await repository.GetAsync(start, end, grouping, run, cancellationToken);
     }
 
     public async Task<JsonResult> OnGetDetailsAsync(

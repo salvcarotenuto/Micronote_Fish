@@ -11,15 +11,20 @@ CREATE TABLE IF NOT EXISTS Aziende (
     Attiva TINYINT(1) NOT NULL DEFAULT 1,
     Bloccata TINYINT(1) NOT NULL DEFAULT 0,
     NomeDatabase VARCHAR(120) NULL,
-    VersioneDbAttuale VARCHAR(30) NULL,
-    VersioneDbRichiesta VARCHAR(30) NULL,
+    VersioneDbAttuale DATETIME NULL,
+    VersioneDbRichiesta DATETIME NULL,
     UNIQUE KEY UX_Aziende_Nome (Nome)
 );
 
 CREATE TABLE IF NOT EXISTS Parametri (
     Chiave VARCHAR(100) NOT NULL PRIMARY KEY,
-    Valore TEXT NULL
+    Valore TEXT NULL,
+    VersioneSchemaDatabase DATETIME NULL
 );
+
+INSERT INTO Parametri (Chiave, VersioneSchemaDatabase)
+VALUES ('VersioneSchemaDatabase', NOW())
+ON DUPLICATE KEY UPDATE VersioneSchemaDatabase = VersioneSchemaDatabase;
 
 INSERT INTO Aziende
 (

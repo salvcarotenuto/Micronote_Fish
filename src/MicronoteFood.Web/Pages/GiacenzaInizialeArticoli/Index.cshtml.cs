@@ -16,6 +16,9 @@ public class IndexModel(InitialArticleStockRepository repository) : PageModel
     public IReadOnlyList<InitialArticleStockRow> Rows { get; private set; } = [];
 
     [BindProperty]
+    public DateOnly? InventoryDate { get; set; }
+
+    [BindProperty]
     public string Payload { get; set; } = "";
 
     [TempData]
@@ -23,21 +26,35 @@ public class IndexModel(InitialArticleStockRepository repository) : PageModel
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
-        Rows = await repository.ListAsync(cancellationToken);
+        await LoadAsync(cancellationToken);
     }
 
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
         var rows = ParsePayload();
+        if (InventoryDate is null)
+        {
+            ModelState.AddModelError(nameof(InventoryDate), "Indicare la data di effettuazione dell'inventario.");
+        }
+
         if (!ModelState.IsValid)
         {
-            Rows = await repository.ListAsync(cancellationToken);
+            var data = await repository.GetAsync(cancellationToken);
+            Rows = data.Rows;
             return Page();
         }
 
-        await repository.SaveAsync(rows, cancellationToken);
-        SavedMessage = $"Registrate {rows.Count} giacenze iniziali.";
+        var inventoryDate = InventoryDate.GetValueOrDefault();
+        await repository.SaveAsync(inventoryDate, rows, cancellationToken);
+        SavedMessage = $"Registrato l'inventario del {inventoryDate:dd/MM/yyyy} per {rows.Count} articoli.";
         return RedirectToPage();
+    }
+
+    private async Task LoadAsync(CancellationToken cancellationToken)
+    {
+        var data = await repository.GetAsync(cancellationToken);
+        Rows = data.Rows;
+        InventoryDate = data.InventoryDate;
     }
 
     private IReadOnlyList<InitialArticleStockSaveRow> ParsePayload()

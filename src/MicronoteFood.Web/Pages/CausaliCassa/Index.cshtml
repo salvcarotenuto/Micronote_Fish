@@ -1,0 +1,67 @@
+@page
+@model MicronoteFood.Web.Pages.CausaliCassa.IndexModel
+@{
+    ViewData["Title"] = "Causali movimenti di cassa";
+    ViewData["BodyClass"] = "list-module";
+}
+
+<section class="list-page cash-cause-list-page small-table-page" data-list-page data-menu-url="/">
+    <header class="list-titlebar">
+        <a class="list-title-identity" asp-page="/Index" aria-label="Torna al menu principale">
+            <img src="~/images/micronote-logo.jpeg" alt="" />
+            <span>
+                <strong>Causali movimenti di cassa</strong>
+                <small>Micronote Food - Tabelle contabili</small>
+            </span>
+        </a>
+        <div class="list-title-actions">
+            <a class="list-title-button" asp-page="./Edit">Aggiungi</a>
+            <button class="list-title-button" type="button" data-cash-cause-action="edit">Modifica</button>
+            <button class="list-title-button" type="button" data-cash-cause-action="delete">Elimina</button>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <span hidden data-page-message data-message-variant="error" data-message-text="@Model.ErrorMessage"></span>
+    }
+
+    <section class="list-panel">
+        <div class="list-grid-frame cash-cause-grid-frame small-table-grid-frame" data-cash-cause-grid>
+            <table class="list-grid cash-cause-grid small-table-grid">
+                <thead><tr><th data-sort-key="code" data-sort-type="number">Codice</th><th data-sort-key="description">Descrizione</th><th data-sort-key="movementType">Tipo movimento</th><th data-sort-key="subjectType">Tipo ditta</th><th data-sort-key="locked">Bloccata</th></tr></thead>
+                <tbody>
+                @foreach (var cause in Model.Causes)
+                {
+                    <tr tabindex="0"
+                        data-cash-cause-row
+                        data-sort-code="@cause.Code"
+                        data-sort-description="@cause.Description"
+                        data-sort-movement-type="@cause.MovementType"
+                        data-sort-subject-type="@cause.SubjectType"
+                        data-sort-locked="@(cause.Locked ? "1" : "0")"
+                        data-edit-url="@Url.Page("./Edit", new { code = cause.Code })"
+                        data-delete-code="@cause.Code"
+                        data-record-label="@cause.Description"
+                        data-locked="@(cause.Locked ? "true" : "false")">
+                        <td class="code-cell">@cause.Code.ToString("000")</td>
+                        <td>@cause.Description</td>
+                        <td>@(cause.MovementType == "C" ? "Costo" : cause.MovementType == "R" ? "Ricavo" : cause.MovementType)</td>
+                        <td>@(cause.SubjectType == "C" ? "Cliente" : cause.SubjectType == "F" ? "Fornitore" : cause.SubjectType == "A" ? "Agente" : cause.SubjectType)</td>
+                        <td>@(cause.Locked ? "Sì" : "")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+            <div class="list-empty" data-cash-cause-empty hidden>Nessuna causale di cassa trovata.</div>
+        </div>
+    </section>
+
+    <form method="post" asp-page-handler="Delete" data-cash-cause-delete-form hidden>
+        <input type="hidden" name="code" data-cash-cause-delete-code />
+    </form>
+</section>
+
+@section Scripts {
+    <script src="~/js/cash-causes-list.js" asp-append-version="true"></script>
+}

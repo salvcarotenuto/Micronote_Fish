@@ -1,0 +1,180 @@
+@page "{id:int?}"
+@model MicronoteFood.Web.Pages.MovimentoContabileCliente.EditModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Movimento contabile cliente";
+    ViewData["BodyClass"] = "customer-cash-movement-module";
+    var it = CultureInfo.GetCultureInfo("it-IT");
+}
+
+<section class="module-page customer-cash-movement-page data-form-skin">
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" href="/" aria-label="Torna al menu">
+                <img src="~/images/micronote-logo.jpeg" alt="" />
+            </a>
+            <div><h1>Movimento contabile cliente</h1><p>Registrazione incassi e movimenti contabili dei clienti.</p></div>
+        </div>
+        <div class="top-actions">
+            <button class="button button-primary primary" id="cashMovementSave" type="submit"
+                    form="customer-cash-movement-form">Registra</button>
+            <a class="button button-secondary secondary" href="@Model.ReturnUrl">Annulla</a>
+        </div>
+    </header>
+
+    <form id="customer-cash-movement-form" method="post"
+          class="entity-form customer-cash-movement-form" novalidate
+          data-enter-navigation data-customer-cash-movement-form data-return-url="@Model.ReturnUrl">
+        <input asp-for="Movement.Id" type="hidden" />
+        <input asp-for="Movement.Code" type="hidden" />
+        <input asp-for="Movement.IsNew" type="hidden" />
+        <input asp-for="Movement.Year" type="hidden" />
+        <input asp-for="Movement.Sector" type="hidden" />
+        <input type="hidden" name="returnTo" value="@Model.ReturnTo" />
+        <input type="hidden" name="customerReadOnly" value="@(Model.CustomerReadOnly ? "true" : "false")" />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <fieldset class="form-frame customer-cash-movement-frame">
+            <div class="customer-cash-movement-grid">
+                <div class="field customer-cash-movement-number">
+                    <label>Numero movimento</label>
+                    <input value="@(Model.Movement.Code > 0 ? $"{Model.Movement.Code:000000} / {Model.Movement.Year:0000}" : "Automatico")"
+                           readonly tabindex="-1" />
+                </div>
+                <div class="field customer-cash-movement-date">
+                    <label>Data movimento</label>
+                    <span class="micronote-date-control" data-date-control>
+                        <input asp-for="Movement.MovementDate" type="hidden"
+                               value="@Model.Movement.MovementDate.ToString("yyyy-MM-dd")" data-filter-date-hidden />
+                        <input class="micronote-date-input" type="text" inputmode="numeric" maxlength="10"
+                               autocomplete="off" value="@Model.Movement.MovementDate.ToString("dd/MM/yyyy")"
+                               data-filter-date-display />
+                        <button class="micronote-date-button" type="button" tabindex="-1"
+                                aria-label="Seleziona data movimento" data-date-picker-button></button>
+                    </span>
+                </div>
+
+                <div class="field customer-cash-movement-customer lookup-field"
+                     data-customer-readonly="@(Model.CustomerReadOnly ? "true" : "false")"
+                     data-lookup-field data-lookup-type="clienti" data-lookup-title="Clienti"
+                     data-code-input="cashMovementCustomerCode"
+                     data-code-display="cashMovementCustomerDisplay"
+                     data-label-input="cashMovementCustomerName">
+                    <label>Cliente</label>
+                    <div class="customer-cash-movement-customer-control">
+                        <input asp-for="Movement.CustomerCode" id="cashMovementCustomerCode" type="hidden" />
+                        <input asp-for="Movement.CustomerStoreCode" id="cashMovementCustomerStoreCode" type="hidden" />
+                        <input id="cashMovementCustomerDisplay" class="customer-cash-movement-customer-code"
+                               type="text" inputmode="numeric" maxlength="5" autocomplete="off" required aria-required="true"
+                               readonly="@(Model.CustomerReadOnly ? "readonly" : null)"
+                               value="@(Model.Movement.CustomerCode > 0 ? Model.Movement.CustomerCode.ToString("00000") : "")" />
+                        <input asp-for="Movement.CustomerName" id="cashMovementCustomerName"
+                               class="customer-cash-movement-customer-name" readonly tabindex="-1" />
+                        @if (!Model.CustomerReadOnly)
+                        {
+                            <button class="lookup-button" type="button" title="Seleziona cliente"
+                                    aria-label="Seleziona cliente" data-lookup-open></button>
+                            <button class="customer-cash-movement-customer-clear" id="cashMovementCustomerClear"
+                                    type="button" title="Cancella cliente"
+                                    aria-label="Cancella cliente">×</button>
+                        }
+                    </div>
+                </div>
+
+                <div class="field customer-cash-movement-cause">
+                    <label>Causale movimento</label>
+                    <select asp-for="Movement.CauseCode">
+                        <option value="20">Incasso da cliente</option>
+                        <option value="5">Abbuoni su vendite</option>
+                    </select>
+                </div>
+
+                <div class="field customer-cash-movement-document">
+                    <label>Bolla collegata</label>
+                    <div class="customer-cash-movement-document-control">
+                        <input asp-for="Movement.DocumentType" id="cashMovementDocumentType" type="hidden" />
+                        <input asp-for="Movement.DocumentId" id="cashMovementDocumentId" type="hidden" />
+                        <input asp-for="Movement.DocumentYear" id="cashMovementDocumentYearValue" type="hidden" />
+                        <input asp-for="Movement.DocumentCode" id="cashMovementDocumentCode" type="hidden" />
+                        <input asp-for="Movement.DocumentNumber" id="cashMovementDocumentNumber" type="hidden" />
+                        <input asp-for="Movement.DocumentDate" id="cashMovementDocumentDate" type="hidden" />
+                        <input id="cashMovementDocumentDisplay" type="text" readonly tabindex="-1"
+                               value="@(Model.Movement.DocumentCode.HasValue && Model.Movement.DocumentYear.HasValue ? $"{Model.Movement.DocumentCode.Value:000000} / {Model.Movement.DocumentYear.Value:0000}" : "")" />
+                        <input id="cashMovementDocumentDescription" type="text" readonly tabindex="-1"
+                               value="@(Model.Movement.DocumentNumber.HasValue && Model.Movement.DocumentDate.HasValue ? $"Bolla n.ro {Model.Movement.DocumentNumber.Value} del {Model.Movement.DocumentDate.Value:dd/MM/yyyy}" : "")" />
+                        <button class="lookup-button" id="cashMovementDocumentLookup" type="button"
+                                 title="Seleziona documento" aria-label="Seleziona documento"></button>
+                        <button class="customer-cash-movement-document-copy" id="cashMovementDocumentCopy"
+                                type="button" title="Copia descrizione bolla"
+                                aria-label="Copia descrizione bolla"
+                                disabled="@(!Model.Movement.DocumentNumber.HasValue)">⧉</button>
+                        <button class="customer-cash-movement-document-clear" id="cashMovementDocumentClear"
+                                type="button" title="Cancella documento collegato"
+                                aria-label="Cancella documento collegato">×</button>
+                    </div>
+                </div>
+                <div class="field customer-cash-movement-amount">
+                    <label>Importo</label>
+                    <input asp-for="Movement.Amount" class="money-input currency-display" type="text"
+                           inputmode="decimal" autocomplete="off" required aria-required="true"
+                           value="@(Model.Movement.Amount == 0 ? "" : Model.Movement.Amount.ToString("N2", it))"
+                           data-money-field data-money-integer-digits="9" />
+                </div>
+                <div class="field">
+                    <label>Modo di pagamento</label>
+                    <select asp-for="Movement.PaymentMethod">
+                        <option value="0">Contanti</option>
+                        <option value="1">Assegno</option>
+                        <option value="2">Bonifico</option>
+                    </select>
+                </div>
+                <div class="field customer-cash-movement-store">
+                    <label>Punto vendita</label>
+                    <select id="cashMovementCustomerStore">
+                        <option value="0"></option>
+                        @foreach (var store in Model.Mask.Stores)
+                        {
+                            <option value="@store.Code" selected="@(store.Code == Model.Movement.CustomerStoreCode)">@store.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="field customer-cash-movement-description">
+                    <label>Annotazioni</label>
+                    <input asp-for="Movement.Description" type="text" maxlength="100" autocomplete="off" />
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <dialog class="customer-cash-document-dialog" id="cashMovementDocumentDialog"
+            data-current-year="@Model.Movement.Year">
+        <div class="customer-cash-document-dialog-head">
+            <strong id="cashMovementDocumentDialogTitle">Documenti cliente</strong>
+            <button type="button" aria-label="Chiudi" data-document-close>×</button>
+        </div>
+        <div class="customer-cash-document-table-wrap">
+            <table>
+                <thead><tr><th>Partita</th><th>Numero</th><th>Data</th><th>Totale</th></tr></thead>
+                <tbody data-document-rows></tbody>
+            </table>
+        </div>
+        <div class="customer-cash-document-dialog-foot">
+            <label for="cashMovementDocumentYear">Anno</label>
+            <select id="cashMovementDocumentYear">
+                @for (var year = Model.Movement.Year; year >= Model.Movement.Year - 3; year--)
+                {
+                    <option value="@year">@year</option>
+                }
+            </select>
+            <button class="button button-primary primary" type="button" data-document-confirm>Seleziona</button>
+            <button class="button button-secondary secondary" type="button" data-document-close>Annulla</button>
+        </div>
+    </dialog>
+</section>
+
+@section Scripts {
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+    <script src="~/js/lookup-fields.js" asp-append-version="true"></script>
+    <script src="~/js/filter-date-picker.js" asp-append-version="true"></script>
+    <script src="~/js/customer-cash-movement.js" asp-append-version="true"></script>
+}

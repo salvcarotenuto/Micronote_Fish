@@ -1,26 +1,82 @@
 param(
-    [int]$Port = 5210
+    [int]$Port = 5210,
+    [string]$OpenPath = "/",
+    [switch]$NoBuild,
+    [switch]$NoBrowser,
+    [switch]$NoWatch
 )
 
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $project = Join-Path $root "src\MicronoteFood.Web\MicronoteFood.Web.csproj"
+$projectFullPath = [System.IO.Path]::GetFullPath($project)
 $outLog = Join-Path $root "micronote-fish-run.out.log"
 $errLog = Join-Path $root "micronote-fish-run.err.log"
 $pidFile = Join-Path $root "micronote-fish-run.pid"
-$url = "http://localhost:$Port"
+$baseUrl = "http://localhost:$Port"
 
-Write-Host "Avvio Micronote Fish su $url"
+if (-not $OpenPath.StartsWith("/")) {
+    $OpenPath = "/$OpenPath"
+}
 
-if (Test-Path -LiteralPath $pidFile) {
-    $previousPid = [int](Get-Content -LiteralPath $pidFile -Raw)
-    Stop-Process -Id $previousPid -Force -ErrorAction SilentlyContinue
-    Remove-Item -LiteralPath $pidFile -Force -ErrorAction SilentlyContinue
+$targetUrl = "$baseUrl$OpenPath"
+
+function Stop-MicronoteProcess {
+    $processes = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
+        ($_.Name -eq "dotnet.exe" -and $_.CommandLine -and $_.CommandLine.Contains($projectFullPath)) -or
+        ($_.Name -eq "MicronoteFood.Web.exe" -and $_.ExecutablePath -and $_.ExecutablePath.StartsWith($root, [System.StringComparison]::OrdinalIgnoreCase))
+    }
+
+    foreach ($item in $processes) {
+        Stop-Process -Id $item.ProcessId -Force -ErrorAction SilentlyContinue
+    }
+
+    if (Test-Path -LiteralPath $pidFile) {
+        $storedPid = 0
+        if ([int]::TryParse((Get-Content -LiteralPath $pidFile -Raw).Trim(), [ref]$storedPid)) {
+            Stop-Process -Id $storedPid -Force -ErrorAction SilentlyContinue
+        }
+        Remove-Item -LiteralPath $pidFile -Force -ErrorAction SilentlyContinue
+    }
+
+    foreach ($attempt in 1..20) {
+        $stillRunning = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
+            ($_.Name -eq "dotnet.exe" -and $_.CommandLine -and $_.CommandLine.Contains($projectFullPath)) -or
+            ($_.Name -eq "MicronoteFood.Web.exe" -and $_.ExecutablePath -and $_.ExecutablePath.StartsWith($root, [System.StringComparison]::OrdinalIgnoreCase))
+        }
+        if (-not $stillRunning) {
+            break
+        }
+        Start-Sleep -Milliseconds 250
+    }
+}
+
+Write-Host "Riavvio Micronote Fish su $baseUrl"
+Stop-MicronoteProcess
+
+if (-not $NoBuild) {
+    Write-Host "Compilazione dell'applicazione..."
+    $configuration = if ($NoWatch) { "Release" } else { "Debug" }
+    & dotnet build $project -c $configuration --no-restore --nologo
+    if ($LASTEXITCODE -ne 0) {
+        throw "Compilazione non riuscita. Il browser non verra aperto."
+    }
+}
+
+$env:ASPNETCORE_ENVIRONMENT = "Development"
+$env:DOTNET_ENVIRONMENT = "Development"
+$env:DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER = "1"
+$env:DOTNET_WATCH_RESTART_ON_RUDE_EDIT = "1"
+
+$runArguments = if ($NoWatch) {
+    @("run", "--no-build", "-c", "Release", "--no-launch-profile", "--project", $project, "--urls", $baseUrl)
+} else {
+    @("watch", "--project", $project, "run", "--no-launch-profile", "--urls", $baseUrl)
 }
 
 $process = Start-Process -FilePath "dotnet" `
-    -ArgumentList @("run", "--project", $project, "--urls", $url) `
+    -ArgumentList $runArguments `
     -WorkingDirectory $root `
     -RedirectStandardOutput $outLog `
     -RedirectStandardError $errLog `
@@ -30,29 +86,34 @@ $process = Start-Process -FilePath "dotnet" `
 Set-Content -LiteralPath $pidFile -Value $process.Id
 
 $ready = $false
-for ($attempt = 1; $attempt -le 30; $attempt++) {
-    Start-Sleep -Milliseconds 500
+foreach ($attempt in 1..120) {
+    if ($process.HasExited) {
+        break
+    }
 
     try {
-        $response = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 2
-        if ($response.StatusCode -eq 200) {
+        $response = Invoke-WebRequest -Uri $baseUrl -UseBasicParsing -TimeoutSec 2
+        if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 500) {
             $ready = $true
             break
         }
     }
     catch {
-        # Il server sta ancora compilando o avviandosi.
+        Start-Sleep -Milliseconds 500
     }
 }
 
-if ($ready) {
-    Write-Host "Micronote Fish pronto: $url"
-    Start-Process $url
-    exit 0
+if (-not $ready) {
+    Write-Host "Micronote Fish non ha risposto entro il tempo previsto."
+    Write-Host "Controllare i log:"
+    Write-Host "  $outLog"
+    Write-Host "  $errLog"
+    exit 1
 }
 
-Write-Host "Micronote Fish non ha risposto entro il tempo previsto."
-Write-Host "Controllare i log:"
-Write-Host "  $outLog"
-Write-Host "  $errLog"
-exit 1
+Write-Host "Micronote Fish pronto: $targetUrl"
+if (-not $NoBrowser) {
+    Start-Process $targetUrl
+}
+
+exit 0

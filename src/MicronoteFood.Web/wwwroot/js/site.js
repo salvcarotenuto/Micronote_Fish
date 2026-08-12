@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     control.tabIndex = -1;
   });
 
-  const showProgress = (message) => {
+  const showProgress = (message, hideText = false) => {
     if (!progressOverlay) {
       return;
     }
@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
       progressText.textContent = message || defaultProgressText;
     }
 
+    progressOverlay.classList.toggle("progress-without-text", hideText);
     progressOverlay.classList.add("active");
     progressOverlay.setAttribute("aria-hidden", "false");
   };
@@ -27,6 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     progressOverlay.classList.remove("active");
+    progressOverlay.classList.remove("progress-without-text");
     progressOverlay.setAttribute("aria-hidden", "true");
 
     if (progressText) {
@@ -250,12 +252,22 @@ document.addEventListener("DOMContentLoaded", () => {
         : Math.max(0, configuredMinimumTime);
       form.dataset.progressPending = "true";
 
-      showProgress(form.dataset.progressMessage || "Salvataggio in corso...");
-      window.requestAnimationFrame(() => {
+      showProgress(
+        form.dataset.progressMessage || "Salvataggio in corso...",
+        form.dataset.progressHideText === "true"
+      );
+      const submitForm = () => {
         window.setTimeout(() => {
           form.dataset.progressReady = "true";
           HTMLFormElement.prototype.submit.call(form);
         }, minimumTime);
+      };
+      window.requestAnimationFrame(() => {
+        if (form.dataset.progressWaitForPaint === "true") {
+          window.requestAnimationFrame(submitForm);
+          return;
+        }
+        submitForm();
       });
     }, { capture: true });
   });

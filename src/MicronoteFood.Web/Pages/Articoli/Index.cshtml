@@ -73,8 +73,14 @@
                 </select>
             </div>
             <div class="list-filter-field article-filter-field">
-                <label for="article-subgroup">Sottogruppo</label>
-                <select id="article-subgroup" asp-items="Model.SubgroupItems" data-article-subgroup>
+                <label for="article-species">Specie</label>
+                <select id="article-species" asp-items="Model.SpeciesItems" data-article-species>
+                    <option value=""></option>
+                </select>
+            </div>
+            <div class="list-filter-field article-filter-field">
+                <label for="article-origin">Provenienza</label>
+                <select id="article-origin" asp-items="Model.OriginItems" data-article-origin>
                     <option value=""></option>
                 </select>
             </div>
@@ -92,11 +98,15 @@
                     <tr>
                         <th data-sort-key="code">Codice</th>
                         <th data-sort-key="description">Descrizione</th>
-                        <th data-sort-key="unitMeasure">Un. mis.</th>
+                        <th data-sort-key="salesUnit">U.m.a.</th>
+                        <th data-sort-key="purchaseUnit">U.m.v.</th>
                         <th data-sort-key="category">Categoria</th>
                         <th data-sort-key="group">Gruppo</th>
-                        <th data-sort-key="subgroup">Sottogruppo</th>
+                        <th data-sort-key="species">Specie</th>
+                        <th data-sort-key="origin">Provenienza</th>
                         <th data-sort-key="standardCost" data-sort-type="number">Costo std</th>
+                        <th data-sort-key="standardPrice" data-sort-type="number">Prezzo std</th>
+                        <th data-sort-key="vatIncludedPrice" data-sort-type="number">Prezzo ivato</th>
                         <th data-sort-key="vatRate" data-sort-type="number">Iva</th>
                         <th data-sort-key="supplier">Fornitore</th>
                     </tr>
@@ -109,15 +119,20 @@
                             data-filter-text="@($"{article.Code} {article.Description}")"
                             data-category-code="@article.CategoryCode"
                             data-group-code="@article.GroupCode"
-                            data-subgroup-code="@article.SubgroupCode"
+                            data-species-code="@article.SpeciesCode"
+                            data-origin-code="@article.OriginCode"
                             data-supplier-code="@article.SupplierCode"
                             data-sort-code="@article.Code"
                             data-sort-description="@article.Description"
-                            data-sort-unit-measure="@article.UnitMeasureCode"
+                            data-sort-sales-unit="@article.SalesUnitCode"
+                            data-sort-purchase-unit="@article.PurchaseUnitCode"
                             data-sort-category="@article.CategoryDescription"
                             data-sort-group="@article.GroupDescription"
-                            data-sort-subgroup="@article.SubgroupDescription"
+                            data-sort-species="@article.SpeciesDescription"
+                            data-sort-origin="@article.OriginDescription"
                             data-sort-standard-cost="@article.StandardCost.ToString(CultureInfo.InvariantCulture)"
+                            data-sort-standard-price="@article.StandardPrice.ToString(CultureInfo.InvariantCulture)"
+                            data-sort-vat-included-price="@article.VatIncludedPrice.ToString(CultureInfo.InvariantCulture)"
                             data-sort-vat-rate="@article.VatRate.ToString(CultureInfo.InvariantCulture)"
                             data-sort-supplier="@article.SupplierName"
                             data-edit-url="@Url.Page("./Edit", new { code = article.Code })"
@@ -126,11 +141,15 @@
                             data-record-label="@article.Description">
                             <td class="code-cell">@article.Code</td>
                             <td>@article.Description</td>
-                            <td>@article.UnitMeasureCode</td>
+                            <td>@article.SalesUnitCode</td>
+                            <td>@article.PurchaseUnitCode</td>
                             <td>@article.CategoryDescription</td>
                             <td>@article.GroupDescription</td>
-                            <td>@article.SubgroupDescription</td>
+                            <td>@article.SpeciesDescription</td>
+                            <td>@article.OriginDescription</td>
                             <td>@Money(article.StandardCost)</td>
+                            <td>@Money(article.StandardPrice)</td>
+                            <td>@Money(article.VatIncludedPrice)</td>
                             <td>@Percent(article.VatRate)</td>
                             <td>@article.SupplierName</td>
                         </tr>

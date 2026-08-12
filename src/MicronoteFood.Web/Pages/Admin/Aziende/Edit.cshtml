@@ -14,7 +14,7 @@
             </a>
             <div>
                 <h1>@Model.Title</h1>
-                <p class="subtitle">Micronote Food - Gestione aziende</p>
+                <p class="subtitle">Micronote Fish - Gestione aziende</p>
             </div>
             <div class="top-actions stock-toolbar-actions admin-company-edit-actions">
                 <button class="button button-primary" type="submit">Salva</button>
@@ -62,12 +62,22 @@
 
                     <div class="field">
                         <label for="CurrentDatabaseVersion">Versione DB attuale</label>
-                        <input id="CurrentDatabaseVersion" name="CurrentDatabaseVersion" value="@Model.CurrentDatabaseVersion" maxlength="30" autocomplete="off" />
+                        <input id="CurrentDatabaseVersion"
+                               value="@Model.CurrentDatabaseVersion?.ToString("yyyy-MM-dd HH:mm:ss")"
+                               readonly />
+                        <input name="CurrentDatabaseVersion"
+                               type="hidden"
+                               value="@Model.CurrentDatabaseVersion?.ToString("yyyy-MM-ddTHH:mm:ss")" />
                     </div>
 
                     <div class="field">
                         <label for="RequiredDatabaseVersion">Versione DB richiesta</label>
-                        <input id="RequiredDatabaseVersion" name="RequiredDatabaseVersion" value="@Model.RequiredDatabaseVersion" maxlength="30" autocomplete="off" />
+                        <input id="RequiredDatabaseVersion"
+                               value="@Model.RequiredDatabaseVersion?.ToString("yyyy-MM-dd HH:mm:ss")"
+                               readonly />
+                        <input name="RequiredDatabaseVersion"
+                               type="hidden"
+                               value="@Model.RequiredDatabaseVersion?.ToString("yyyy-MM-ddTHH:mm:ss")" />
                     </div>
 
                     <div class="field field-check admin-company-check-field">

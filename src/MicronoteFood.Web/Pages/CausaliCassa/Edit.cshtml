@@ -1,0 +1,73 @@
+@page "{code:int?}"
+@model MicronoteFood.Web.Pages.CausaliCassa.EditModel
+@{
+    ViewData["Title"] = Model.Cause.IsNew ? "Nuova causale di cassa" : "Scheda causale di cassa";
+    ViewData["BodyClass"] = "cash-cause-edit-module";
+}
+
+<section class="module-page form-module-page supplier-form-page data-form-skin">
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="./Index" aria-label="Torna all'elenco"><img src="~/images/micronote-logo.jpeg" alt="" /></a>
+            <div><h1>@ViewData["Title"]</h1><p>Causali dei movimenti di cassa</p></div>
+        </div>
+        <div class="top-actions">
+            <button class="button button-primary primary" type="submit" form="cash-cause-form">Salva</button>
+            <a class="button button-secondary secondary" asp-page="./Index">Annulla</a>
+        </div>
+    </header>
+
+    <form id="cash-cause-form" method="post" class="entity-form" data-enter-navigation>
+        <input asp-for="Cause.IsNew" type="hidden" />
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+        <fieldset class="form-frame compact-frame">
+            <legend>Causale movimento di cassa</legend>
+            <div class="cash-cause-form-fields">
+                <div class="field field-code">
+                    <label asp-for="Cause.Code"></label>
+                    <input asp-for="Cause.Code"
+                           value="@(Model.Cause.Code > 0 ? Model.Cause.Code.ToString("000") : "")"
+                           type="text"
+                           inputmode="numeric"
+                           maxlength="3"
+                           pattern="[0-9]{1,3}"
+                           autocomplete="off"
+                           readonly
+                           tabindex="-1" />
+                    <span asp-validation-for="Cause.Code"></span>
+                </div>
+                <div class="field">
+                    <label asp-for="Cause.Description"></label>
+                    <input asp-for="Cause.Description" autofocus />
+                    <span asp-validation-for="Cause.Description"></span>
+                </div>
+                <div class="field">
+                    <label asp-for="Cause.MovementType"></label>
+                    <select asp-for="Cause.MovementType"><option value=""></option><option value="C">Costo</option><option value="R">Ricavo</option></select>
+                    <span asp-validation-for="Cause.MovementType"></span>
+                </div>
+                <div class="field">
+                    <label asp-for="Cause.SubjectType"></label>
+                    <select asp-for="Cause.SubjectType"><option value=""></option><option value="C">Cliente</option><option value="F">Fornitore</option><option value="A">Agente</option></select>
+                    <span asp-validation-for="Cause.SubjectType"></span>
+                </div>
+                <div class="field-check">
+                    <label class="check-button-field">
+                        <span class="check-text">Bloccata</span>
+                        <input asp-for="Cause.Locked" type="checkbox" disabled="@(!Model.Cause.IsNew)" />
+                        <span class="check-button-wrap" aria-hidden="true"></span>
+                    </label>
+                    @if (!Model.Cause.IsNew)
+                    {
+                        <input asp-for="Cause.Locked" type="hidden" />
+                    }
+                </div>
+            </div>
+        </fieldset>
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/form-enter-navigation.js" asp-append-version="true"></script>
+}

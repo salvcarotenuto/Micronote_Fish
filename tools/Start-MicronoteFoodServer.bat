@@ -1,3 +1,3 @@
 @echo off
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\Codex\Micronote_Food\app\tools\Start-MicronoteFoodServer.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Start-MicronoteFoodServer.ps1"
 

@@ -12,9 +12,27 @@
     window.parent.postMessage({ type: "micronote:article-cancel" }, window.location.origin);
   });
 
+  if (modalCancel) {
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      window.parent.postMessage({ type: "micronote:article-cancel" }, window.location.origin);
+    }, true);
+  }
+
   form.querySelectorAll("[data-integer-field]").forEach((input) => {
     const clean = () => {
       input.value = input.value.replace(/\D/g, "");
+    };
+    const format = () => {
+      clean();
+      if (input.value !== "") {
+        input.value = String(Number.parseInt(input.value, 10));
+      }
     };
 
     input.addEventListener("beforeinput", (event) => {
@@ -26,6 +44,7 @@
     });
 
     input.addEventListener("input", clean);
+    input.addEventListener("blur", format);
     input.addEventListener("paste", () => {
       window.setTimeout(clean, 0);
     });
@@ -68,6 +87,18 @@
     normalizeMoneyFields();
     normalizeDecimalFields();
     normalizePercentFields();
+  };
+
+  const localizeDecimalFieldsForServer = () => {
+    form.querySelectorAll("[data-decimal-field]").forEach((input) => {
+      const decimal = window.MicronoteDecimal;
+      const value = decimal?.parse
+        ? decimal.parse(input.value)
+        : Number.parseFloat(String(input.value ?? "").replace(",", "."));
+      input.value = Number.isFinite(value)
+        ? String(value).replace(".", ",")
+        : "";
+    });
   };
 
   const azione = Number.parseInt(form.querySelector("#Azione")?.value ?? "2", 10);
@@ -129,6 +160,7 @@
     window.MicronoteProgress?.show?.("Salvataggio in corso...");
     window.setTimeout(() => {
       normalizeNumericFields();
+      localizeDecimalFieldsForServer();
       HTMLFormElement.prototype.submit.call(form);
     }, 1000);
   });

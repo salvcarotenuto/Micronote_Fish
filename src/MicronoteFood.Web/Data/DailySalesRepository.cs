@@ -1,4 +1,3 @@
-using System.Globalization;
 using MicronoteFood.Web.Models;
 using MySqlConnector;
 
@@ -6,98 +5,120 @@ namespace MicronoteFood.Web.Data;
 
 public sealed class DailySalesRepository(MicronoteDb database)
 {
-    private const decimal DefaultVatRate = 10m;
-
     public async Task<DateOnly?> LastDateAsync(CancellationToken cancellationToken = default)
     {
         await using var connection = await database.OpenConnectionAsync(cancellationToken);
-        await using var command = new MySqlCommand("SELECT MAX(DataMov) FROM Vendite;", connection);
+        await using var command = new MySqlCommand("SELECT MAX(DataDoc) FROM Vendite;", connection);
         var value = await command.ExecuteScalarAsync(cancellationToken);
         return value is null or DBNull ? null : DateOnly.FromDateTime(Convert.ToDateTime(value));
     }
 
-    public async Task<DailySalesPageModel> GetAsync(DateOnly date, CancellationToken cancellationToken = default)
+    public async Task<DailySalesPageModel> GetAsync(DateOnly date, int storeCode, string? selectedKey, CancellationToken cancellationToken = default)
     {
         await using var connection = await database.OpenConnectionAsync(cancellationToken);
-        var vatRate = await VatRateAsync(connection, cancellationToken);
-        var code = 0;
-        var year = date.Year;
-
-        await using (var command = new MySqlCommand("SELECT Anno, Codice FROM Vendite WHERE DataMov = @date ORDER BY Codice DESC LIMIT 1;", connection))
+        var sales = await ListSalesAsync(connection, date, storeCode, cancellationToken);
+        var selected = sales.FirstOrDefault(row => row.Key == selectedKey) ?? sales.FirstOrDefault();
+        return new DailySalesPageModel
         {
-            command.Parameters.Add("@date", MySqlDbType.Date).Value = date.ToDateTime(TimeOnly.MinValue);
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-            if (await reader.ReadAsync(cancellationToken))
-            {
-                year = Convert.ToInt32(reader["Anno"]);
-                code = Convert.ToInt32(reader["Codice"]);
-            }
-        }
-
-        var rows = new List<DailySalesRow>();
-        const string sql = """
-            SELECT pv.Codice AS PuntoV, COALESCE(pv.Nome, '') AS Nome,
-                   COALESCE(mi.Imponibile, 0) AS ImponibileIva, COALESCE(mi.Iva, 0) AS Iva,
-                   COALESCE(mi.NonImponibile, 0) AS NonImponibile,
-                   COALESCE(vr.Contanti, 0) AS Contanti,
-                   COALESCE(vr.Carta, 0) AS Carta, COALESCE(vr.Tickets, 0) AS Tickets,
-                   COALESCE(vr.Assegni, 0) AS Assegni, COALESCE(vr.Altro, 0) AS Altro,
-                   COALESCE(vr.Sospesi, 0) AS Sospesi, COALESCE(vr.Perdite, 0) AS Perdite
-            FROM PuntiVendita pv
-            LEFT JOIN VenditeRg vr ON vr.PuntoV = pv.Codice AND vr.Anno = @year AND vr.Codice = @code
-            LEFT JOIN (
-                SELECT Anno, Codice, PuntoV,
-                       SUM(CASE WHEN COALESCE(AliqIva, 0) <> 0 OR COALESCE(Iva, 0) <> 0 THEN Imponibile ELSE 0 END) AS Imponibile,
-                       SUM(CASE
-                               WHEN COALESCE(Iva, 0) <> 0 THEN Iva
-                               WHEN COALESCE(AliqIva, 0) <> 0 THEN ROUND(Imponibile * AliqIva / 100, 2)
-                               ELSE 0
-                           END) AS Iva,
-                       SUM(CASE WHEN COALESCE(AliqIva, 0) = 0 AND COALESCE(Iva, 0) = 0 THEN Imponibile ELSE 0 END) AS NonImponibile
-                FROM MovivaRg
-                WHERE Settore = 20
-                GROUP BY Anno, Codice, PuntoV
-            ) mi ON mi.Anno = @year AND mi.Codice = @code AND mi.PuntoV = pv.Codice
-            WHERE COALESCE(pv.Attivo, 1) <> 0
-            ORDER BY pv.Codice;
-            """;
-        await using (var command = new MySqlCommand(sql, connection))
-        {
-            command.Parameters.AddWithValue("@year", year);
-            command.Parameters.AddWithValue("@code", code);
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-            while (await reader.ReadAsync(cancellationToken))
-            {
-                var taxableNet = Money(reader["ImponibileIva"]);
-                var vat = Money(reader["Iva"]);
-                var other = Money(reader["Altro"]);
-                var exempt = Money(reader["NonImponibile"]);
-                var net = taxableNet + exempt;
-                var total = net + vat;
-                rows.Add(new DailySalesRow(Convert.ToInt32(reader["PuntoV"]), Convert.ToString(reader["Nome"]) ?? "",
-                    taxableNet + vat, exempt, net, vat, total, Money(reader["Contanti"]), Money(reader["Carta"]),
-                    Money(reader["Tickets"]), Money(reader["Assegni"]), other,
-                    Money(reader["Sospesi"]), Money(reader["Perdite"])));
-            }
-        }
-
-        return new DailySalesPageModel { MovementDate = date, Code = code, VatRate = vatRate, Rows = rows,
-            Totals = new(rows.Sum(x => x.TaxableGross), rows.Sum(x => x.Exempt), rows.Sum(x => x.Net), rows.Sum(x => x.Vat),
-                rows.Sum(x => x.Total), rows.Sum(x => x.Cash), rows.Sum(x => x.Card), rows.Sum(x => x.Tickets),
-                rows.Sum(x => x.Checks), rows.Sum(x => x.Other), rows.Sum(x => x.Suspended), rows.Sum(x => x.Losses)) };
+            SaleDate = date,
+            StoreCode = storeCode,
+            SelectedKey = selected?.Key ?? "",
+            Stores = await ListStoresAsync(connection, cancellationToken),
+            Sales = sales,
+            Articles = await ListArticlesAsync(connection, date, storeCode, cancellationToken),
+            Details = selected is null ? [] : await ListDetailsAsync(connection, selected.Id, selected.Year, selected.Code, cancellationToken),
+            Totals = await TotalsAsync(connection, date, storeCode, cancellationToken)
+        };
     }
 
-    private static async Task<decimal> VatRateAsync(MySqlConnection connection, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<DailySaleDetail>> GetDetailsAsync(int id, int year, int code, CancellationToken cancellationToken = default)
     {
-        const string sql = "SELECT Valore FROM Opzioni WHERE Chiave IN ('AliqIvaVendite', 'AliquotaIvaVendite') ORDER BY Chiave LIMIT 1;";
-        try
-        {
-            await using var command = new MySqlCommand(sql, connection);
-            var value = Convert.ToString(await command.ExecuteScalarAsync(cancellationToken));
-            return decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var rate) && rate > 0 ? rate : DefaultVatRate;
-        }
-        catch (MySqlException) { return DefaultVatRate; }
+        await using var connection = await database.OpenConnectionAsync(cancellationToken);
+        return await ListDetailsAsync(connection, id, year, code, cancellationToken);
     }
 
-    private static decimal Money(object value) => value is DBNull ? 0 : Convert.ToDecimal(value);
+    private static async Task<IReadOnlyList<DailySaleItem>> ListSalesAsync(MySqlConnection connection, DateOnly date, int storeCode, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT COALESCE(v.ID, 0) AS ID, v.Anno, v.Codice, COALESCE(v.Cliente, 0) AS Cliente,
+                   COALESCE(c.Nome, '') AS Nome, COALESCE(v.Merce, 0) AS Merce, COALESCE(v.Iva, 0) AS Iva,
+                   COALESCE(v.Totale, 0) AS Totale, COALESCE(v.Pagato, 0) AS Pagato,
+                   COALESCE((SELECT SUM(mc.Importo) FROM MovCassa mc
+                       WHERE mc.CliFor = 'C' AND mc.Ditta = v.Cliente AND mc.Causale = 20 AND mc.DataMov = @date), 0) AS Cassa
+            FROM Vendite v LEFT JOIN Clienti c ON c.Codice = v.Cliente
+            WHERE v.DataDoc = @date AND (@storeCode = 0 OR v.PuntoV = @storeCode)
+            ORDER BY v.Codice;
+            """;
+        await using var command = new MySqlCommand(sql, connection);
+        command.Parameters.Add("@date", MySqlDbType.Date).Value = date.ToDateTime(TimeOnly.MinValue);
+        command.Parameters.AddWithValue("@storeCode", storeCode);
+        var rows = new List<DailySaleItem>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var id = Convert.ToInt32(reader["ID"]); var year = Convert.ToInt32(reader["Anno"]); var code = Convert.ToInt32(reader["Codice"]);
+            rows.Add(new(id > 0 ? $"id:{id}" : $"legacy:{year}:{code}", id, year, code, Convert.ToInt32(reader["Cliente"]), Convert.ToString(reader["Nome"]) ?? "", Decimal(reader["Merce"]), Decimal(reader["Iva"]), Decimal(reader["Totale"]), Decimal(reader["Pagato"]), Decimal(reader["Cassa"])));
+        }
+        return rows;
+    }
+
+    private static async Task<IReadOnlyList<DailySoldArticle>> ListArticlesAsync(MySqlConnection connection, DateOnly date, int storeCode, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT COALESCE(rg.Articolo, '') AS Articolo, COALESCE(a.Descrizione, '') AS Descrizione,
+                   COALESCE(SUM(rg.Quantita), 0) AS Quantita, COALESCE(SUM(rg.Importo), 0) AS Importo
+            FROM VenditeRg rg INNER JOIN Vendite v ON v.ID = rg.ID LEFT JOIN Articoli a ON a.Codice = rg.Articolo
+            WHERE v.DataDoc = @date AND (@storeCode = 0 OR v.PuntoV = @storeCode)
+            GROUP BY rg.Articolo, a.Descrizione ORDER BY rg.Articolo;
+            """;
+        await using var command = new MySqlCommand(sql, connection);
+        command.Parameters.Add("@date", MySqlDbType.Date).Value = date.ToDateTime(TimeOnly.MinValue);
+        command.Parameters.AddWithValue("@storeCode", storeCode);
+        var rows = new List<DailySoldArticle>(); await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken)) rows.Add(new(Convert.ToString(reader["Articolo"]) ?? "", Convert.ToString(reader["Descrizione"]) ?? "", Decimal(reader["Quantita"]), Decimal(reader["Importo"])));
+        return rows;
+    }
+
+    private static async Task<IReadOnlyList<DailySaleDetail>> ListDetailsAsync(MySqlConnection connection, int id, int year, int code, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT COALESCE(rg.Riga, 0) AS Riga, COALESCE(rg.Articolo, '') AS Articolo, COALESCE(a.Descrizione, '') AS Descrizione,
+                   COALESCE(rg.Ums, '') AS Ums, COALESCE(rg.Colli, 0) AS Colli, COALESCE(rg.Quantita, 0) AS Quantita,
+                   COALESCE(rg.Prezzo, 0) AS Prezzo, COALESCE(rg.AliqIva, 0) AS AliqIva,
+                   ROUND(COALESCE(rg.Prezzo, 0) * (1 + COALESCE(rg.AliqIva, 0) / 100), 2) AS PrIvato,
+                   COALESCE(rg.Importo, 0) AS Importo
+            FROM VenditeRg rg LEFT JOIN Articoli a ON a.Codice = rg.Articolo
+            WHERE rg.ID = @id
+            ORDER BY rg.Riga;
+            """;
+        await using var command = new MySqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@id", id);
+        var rows = new List<DailySaleDetail>(); await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken)) rows.Add(new(Convert.ToInt32(reader["Riga"]), Convert.ToString(reader["Articolo"]) ?? "", Convert.ToString(reader["Descrizione"]) ?? "", Convert.ToString(reader["Ums"]) ?? "", Convert.ToInt32(reader["Colli"]), Decimal(reader["Quantita"]), Decimal(reader["Prezzo"]), Decimal(reader["AliqIva"]), Decimal(reader["PrIvato"]), Decimal(reader["Importo"])));
+        return rows;
+    }
+
+    private static async Task<DailySaleTotals> TotalsAsync(MySqlConnection connection, DateOnly date, int storeCode, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT COALESCE(SUM(Merce), 0) AS Merce, COALESCE(SUM(Iva), 0) AS Iva, COALESCE(SUM(Totale), 0) AS Totale, COALESCE(SUM(Pagato), 0) AS Pagato
+            FROM Vendite WHERE DataDoc = @date AND (@storeCode = 0 OR PuntoV = @storeCode);
+            """;
+        await using var command = new MySqlCommand(sql, connection);
+        command.Parameters.Add("@date", MySqlDbType.Date).Value = date.ToDateTime(TimeOnly.MinValue); command.Parameters.AddWithValue("@storeCode", storeCode);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken); await reader.ReadAsync(cancellationToken);
+        var totals = new DailySaleTotals { Goods = Decimal(reader["Merce"]), Vat = Decimal(reader["Iva"]), Sales = Decimal(reader["Totale"]), Paid = Decimal(reader["Pagato"]) };
+        await reader.DisposeAsync();
+        await using var cash = new MySqlCommand("SELECT COALESCE(SUM(Importo), 0) FROM MovCassa WHERE CliFor = 'C' AND Causale = 20 AND DataMov = @date;", connection);
+        cash.Parameters.Add("@date", MySqlDbType.Date).Value = date.ToDateTime(TimeOnly.MinValue);
+        totals.CashIn = Decimal(await cash.ExecuteScalarAsync(cancellationToken)); return totals;
+    }
+
+    private static async Task<IReadOnlyList<DailySaleStore>> ListStoresAsync(MySqlConnection connection, CancellationToken cancellationToken)
+    {
+        await using var command = new MySqlCommand("SELECT Codice, COALESCE(Nome, '') AS Nome FROM PuntiVendita WHERE COALESCE(Attivo, 1) <> 0 ORDER BY Codice;", connection);
+        var rows = new List<DailySaleStore>(); await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken)) rows.Add(new(Convert.ToInt32(reader["Codice"]), Convert.ToString(reader["Nome"]) ?? "")); return rows;
+    }
+    private static decimal Decimal(object? value) => value is null or DBNull ? 0m : Convert.ToDecimal(value);
 }

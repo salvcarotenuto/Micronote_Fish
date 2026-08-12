@@ -4,10 +4,27 @@
   let state = null;
   let searchTimer = 0;
 
-  const columns = [
+  const defaultColumns = [
     { key: "code", label: "Codice" },
     { key: "label", label: "Nome" },
     { key: "detail", label: "Dettaglio" }
+  ];
+  const customerColumns = [
+    { key: "code", label: "Codice", width: 90 },
+    { key: "label", label: "Cliente", width: 420 },
+    { key: "city", label: "Città", width: 220 },
+    { key: "category", label: "Categoria", width: 200 }
+  ];
+  const articleColumns = [
+    { key: "code", label: "Codice", width: 120 },
+    { key: "description", label: "Descrizione", width: 300 },
+    { key: "unitMeasure", label: "U.m.", width: 70, align: "center" },
+    { key: "standardCost", label: "Costo std", numeric: true, width: 90, priceMode: "carico" },
+    { key: "standardPrice", label: "Prezzo std", numeric: true, width: 90, priceMode: "vendita" },
+    { key: "category", label: "Categoria", width: 150 },
+    { key: "group", label: "Gruppo", width: 150 },
+    { key: "species", label: "Specie", width: 150 },
+    { key: "origin", label: "Provenienza", width: 150 }
   ];
 
   function buildOverlay() {
@@ -29,9 +46,10 @@
         </div>
         <div class="lookup-table-wrap" tabindex="0">
           <table class="lookup-table">
+            <colgroup></colgroup>
             <thead>
               <tr>
-                ${columns.map((column) => `<th><button type="button" data-lookup-sort="${column.key}">${column.label}</button></th>`).join("")}
+                ${defaultColumns.map((column) => `<th><button type="button" data-lookup-sort="${column.key}">${column.label}</button></th>`).join("")}
               </tr>
             </thead>
             <tbody></tbody>
@@ -92,10 +110,18 @@
 
   function openLookup(field) {
     const dialog = buildOverlay();
+    const articlePriceMode = field.dataset.lookupArticlePrice === "vendita"
+      ? "vendita"
+      : "carico";
     state = {
       field,
       type: field.dataset.lookupType,
       title: field.dataset.lookupTitle || "Selezione",
+      columns: field.dataset.lookupType === "articoli"
+        ? articleColumns.filter(column => !column.priceMode || column.priceMode === articlePriceMode)
+        : field.dataset.lookupType === "clienti"
+          ? customerColumns
+          : defaultColumns,
       rows: [],
       selectedIndex: -1,
       sortKey: "label",
@@ -103,6 +129,30 @@
     };
 
     dialog.querySelector("#lookup-title").textContent = state.title;
+    overlay.classList.toggle("is-article-lookup", state.type === "articoli");
+    const dialogPanel = dialog.querySelector(".lookup-dialog");
+    dialogPanel?.classList.toggle("is-article-lookup", state.type === "articoli");
+    dialogPanel?.classList.toggle("is-customer-lookup", state.type === "clienti");
+    dialog.querySelector("colgroup").innerHTML = state.columns
+      .map(column => `<col${column.width ? ` style="width:${column.width}px"` : ""}>`)
+      .join("");
+    const assignedTableWidth = state.columns.reduce((total, column) => total + (column.width || 0), 0);
+    dialog.querySelector(".lookup-table").style.width = assignedTableWidth
+      ? `${assignedTableWidth}px`
+      : "100%";
+    dialog.querySelector(".lookup-table").style.minWidth = assignedTableWidth
+      ? `${assignedTableWidth}px`
+      : "650px";
+    dialog.querySelector("thead tr").innerHTML = state.columns
+      .map(column => {
+        const alignment = column.numeric ? "right" : column.align || "";
+        const style = alignment ? ` style="text-align:${alignment}"` : "";
+        const buttonStyle = alignment
+          ? ` style="justify-content:${alignment === "right" ? "flex-end" : "center"};text-align:${alignment}"`
+          : "";
+        return `<th class="${column.numeric ? "numeric-column" : ""}"${style}><button type="button" data-lookup-sort="${column.key}"${buttonStyle}>${column.label}</button></th>`;
+      })
+      .join("");
     dialog.querySelector(".lookup-search").value = "";
     dialog.querySelector("tbody").innerHTML = "";
     dialog.classList.add("is-open");
@@ -123,13 +173,28 @@
     }
 
     const search = overlay.querySelector(".lookup-search")?.value.trim() || "";
-    const params = new URLSearchParams({ type: state.type, q: search });
-    const response = await fetch(`${apiUrl}?${params.toString()}`, {
+    const isArticleLookup = state.type === "articoli";
+    const params = isArticleLookup
+      ? new URLSearchParams({ q: search })
+      : new URLSearchParams({ type: state.type, q: search });
+    const response = await fetch(`${isArticleLookup ? "/api/articoli" : apiUrl}?${params.toString()}`, {
       headers: { Accept: "application/json" }
     });
     const payload = await response.json();
 
-    state.rows = Array.isArray(payload.rows) ? payload.rows : [];
+    state.rows = Array.isArray(payload.rows)
+      ? payload.rows.map(row => isArticleLookup
+        ? {
+            ...row,
+            unitMeasure: state.field.dataset.lookupArticleUnit === "vendita"
+              ? row.salesUnitMeasure || ""
+              : row.purchaseUnitMeasure || "",
+            codeLabel: row.code,
+            label: row.description || "",
+            detail: [row.unitMeasure, row.category].filter(Boolean).join(" · ")
+          }
+        : row)
+      : [];
     sortRows();
     state.selectedIndex = state.rows.length > 0 ? 0 : -1;
     renderRows();
@@ -140,9 +205,14 @@
     const tbody = overlay.querySelector("tbody");
     tbody.innerHTML = state.rows.map((row, index) => `
       <tr data-index="${index}" class="${index === state.selectedIndex ? "selected" : ""}">
-        <td>${escapeHtml(row.codeLabel || row.code || "")}</td>
-        <td>${escapeHtml(row.label || "")}</td>
-        <td>${escapeHtml(row.detail || "")}</td>
+        ${state.columns.map(column => {
+          const alignment = column.numeric ? "right" : column.align || "";
+          return `<td class="${column.numeric ? "numeric-column" : ""}"${alignment ? ` style="text-align:${alignment}"` : ""}>${escapeHtml(
+          column.numeric
+            ? Number(row[column.key] || 0).toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : row[column.key] || ""
+          )}</td>`;
+        }).join("")}
       </tr>
     `).join("");
 
@@ -165,8 +235,9 @@
     const direction = state.sortDirection === "desc" ? -1 : 1;
     const key = state.sortKey;
     state.rows.sort((left, right) => {
-      if (key === "code") {
-        return ((Number(left.code) || 0) - (Number(right.code) || 0)) * direction;
+      const column = state.columns.find(item => item.key === key);
+      if (key === "code" || column?.numeric) {
+        return ((Number(left[key]) || 0) - (Number(right[key]) || 0)) * direction;
       }
 
       return String(left[key] || "").localeCompare(String(right[key] || ""), "it", {
@@ -231,6 +302,25 @@
       event.preventDefault();
       event.stopPropagation();
       closeLookup();
+      return;
+    }
+
+    const search = overlay?.querySelector(".lookup-search");
+    if (!search || event.target === search || event.ctrlKey || event.altKey || event.metaKey) {
+      return;
+    }
+
+    if (event.key === "Backspace") {
+      event.preventDefault();
+      search.value = search.value.slice(0, -1);
+      search.dispatchEvent(new Event("input", { bubbles: true }));
+      return;
+    }
+
+    if (event.key.length === 1) {
+      event.preventDefault();
+      search.value += event.key;
+      search.dispatchEvent(new Event("input", { bubbles: true }));
     }
   }
 
@@ -402,6 +492,14 @@
     if (field) {
       openLookup(field);
     }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (!state || event.target === overlay?.querySelector(".lookup-search")
+        || event.target?.closest?.(".lookup-table-wrap")) {
+      return;
+    }
+    handleLookupKeydown(event);
   });
 
   document.querySelectorAll("[data-lookup-field]").forEach((field) => {

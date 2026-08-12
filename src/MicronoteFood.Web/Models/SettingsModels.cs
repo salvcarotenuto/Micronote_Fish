@@ -155,9 +155,19 @@ public sealed class SettingsEditModel
     [StringLength(10, ErrorMessage = "Il campo Aliquota IVA vendite non puo superare 10 caratteri.")]
     public string? AliqIvaVendite { get; set; } = "";
 
+    [Display(Name = "Data inventario")]
+    [StringLength(10, ErrorMessage = "Il campo Data inventario non puo superare 10 caratteri.")]
+    public string? DataInventario { get; set; } = "";
+
     [Display(Name = "Aliquota IVA articoli")]
     [StringLength(10, ErrorMessage = "Il campo Aliquota IVA articoli non puo superare 10 caratteri.")]
     public string? AliquotaRitenutaIrpef { get; set; } = "";
+
+    [Display(Name = "Abilita la casella Importo nella vendita al banco")]
+    public bool AttivaImporto { get; set; }
+
+    [Display(Name = "In apertura della vendita al banco seleziona questo raggruppamento")]
+    public string RaggruppamentoVenditaBanco { get; set; } = "category";
 
     [Display(Name = " ")]
     [StringLength(10, ErrorMessage = "Il campo riservato non puo superare 10 caratteri.")]

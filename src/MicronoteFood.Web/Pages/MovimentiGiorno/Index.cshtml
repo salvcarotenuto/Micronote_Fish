@@ -1,0 +1,118 @@
+@page
+@model MicronoteFood.Web.Pages.MovimentiGiorno.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Movimenti del giorno";
+    ViewData["BodyClass"] = "daily-movements-module";
+    var r = Model.Report;
+    var t = r.Totals;
+    var it = CultureInfo.GetCultureInfo("it-IT");
+    string Quantity(decimal value) => value == 0 ? "" : value.ToString("N3", it);
+    string Money(decimal value) => value == 0 ? "" : value.ToString("N2", it);
+    string Signed(decimal value, int decimals) => value == 0 ? "" : (value > 0 ? "+ " : "- ") + Math.Abs(value).ToString(decimals == 3 ? "N3" : "N2", it);
+    var purchases = r.Rows.Where(row => row.MovementType == "C").ToArray();
+    var sales = r.Rows.Where(row => row.MovementType == "S").ToArray();
+}
+
+<section class="module-page daily-movements-page supplier-form-page data-form-skin" data-daily-movements>
+    <header class="module-header">
+        <div class="module-title-identity">
+            <a class="module-title-logo" asp-page="/Index" aria-label="Torna al menu principale"><img src="~/images/micronote-logo.jpeg" alt="" /></a>
+            <div><h1>Movimenti del giorno</h1><p>Riepilogo movimenti di magazzino raggruppati per giorno e articolo</p></div>
+        </div>
+        <div class="top-actions daily-movements-actions">
+            <span class="list-records-box"><strong>@r.Rows.Count</strong><span>record</span></span>
+            <button class="button button-primary primary" type="button" data-daily-movements-refresh>Aggiorna</button>
+            <button class="button button-primary primary" type="button" onclick="window.print()">Stampa</button>
+            <a class="button button-secondary secondary" asp-page="/Index">Esci</a>
+        </div>
+    </header>
+
+    <form id="daily-movements-filter" class="daily-movements-filter" method="get" data-daily-movements-form>
+        <fieldset class="form-frame">
+            <div class="daily-movements-dates">
+                <div class="field"><label>Dalla data</label><span class="micronote-date-control" data-date-control>
+                    <input type="hidden" name="dateFrom" value="@r.DateFrom.ToString("yyyy-MM-dd")" data-filter-date-hidden />
+                    <input class="micronote-date-input" type="text" inputmode="numeric" maxlength="10" autocomplete="off" value="@r.DateFrom.ToString("dd/MM/yyyy", it)" data-filter-date-display />
+                    <button class="micronote-date-button" type="button" tabindex="-1" aria-label="Seleziona data iniziale" data-date-picker-button></button>
+                </span></div>
+                <div class="field"><label>Alla data</label><span class="micronote-date-control" data-date-control>
+                    <input type="hidden" name="dateTo" value="@r.DateTo.ToString("yyyy-MM-dd")" data-filter-date-hidden />
+                    <input class="micronote-date-input" type="text" inputmode="numeric" maxlength="10" autocomplete="off" value="@r.DateTo.ToString("dd/MM/yyyy", it)" data-filter-date-display />
+                    <button class="micronote-date-button" type="button" tabindex="-1" aria-label="Seleziona data finale" data-date-picker-button></button>
+                </span></div>
+            </div>
+            <div class="daily-movements-selection">
+                <div class="daily-movements-switch-row">
+                    <div class="field daily-movements-type"><label>Seleziona movimenti per</label><select name="selectionType" data-daily-movements-type>
+                        <option value="articolo" selected="@(r.SelectionType == "articolo")">Articolo</option>
+                        <option value="categoria" selected="@(r.SelectionType == "categoria")">Categoria</option>
+                        <option value="gruppo" selected="@(r.SelectionType == "gruppo")">Gruppo</option>
+                        <option value="specie" selected="@(r.SelectionType == "specie")">Specie</option>
+                        <option value="provenienza" selected="@(r.SelectionType == "provenienza")">Provenienza</option>
+                    </select></div>
+                    @foreach (var selection in new[] {
+                        (Key: "categoria", Label: "Categoria", Options: r.Categories),
+                        (Key: "gruppo", Label: "Gruppo", Options: r.Groups),
+                        (Key: "specie", Label: "Specie", Options: r.Species),
+                        (Key: "provenienza", Label: "Provenienza", Options: r.Origins) })
+                    {
+                        <div class="field daily-movements-combo" data-daily-movements-combo="@selection.Key" hidden="@(r.SelectionType != selection.Key)">
+                            <label>@selection.Label</label><select name="classificationCode" disabled="@(r.SelectionType != selection.Key)">
+                                <option value=""></option>
+                                @foreach (var option in selection.Options) { <option value="@option.Code" selected="@(r.SelectionType == selection.Key && option.Code == r.ClassificationCode)">@option.Code.ToString("000") - @option.Description</option> }
+                            </select>
+                        </div>
+                    }
+                    <div class="field daily-movements-combo daily-movements-combo-disabled" data-daily-movements-combo="articolo">
+                        <label>Raggruppamento</label><select disabled><option></option></select>
+                    </div>
+                </div>
+                <div class="field lookup-field daily-movements-value"
+                     data-daily-movements-article-field
+                     data-lookup-field
+                     data-lookup-type="articoli"
+                     data-lookup-title="Seleziona articolo"
+                     data-lookup-article-unit="carico"
+                     data-lookup-article-price="carico"
+                     data-code-input="dailyMovementArticleCode"
+                     data-code-display="dailyMovementArticleDisplay"
+                     data-label-input="dailyMovementArticleDescription">
+                    <label>Articolo</label>
+                    <input id="dailyMovementArticleCode" name="articleCode" value="@r.ArticleCode" type="hidden" />
+                    <input id="dailyMovementArticleDisplay" class="daily-movements-article-code" value="@r.ArticleCode" autocomplete="off" readonly="@(r.SelectionType != "articolo")" data-daily-movements-article-code />
+                    <input id="dailyMovementArticleDescription" class="daily-movements-article-description" value="@r.ArticleDescription" readonly tabindex="-1" data-daily-movements-article-description />
+                    <button class="lookup-button daily-movements-article-lookup" type="button" disabled="@(r.SelectionType != "articolo")" title="Seleziona articolo" aria-label="Seleziona articolo" data-lookup-open data-daily-movements-article-lookup></button>
+                    <button class="article-supplier-clear-button daily-movements-article-clear" type="button" disabled="@(r.SelectionType != "articolo")" title="Azzera articolo" aria-label="Azzera articolo" data-daily-movements-article-clear>x</button>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+
+    <div class="daily-movements-content">
+        <fieldset class="form-frame daily-movements-list-panel">
+            <div class="daily-purchases-panel-title">Lista articoli acquistati e venduti</div>
+            <div class="list-grid-frame daily-movements-grid-frame"><table class="list-grid daily-movements-grid">
+                <thead><tr><th>Partita</th><th>Causale</th><th>Articolo</th><th>Descrizione</th><th>Ditta</th><th>Nome</th><th>Colli</th><th>Peso</th><th>Prezzo</th><th>Importo</th></tr></thead>
+                <tbody>
+                @if (purchases.Length > 0) { <tr class="daily-movements-section"><td></td><td colspan="9">ACQUISTI</td></tr> }
+                @foreach (var row in purchases) { <tr tabindex="0"><td>@row.Code.ToString("000000")</td><td>@row.Cause</td><td>@row.ArticleCode</td><td>@row.ArticleDescription</td><td>@(row.CompanyCode == 0 ? "" : row.CompanyCode.ToString("00000"))</td><td>@row.CompanyName</td><td>@(row.Packages == 0 ? "" : row.Packages)</td><td>@Quantity(row.Quantity)</td><td>@Money(row.Price)</td><td>@Money(row.Amount)</td></tr> }
+                @if (sales.Length > 0) { <tr class="daily-movements-spacer"><td colspan="10"></td></tr><tr class="daily-movements-section"><td></td><td colspan="9">VENDITE</td></tr> }
+                @foreach (var row in sales) { <tr tabindex="0"><td>@row.Code.ToString("000000")</td><td>@row.Cause</td><td>@row.ArticleCode</td><td>@row.ArticleDescription</td><td>@(row.CompanyCode == 0 ? "" : row.CompanyCode.ToString("00000"))</td><td>@row.CompanyName</td><td>@(row.Packages == 0 ? "" : row.Packages)</td><td>@Quantity(row.Quantity)</td><td>@Money(row.Price)</td><td>@Money(row.Amount)</td></tr> }
+                </tbody>
+            </table></div>
+        </fieldset>
+
+        <aside class="daily-movements-summary">
+            <section><h2>Acquisti</h2><div><label>Colli</label><input value="@(t.PurchasedPackages == 0 ? "" : t.PurchasedPackages)" readonly /><label>Peso</label><input value="@Quantity(t.PurchasedQuantity)" readonly /><label>Importo</label><input value="@Money(t.PurchasedAmount)" readonly /><label>Costo medio</label><input value="@Money(t.PurchaseAverage)" readonly /></div></section>
+            <section><h2>Vendite</h2><div><label>Colli</label><input value="@(t.SoldPackages == 0 ? "" : t.SoldPackages)" readonly /><label>Peso</label><input value="@Quantity(t.SoldQuantity)" readonly /><label>Importo</label><input value="@Money(t.SoldAmount)" readonly /><label>Prezzo medio</label><input value="@Money(t.SaleAverage)" readonly /></div></section>
+            <section><h2>Saldo</h2><div><label>Colli</label><input value="@Signed(t.PackageBalance, 2)" readonly /><label>Peso</label><input value="@Signed(t.QuantityBalance, 3)" readonly /><label>Importo</label><input value="@Signed(t.AmountBalance, 2)" readonly /><label>Ricar. medio €</label><input value="@Money(t.AverageMarkup)" readonly /><label>Ricar. medio %</label><input value="@(t.PercentageMarkup == 0 ? "" : t.PercentageMarkup.ToString("N2", it) + " %")" readonly /></div></section>
+        </aside>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/filter-date-picker.js" asp-append-version="true"></script>
+    <script src="~/js/lookup-fields.js" asp-append-version="true"></script>
+    <script src="~/js/daily-movements.js" asp-append-version="true"></script>
+}

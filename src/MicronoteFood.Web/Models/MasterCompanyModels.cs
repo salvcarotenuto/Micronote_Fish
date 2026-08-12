@@ -9,8 +9,8 @@ public sealed record CompanyMasterRecord(
     bool Active,
     bool Locked,
     string DatabaseName,
-    string? CurrentDatabaseVersion,
-    string? RequiredDatabaseVersion,
+    DateTime? CurrentDatabaseVersion,
+    DateTime? RequiredDatabaseVersion,
     bool DatabaseExists = false);
 
 public sealed record AppParameterRecord(string Key, string Value);
@@ -53,12 +53,10 @@ public sealed class CompanyMasterEditModel
     public string DatabaseName { get; set; } = "";
 
     [Display(Name = "Versione DB attuale")]
-    [StringLength(30)]
-    public string? CurrentDatabaseVersion { get; set; }
+    public DateTime? CurrentDatabaseVersion { get; set; }
 
     [Display(Name = "Versione DB richiesta")]
-    [StringLength(30)]
-    public string? RequiredDatabaseVersion { get; set; }
+    public DateTime? RequiredDatabaseVersion { get; set; }
 
     [Display(Name = "Attiva")]
     public bool Active { get; set; } = true;
